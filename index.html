@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AquaHub Connect — Mobile App Prototype</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --teal:#0d9e82;--teal-l:#e6f7f4;--teal-d:#087a64;
+  --earth:#c47c2b;--earth-l:#fdf3e7;
+  --sky:#1a7bc4;--sky-l:#e8f3fc;
+  --red:#dc3545;--red-l:#fdecea;
+  --green:#1a9e4a;--green-l:#e8f7ee;
+  --purple:#7c3aed;--purple-l:#f0ebfe;
+  --bg:#f0f4f3;--white:#ffffff;
+  --text:#0f2420;--text2:#4a6660;--text3:#8aa8a3;
+  --border:#dde8e6;
+  --sans:'Plus Jakarta Sans',sans-serif;
+  --display:'Space Grotesk',sans-serif;
+  --radius:18px;--radius-sm:12px;--radius-xs:8px;
+  --shadow:0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.12);
+}
+body{background:#1a2e2a;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--sans);padding:20px}
+body::before{content:'AquaHub Connect — Mobile App Prototype';position:fixed;top:14px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.3);font-size:11px;letter-spacing:2px;text-transform:uppercase;font-family:var(--display);white-space:nowrap}
+
+/* PHONE FRAME */
+.phone{
+  width:390px;height:844px;background:var(--white);border-radius:44px;
+  overflow:hidden;position:relative;
+  box-shadow:0 0 0 10px #0d1a16,0 0 0 12px #1e3530,0 32px 80px rgba(0,0,0,0.6);
+  flex-shrink:0;
+}
+/* notch */
+.phone::before{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:120px;height:34px;background:#0d1a16;border-radius:0 0 20px 20px;z-index:1000;
+}
+
+/* SCREENS */
+.screen{position:absolute;inset:0;background:var(--bg);overflow-y:auto;overflow-x:hidden;display:none;flex-direction:column;padding-top:44px;padding-bottom:80px}
+.screen.active{display:flex}
+.screen::-webkit-scrollbar{display:none}
+
+/* STATUS BAR */
+.status-bar{position:absolute;top:0;left:0;right:0;height:44px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 24px 6px;z-index:100;font-size:12px;font-weight:600;color:var(--text)}
+.status-bar.light{color:#fff}
+.status-time{font-family:var(--display)}
+.status-icons{display:flex;align-items:center;gap:4px;font-size:11px}
+
+/* BOTTOM NAV */
+.bottom-nav{
+  position:absolute;bottom:0;left:0;right:0;height:80px;
+  background:var(--white);border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-around;
+  padding:0 8px 16px;z-index:200;
+}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:8px 12px;border-radius:var(--radius-xs);transition:all .2s;min-width:56px}
+.nav-item.active .nav-icon{color:var(--teal)}
+.nav-item.active .nav-label{color:var(--teal);font-weight:700}
+.nav-icon{font-size:22px;color:var(--text3);transition:color .2s}
+.nav-label{font-size:9px;color:var(--text3);font-weight:500;letter-spacing:.3px;text-transform:uppercase}
+
+/* SHARED COMPONENTS */
+.screen-header{padding:16px 20px 12px;background:var(--white);border-bottom:1px solid var(--border)}
+.screen-header h2{font-family:var(--display);font-size:20px;font-weight:700;color:var(--text)}
+.screen-header p{font-size:13px;color:var(--text2);margin-top:2px}
+
+.card{background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
+.section-label{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.chip.ok{background:var(--green-l);color:var(--green)}
+.chip.warn{background:#fff3cd;color:#856404}
+.chip.danger{background:var(--red-l);color:var(--red)}
+.chip.info{background:var(--sky-l);color:var(--sky)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;border:none;width:100%;font-family:var(--sans)}
+.btn-primary{background:var(--teal);color:#fff}
+.btn-primary:hover{background:var(--teal-d)}
+.btn-outline{background:transparent;color:var(--teal);border:2px solid var(--teal)}
+.btn-sm{padding:10px 16px;font-size:13px;border-radius:var(--radius-xs);width:auto}
+
+/* ── SCREEN 1: SPLASH ── */
+#splash{background:linear-gradient(160deg,#0d4a3a 0%,#0f6b52 50%,#1a8a6a 100%);padding-top:0;padding-bottom:0;justify-content:space-between}
+.splash-top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 32px 24px}
+.splash-logo{width:80px;height:80px;background:rgba(255,255,255,0.15);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:40px;margin-bottom:20px;border:2px solid rgba(255,255,255,0.2)}
+.splash-name{font-family:var(--display);font-size:30px;font-weight:700;color:#fff;text-align:center;margin-bottom:6px}
+.splash-tagline{font-size:13px;color:rgba(255,255,255,0.7);text-align:center;line-height:1.5;max-width:240px}
+.splash-badges{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap;justify-content:center}
+.splash-badge{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 12px;font-size:11px;color:rgba(255,255,255,0.8);font-weight:500}
+.splash-bottom{padding:24px 24px 48px;display:flex;flex-direction:column;gap:10px}
+.splash-btn-main{background:#fff;color:var(--teal-d);font-size:15px;font-weight:800;padding:16px;border-radius:var(--radius);text-align:center;cursor:pointer;font-family:var(--display)}
+.splash-btn-main:hover{background:rgba(255,255,255,0.9)}
+.splash-access{display:flex;justify-content:center;gap:16px;margin-top:4px}
+.access-opt{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:10px 16px;background:rgba(255,255,255,0.08);border-radius:var(--radius-sm);border:1px solid rgba(255,255,255,0.15)}
+.access-opt span:first-child{font-size:22px}
+.access-opt span:last-child{font-size:10px;color:rgba(255,255,255,0.6);font-weight:500}
+
+/* ── SCREEN 2: HOME ── */
+#home .hero{background:linear-gradient(135deg,var(--teal-d),var(--teal));padding:20px;border-radius:0 0 28px 28px;margin-top:-1px;position:relative;overflow:hidden}
+#home .hero::before{content:'<i class="fa-solid fa-water"></i>';position:absolute;right:-10px;top:-10px;font-size:100px;opacity:.08}
+.hero-greeting{font-size:13px;color:rgba(255,255,255,0.75);margin-bottom:2px}
+.hero-name{font-family:var(--display);font-size:22px;font-weight:700;color:#fff;margin-bottom:12px}
+.hero-alert-pill{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px}
+.alert-pill-dot{width:8px;height:8px;border-radius:50%;background:#ffd166;animation:blink 1.5s infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.alert-pill-text{font-size:12px;color:#fff;line-height:1.4}
+.alert-pill-text strong{color:#ffd166}
+.home-content{padding:16px}
+.quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.qa-card{background:var(--white);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .2s;box-shadow:var(--shadow);border:2px solid transparent}
+.qa-card:hover{border-color:var(--teal);transform:translateY(-2px)}
+.qa-icon{font-size:28px;margin-bottom:8px}
+.qa-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
+.qa-sub{font-size:11px;color:var(--text3)}
+.weather-card{background:linear-gradient(135deg,#1a4a7a,#1e6aaa);border-radius:var(--radius);padding:16px;margin-bottom:12px;position:relative;overflow:hidden}
+.weather-card::before{content:'<i class="fa-solid fa-sun"></i>';position:absolute;right:16px;top:12px;font-size:40px;opacity:.6}
+.weather-temp{font-family:var(--display);font-size:36px;font-weight:700;color:#fff}
+.weather-desc{font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:8px}
+.weather-row{display:flex;gap:12px}
+.weather-item{font-size:11px;color:rgba(255,255,255,0.7);display:flex;align-items:center;gap:4px}
+.news-item{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border)}
+.news-item:last-child{border:none;padding-bottom:0}
+.news-icon{width:40px;height:40px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.news-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;line-height:1.3}
+.news-meta{font-size:11px;color:var(--text3)}
+
+/* ── SCREEN 3: MARKETPLACE ── */
+#market .market-content{padding:16px}
+.product-card{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s}
+.product-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.product-header{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.product-icon{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+.product-name{font-family:var(--display);font-size:16px;font-weight:700;color:var(--text);margin-bottom:2px}
+.product-desc{font-size:12px;color:var(--text2);line-height:1.4}
+.product-footer{display:flex;align-items:center;justify-content:space-between}
+.product-price{font-family:var(--display);font-size:18px;font-weight:700;color:var(--teal)}
+.product-unit{font-size:11px;color:var(--text3);margin-top:1px}
+.add-btn{background:var(--teal);color:#fff;border:none;border-radius:var(--radius-sm);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .2s}
+.add-btn:hover{background:var(--teal-d)}
+.avail-bar{height:4px;background:var(--border);border-radius:2px;margin:10px 0 4px;overflow:hidden}
+.avail-fill{height:100%;border-radius:2px;background:var(--teal)}
+.avail-label{font-size:10px;color:var(--text3)}
+.filter-row{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;background:var(--white);border-bottom:1px solid var(--border)}
+.filter-row::-webkit-scrollbar{display:none}
+.filter-chip{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);color:var(--text2);white-space:nowrap;background:transparent;transition:all .2s}
+.filter-chip.sel{background:var(--teal);color:#fff;border-color:var(--teal)}
+
+/* ── SCREEN 4: BOOK SERVICE ── */
+#book .book-content{padding:16px}
+.service-option{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s;border:2px solid transparent}
+.service-option.sel{border-color:var(--teal);background:var(--teal-l)}
+.service-option:hover{border-color:var(--teal)}
+.service-header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.service-icon{font-size:28px}
+.service-name{font-family:var(--display);font-size:15px;font-weight:700;color:var(--text)}
+.service-price{font-size:12px;color:var(--teal);font-weight:600;margin-top:1px}
+.service-desc{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:10px}
+.service-features{display:flex;flex-wrap:wrap;gap:6px}
+.feat-tag{background:var(--teal-l);color:var(--teal);border-radius:20px;padding:3px 9px;font-size:10px;font-weight:600}
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;display:block;text-transform:uppercase;letter-spacing:.5px}
+.form-input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);font-family:var(--sans);background:var(--white);outline:none;transition:border-color .2s}
+.form-input:focus{border-color:var(--teal)}
+.date-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+.date-btn{padding:10px 6px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--white);text-align:center;cursor:pointer;transition:all .2s}
+.date-btn.sel{border-color:var(--teal);background:var(--teal-l)}
+.date-day{font-size:10px;color:var(--text3);margin-bottom:2px}
+.date-num{font-size:16px;font-weight:700;color:var(--text)}
+.time-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.time-btn{padding:10px 6px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--white);text-align:center;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:all .2s}
+.time-btn.sel{border-color:var(--teal);background:var(--teal-l);color:var(--teal)}
+
+/* ── SCREEN 5: CLIMATE ALERTS ── */
+#alerts-screen .alerts-content{padding:16px}
+.alert-hero{border-radius:var(--radius);padding:20px;margin-bottom:16px;position:relative;overflow:hidden}
+.alert-hero.flood{background:linear-gradient(135deg,#1a3a6a,#1e5aaa)}
+.alert-hero.heat{background:linear-gradient(135deg,#7a2a00,#cc4400)}
+.alert-hero-icon{font-size:48px;margin-bottom:8px}
+.alert-hero-title{font-family:var(--display);font-size:20px;font-weight:700;color:#fff;margin-bottom:4px}
+.alert-hero-sub{font-size:13px;color:rgba(255,255,255,0.8);line-height:1.5}
+.alert-level{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:#fff;margin-top:10px}
+.alert-card{background:var(--white);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);border-left:4px solid transparent}
+.alert-card.flood{border-left-color:var(--sky)}
+.alert-card.heat{border-left-color:var(--red)}
+.alert-card.ok{border-left-color:var(--green)}
+.alert-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.alert-card-title{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px}
+.alert-card-time{font-size:10px;color:var(--text3)}
+.alert-card-body{font-size:12px;color:var(--text2);line-height:1.5}
+.tips-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.tip-item{background:var(--teal-l);border-radius:var(--radius-xs);padding:10px;font-size:11px;color:var(--teal-d);font-weight:500;display:flex;align-items:flex-start;gap:6px;line-height:1.4}
+.tip-icon{flex-shrink:0}
+
+/* ── SCREEN 6: GAME ── */
+#game-screen .game-content{padding:16px}
+.game-hero{background:linear-gradient(135deg,#3a1a6a,#6a2aaa);border-radius:var(--radius);padding:20px;margin-bottom:16px;text-align:center;position:relative;overflow:hidden}
+.game-hero::before{content:'<i class="fa-solid fa-gamepad"></i>';position:absolute;right:-10px;bottom:-10px;font-size:80px;opacity:.15}
+.game-title{font-family:var(--display);font-size:22px;font-weight:700;color:#fff;margin-bottom:4px}
+.game-sub{font-size:13px;color:rgba(255,255,255,0.75);margin-bottom:14px}
+.xp-bar-wrap{background:rgba(255,255,255,0.15);border-radius:10px;height:10px;margin-bottom:6px;overflow:hidden}
+.xp-bar-fill{height:100%;background:linear-gradient(90deg,#ffd166,#ffaa00);border-radius:10px;width:62%}
+.xp-label{font-size:11px;color:rgba(255,255,255,0.7);text-align:left}
+.badges-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.badge-item{background:var(--white);border-radius:var(--radius-sm);padding:12px 8px;text-align:center;box-shadow:var(--shadow);cursor:pointer;transition:all .2s}
+.badge-item:hover{transform:translateY(-2px)}
+.badge-icon{font-size:28px;margin-bottom:4px}
+.badge-name{font-size:9px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.3px}
+.badge-item.locked{opacity:.4;filter:grayscale(1)}
+.quiz-card{background:var(--white);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:12px}
+.quiz-q{font-size:15px;font-weight:700;color:var(--text);line-height:1.5;margin-bottom:14px}
+.quiz-opts{display:flex;flex-direction:column;gap:8px}
+.quiz-opt{padding:13px 16px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-size:13px;color:var(--text2);cursor:pointer;transition:all .2s;font-family:var(--sans);background:var(--white);text-align:left}
+.quiz-opt:hover{border-color:var(--teal);color:var(--teal)}
+.quiz-opt.correct{border-color:var(--green);background:var(--green-l);color:var(--green);font-weight:700}
+.quiz-opt.wrong{border-color:var(--red);background:var(--red-l);color:var(--red)}
+.quiz-feedback{background:var(--teal-l);border-radius:var(--radius-sm);padding:12px;font-size:12px;color:var(--teal-d);line-height:1.5;margin-top:10px;display:none}
+.quiz-feedback.show{display:block}
+.leaderboard{background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.lb-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.lb-item:last-child{border:none;padding-bottom:0}
+.lb-rank{font-family:var(--display);font-size:16px;font-weight:700;width:24px;text-align:center}
+.lb-rank.gold{color:#ffd700}.lb-rank.silver{color:#c0c0c0}.lb-rank.bronze{color:#cd7f32}
+.lb-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.lb-name{font-size:13px;font-weight:600;color:var(--text);flex:1}
+.lb-pts{font-size:12px;font-weight:700;color:var(--teal)}
+
+/* ── SCREEN 7: PROFILE / ACCESSIBILITY ── */
+#profile-screen .profile-content{padding:16px}
+.profile-hero{background:linear-gradient(135deg,var(--teal-d),var(--teal));padding:24px 20px;border-radius:0 0 28px 28px;margin-top:-1px;text-align:center}
+.profile-avatar{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.2);border:3px solid rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 10px}
+.profile-name{font-family:var(--display);font-size:18px;font-weight:700;color:#fff;margin-bottom:2px}
+.profile-loc{font-size:12px;color:rgba(255,255,255,0.75)}
+.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,0.15);border-radius:var(--radius-sm);margin-top:14px;overflow:hidden}
+.pstat{background:rgba(255,255,255,0.1);padding:10px 6px;text-align:center}
+.pstat-val{font-family:var(--display);font-size:18px;font-weight:700;color:#fff}
+.pstat-lbl{font-size:9px;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:.5px}
+.access-section{margin-bottom:16px}
+.access-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--white);border-radius:var(--radius-sm);margin-bottom:8px;box-shadow:var(--shadow)}
+.access-row-left{display:flex;align-items:center;gap:12px}
+.access-row-icon{font-size:22px}
+.access-row-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:1px}
+.access-row-sub{font-size:11px;color:var(--text3)}
+.toggle{width:48px;height:28px;background:var(--border);border-radius:14px;position:relative;cursor:pointer;transition:background .3s;flex-shrink:0}
+.toggle.on{background:var(--teal)}
+.toggle::after{content:'';position:absolute;width:22px;height:22px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform .3s;box-shadow:0 1px 4px rgba(0,0,0,0.2)}
+.toggle.on::after{transform:translateX(20px)}
+.lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lang-btn{padding:12px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--white);text-align:center;cursor:pointer;transition:all .2s;font-family:var(--sans)}
+.lang-btn.sel{border-color:var(--teal);background:var(--teal-l)}
+.lang-flag{font-size:20px;margin-bottom:4px}
+.lang-name{font-size:12px;font-weight:600;color:var(--text)}
+
+/* TOAST */
+.toast{
+  position:absolute;bottom:100px;left:20px;right:20px;
+  background:#0f2420;color:#fff;border-radius:var(--radius-sm);
+  padding:14px 16px;font-size:13px;font-weight:500;
+  display:flex;align-items:center;gap:10px;z-index:500;
+  transform:translateY(20px);opacity:0;transition:all .35s;pointer-events:none;
+}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* CONFIRM MODAL */
+.modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.5);z-index:400;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-sheet{background:var(--white);border-radius:28px 28px 0 0;padding:24px 20px 40px;width:100%}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px}
+.modal-title{font-family:var(--display);font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px}
+.modal-sub{font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:20px}
+.modal-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.modal-row:last-of-type{border:none;margin-bottom:12px}
+.modal-key{font-size:13px;color:var(--text2)}
+.modal-val{font-size:13px;font-weight:700;color:var(--text)}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- STATUS BAR -->
+  <div class="status-bar" id="status-bar">
+    <span class="status-time" id="status-time">9:41</span>
+    <div class="status-icons">
+      <span>●●●</span><span>WiFi</span><span>🔋</span>
+    </div>
+  </div>
+
+  <!-- ── SPLASH ── -->
+  <div class="screen active" id="splash">
+    <div class="splash-top">
+      <div class="splash-logo"><i class="fa-solid fa-droplet"></i></div>
+      <div class="splash-name">AquaHub Connect</div>
+      <div class="splash-tagline">Clean water, safe sanitation and climate alerts for every community in Northern Ghana</div>
+      <div class="splash-badges">
+        <div class="splash-badge"><i class="fa-solid fa-wheelchair"></i> Accessible</div>
+        <div class="splash-badge"><i class="fa-solid fa-earth-africa"></i> Climate-Smart</div>
+        <div class="splash-badge"><i class="fa-solid fa-flag"></i> Made in Ghana</div>
+      </div>
+    </div>
+    <div class="splash-bottom">
+      <div class="splash-btn-main" onclick="goTo('home')">Get Started →</div>
+      <div class="splash-access">
+        <div class="access-opt" onclick="goTo('home')">
+          <span><i class="fa-solid fa-volume-high"></i></span><span>Voice Mode</span>
+        </div>
+        <div class="access-opt" onclick="goTo('home')">
+          <span><i class="fa-solid fa-eye"></i></span><span>Large Text</span>
+        </div>
+        <div class="access-opt" onclick="goTo('home')">
+          <span><i class="fa-solid fa-globe"></i></span><span>Language</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HOME ── -->
+  <div class="screen" id="home">
+    <div class="hero">
+      <div class="hero-greeting">Good morning,</div>
+      <div class="hero-name">Amina </div>
+      <div class="hero-alert-pill">
+        <div class="alert-pill-dot"></div>
+        <div class="alert-pill-text"><strong>Flood Advisory:</strong> Risk rising in your area. Jirapa district — check alerts now.</div>
+      </div>
+    </div>
+    <div class="home-content">
+      <div class="section-label" style="margin-top:4px">Quick Actions</div>
+      <div class="quick-actions">
+        <div class="qa-card" onclick="goTo('market')">
+          <div class="qa-icon"><i class="fa-solid fa-cart-shopping"></i></div>
+          <div class="qa-title">Buy Products</div>
+          <div class="qa-sub">Water, Biogas, Fertilizer</div>
+        </div>
+        <div class="qa-card" onclick="goTo('book')">
+          <div class="qa-icon"><i class="fa-solid fa-truck"></i></div>
+          <div class="qa-title">Book a Service</div>
+          <div class="qa-sub">Toilet draining & more</div>
+        </div>
+        <div class="qa-card" onclick="goTo('alerts-screen')">
+          <div class="qa-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <div class="qa-title">Climate Alerts</div>
+          <div class="qa-sub">1 active warning</div>
+        </div>
+        <div class="qa-card" onclick="goTo('game-screen')">
+          <div class="qa-icon"><i class="fa-solid fa-gamepad"></i></div>
+          <div class="qa-title">EduGame</div>
+          <div class="qa-sub">620 XP · Level 4</div>
+        </div>
+      </div>
+      <div class="weather-card">
+        <div class="weather-temp">32°C</div>
+        <div class="weather-desc">Mostly clear · Tamale, N. Ghana</div>
+        <div class="weather-row">
+          <div class="weather-item"><i class="fa-solid fa-droplet"></i> Humidity 68%</div>
+          <div class="weather-item"><i class="fa-solid fa-wind"></i> Wind 14 km/h</div>
+          <div class="weather-item"><i class="fa-solid fa-cloud-rain"></i> Rain 40%</div>
+        </div>
+      </div>
+      <div class="card" style="padding:14px 16px">
+        <div class="section-label">Latest Updates</div>
+        <div class="news-item">
+          <div class="news-icon" style="background:var(--teal-l)"><i class="fa-solid fa-droplet"></i></div>
+          <div>
+            <div class="news-title">Clean water available — 800L in stock</div>
+            <div class="news-meta">AquaHub Site · 2 min ago</div>
+          </div>
+        </div>
+        <div class="news-item">
+          <div class="news-icon" style="background:#fff3cd"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <div>
+            <div class="news-title">Flood risk index rising to 5/10 this week</div>
+            <div class="news-meta">Climate Monitor · 1 hr ago</div>
+          </div>
+        </div>
+        <div class="news-item">
+          <div class="news-icon" style="background:var(--purple-l)"><i class="fa-solid fa-gamepad"></i></div>
+          <div>
+            <div class="news-title">You earned the Water Guardian badge!</div>
+            <div class="news-meta">EduGame · Yesterday</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MARKET ── -->
+  <div class="screen" id="market">
+    <div class="screen-header">
+      <h2>Marketplace</h2>
+      <p>Hub products delivered to your community</p>
+    </div>
+    <div class="filter-row">
+      <div class="filter-chip sel">All Products</div>
+      <div class="filter-chip"><i class="fa-solid fa-droplet"></i> Water</div>
+      <div class="filter-chip"><i class="fa-solid fa-fire"></i> Biogas</div>
+      <div class="filter-chip"><i class="fa-solid fa-seedling"></i> Fertilizer</div>
+    </div>
+    <div class="market-content">
+      <div class="product-card" onclick="showOrder('Clean Irrigation Water','$0.002 / litre','<i class="fa-solid fa-droplet"></i>')">
+        <div class="product-header">
+          <div class="product-icon" style="background:var(--sky-l)"><i class="fa-solid fa-droplet"></i></div>
+          <div>
+            <div class="product-name">Clean Irrigation Water</div>
+            <div class="product-desc">WHO-safe treated water. Ideal for vegetable farming, cleaning, and hygiene use. Same-day delivery available.</div>
+          </div>
+        </div>
+        <div class="avail-bar"><div class="avail-fill" style="width:72%"></div></div>
+        <div class="avail-label">3,240 L available of 4,500 L daily capacity</div>
+        <div class="product-footer" style="margin-top:10px">
+          <div>
+            <div class="product-price">$0.002<span style="font-size:13px;font-weight:400">/litre</span></div>
+            <div class="product-unit">Min. order: 100 litres</div>
+          </div>
+          <button class="add-btn" onclick="event.stopPropagation();showOrder('Clean Irrigation Water','$0.002 / litre','<i class="fa-solid fa-droplet"></i>')">Order Now</button>
+        </div>
+      </div>
+      <div class="product-card" onclick="showOrder('Biogas Fuel','$0.08 / m³','<i class="fa-solid fa-fire"></i>')">
+        <div class="product-header">
+          <div class="product-icon" style="background:var(--earth-l)"><i class="fa-solid fa-fire"></i></div>
+          <div>
+            <div class="product-name">Biogas Fuel</div>
+            <div class="product-desc">Clean cooking energy captured during sludge treatment. Replaces charcoal and firewood. Delivered in portable canisters.</div>
+          </div>
+        </div>
+        <div class="avail-bar"><div class="avail-fill" style="width:74%;background:var(--earth)"></div></div>
+        <div class="avail-label">18.4 m³ available of 25 m³ daily capacity</div>
+        <div class="product-footer" style="margin-top:10px">
+          <div>
+            <div class="product-price" style="color:var(--earth)">$0.08<span style="font-size:13px;font-weight:400">/m³</span></div>
+            <div class="product-unit">Min. order: 2 m³</div>
+          </div>
+          <button class="add-btn" style="background:var(--earth)" onclick="event.stopPropagation();showOrder('Biogas Fuel','$0.08 / m³','<i class="fa-solid fa-fire"></i>')">Order Now</button>
+        </div>
+      </div>
+      <div class="product-card" onclick="showOrder('Organic Fertilizer','$0.15 / kg','<i class="fa-solid fa-seedling"></i>')">
+        <div class="product-header">
+          <div class="product-icon" style="background:var(--green-l)"><i class="fa-solid fa-seedling"></i></div>
+          <div>
+            <div class="product-name">Organic Fertilizer</div>
+            <div class="product-desc">Nutrient-rich dried digestate. Boosts crop yields for smallholder farmers. Bagged and ready for collection or delivery.</div>
+          </div>
+        </div>
+        <div class="avail-bar"><div class="avail-fill" style="width:70%;background:var(--green)"></div></div>
+        <div class="avail-label">42 kg available of 60 kg daily capacity</div>
+        <div class="product-footer" style="margin-top:10px">
+          <div>
+            <div class="product-price" style="color:var(--green)">$0.15<span style="font-size:13px;font-weight:400">/kg</span></div>
+            <div class="product-unit">Min. order: 5 kg</div>
+          </div>
+          <button class="add-btn" style="background:var(--green)" onclick="event.stopPropagation();showOrder('Organic Fertilizer','$0.15 / kg','<i class="fa-solid fa-seedling"></i>')">Order Now</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BOOK ── -->
+  <div class="screen" id="book">
+    <div class="screen-header">
+      <h2>Book a Service</h2>
+      <p>We come to you — licensed and affordable</p>
+    </div>
+    <div class="book-content">
+      <div class="section-label">Choose Service</div>
+      <div class="service-option sel" onclick="selectService(this)">
+        <div class="service-header">
+          <div class="service-icon"><i class="fa-solid fa-truck"></i></div>
+          <div>
+            <div class="service-name">Toilet / Pit Latrine Draining</div>
+            <div class="service-price">From $8.00 per visit</div>
+          </div>
+        </div>
+        <div class="service-desc">Our vacuum truck team collects fecal sludge from your toilet or pit latrine and safely transports it to the AquaHub for treatment. No mess, no odour.</div>
+        <div class="service-features">
+          <span class="feat-tag">Licensed Operators</span>
+          <span class="feat-tag">Same-Week Booking</span>
+          <span class="feat-tag">Accessible Support</span>
+        </div>
+      </div>
+      <div class="service-option" onclick="selectService(this)">
+        <div class="service-header">
+          <div class="service-icon"><i class="fa-solid fa-wrench"></i></div>
+          <div>
+            <div class="service-name">Sanitation Assessment</div>
+            <div class="service-price">Free — NGO supported</div>
+          </div>
+        </div>
+        <div class="service-desc">A trained officer visits your home to assess sanitation needs and recommend the right solution for your household.</div>
+        <div class="service-features">
+          <span class="feat-tag">Free of Charge</span>
+          <span class="feat-tag">PWD Friendly</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-label">Schedule Your Booking</div>
+        <div class="form-group">
+          <label class="form-label">Your Location / Address</label>
+          <input class="form-input" placeholder="e.g. Lang-Oullo, Jirapa District" value="Lang-Oullo, Jirapa District"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Select Date</label>
+          <div class="date-grid">
+            <div class="date-btn"><div class="date-day">MON</div><div class="date-num">26</div></div>
+            <div class="date-btn sel"><div class="date-day">TUE</div><div class="date-num">27</div></div>
+            <div class="date-btn"><div class="date-day">WED</div><div class="date-num">28</div></div>
+            <div class="date-btn"><div class="date-day">THU</div><div class="date-num">29</div></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Preferred Time</label>
+          <div class="time-grid">
+            <div class="time-btn">8:00 AM</div>
+            <div class="time-btn sel">10:00 AM</div>
+            <div class="time-btn">2:00 PM</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Special Requirements</label>
+          <input class="form-input" placeholder="e.g. wheelchair access needed, elderly household..."/>
+        </div>
+        <button class="btn btn-primary" onclick="showBookConfirm()">Confirm Booking →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ALERTS ── -->
+  <div class="screen" id="alerts-screen">
+    <div class="screen-header">
+      <h2>Climate Alerts</h2>
+      <p>Real-time warnings for your area</p>
+    </div>
+    <div class="alerts-content">
+      <div class="alert-hero flood">
+        <div class="alert-hero-icon"><i class="fa-solid fa-water"></i></div>
+        <div class="alert-hero-title">Flood Advisory — Jirapa District</div>
+        <div class="alert-hero-sub">River levels rising. Risk index now 5/10 and increasing. Wet season approaching. Prepare now.</div>
+        <div class="alert-level"><i class="fa-solid fa-triangle-exclamation"></i> MODERATE RISK — Stay Informed</div>
+      </div>
+      <div class="section-label">Protective Tips</div>
+      <div class="tips-grid">
+        <div class="tip-item"><span class="tip-icon"><i class="fa-solid fa-house"></i></span>Move valuables to higher ground</div>
+        <div class="tip-item"><span class="tip-icon"><i class="fa-solid fa-droplet"></i></span>Store clean drinking water</div>
+        <div class="tip-item"><span class="tip-icon"><i class="fa-solid fa-mobile-screen"></i></span>Keep phone charged</div>
+        <div class="tip-item"><span class="tip-icon"><i class="fa-solid fa-door-open"></i></span>Know your evacuation route</div>
+      </div>
+      <div class="section-label" style="margin-top:16px">All Alerts</div>
+      <div class="alert-card flood">
+        <div class="alert-card-header">
+          <div class="alert-card-title"><i class="fa-solid fa-water"></i> Flood Risk Rising</div>
+          <div class="alert-card-time">2 hrs ago</div>
+        </div>
+        <div class="alert-card-body">White Volta river level increased 0.8m in 24h. Communities within 2km of riverbanks advised to monitor closely.</div>
+      </div>
+      <div class="alert-card heat">
+        <div class="alert-card-header">
+          <div class="alert-card-title"><i class="fa-solid fa-temperature-high"></i> Heat Advisory</div>
+          <div class="alert-card-time">Yesterday</div>
+        </div>
+        <div class="alert-card-body">Temperatures expected to reach 38°C Thursday–Friday. Elderly and children at highest risk. Stay hydrated. Avoid midday sun.</div>
+      </div>
+      <div class="alert-card ok">
+        <div class="alert-card-header">
+          <div class="alert-card-title"><i class="fa-solid fa-circle-check" style="color:var(--green)"></i> AquaHub Hub Status</div>
+          <div class="alert-card-time">Live</div>
+        </div>
+        <div class="alert-card-body">Your local AquaHub is fully operational. Elevated platform protection active. Safe water available for collection today.</div>
+      </div>
+      <div class="alert-card flood">
+        <div class="alert-card-header">
+          <div class="alert-card-title"><i class="fa-solid fa-cloud-rain"></i>️ 3-Day Forecast</div>
+          <div class="alert-card-time">Updated now</div>
+        </div>
+        <div class="alert-card-body">Mon: Partly cloudy 31°C · Tue: Heavy rain expected 28°C · Wed: Showers, flooding possible 27°C. Prepare drainage.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GAME ── -->
+  <div class="screen" id="game-screen">
+    <div class="game-content">
+      <div class="game-hero">
+        <div class="game-title">Climate Quest</div>
+        <div class="game-sub">Learn. Play. Protect your community.</div>
+        <div class="xp-bar-wrap"><div class="xp-bar-fill"></div></div>
+        <div class="xp-label">620 / 1000 XP · Level 4 — Water Defender</div>
+      </div>
+      <div class="section-label">Your Badges</div>
+      <div class="badges-row">
+        <div class="badge-item"><div class="badge-icon"><i class="fa-solid fa-medal"></i></div><div class="badge-name">Flood Hero</div></div>
+        <div class="badge-item"><div class="badge-icon"><i class="fa-solid fa-droplet"></i></div><div class="badge-name">Water Guard</div></div>
+        <div class="badge-item locked"><div class="badge-icon"><i class="fa-solid fa-seedling"></i></div><div class="badge-name">Green Star</div></div>
+        <div class="badge-item locked"><div class="badge-icon"><i class="fa-solid fa-trophy"></i></div><div class="badge-name">Champion</div></div>
+      </div>
+      <div class="section-label">Daily Challenge</div>
+      <div class="quiz-card">
+        <div class="quiz-q" id="quiz-q">What is the main cause of waterborne disease during floods in Northern Ghana?</div>
+        <div class="quiz-opts" id="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this, false)">A. Drinking too much water</button>
+          <button class="quiz-opt" onclick="answer(this, true)">B. Fecal sludge overflowing into water sources</button>
+          <button class="quiz-opt" onclick="answer(this, false)">C. Too much sunshine</button>
+          <button class="quiz-opt" onclick="answer(this, false)">D. Lack of electricity</button>
+        </div>
+        <div class="quiz-feedback" id="quiz-feedback"><i class="fa-solid fa-circle-check" style="color:var(--green)"></i> Correct! When pit latrines and septic tanks overflow during floods, fecal matter contaminates rivers and groundwater — spreading cholera, typhoid and diarrhoea. The AquaRecover Hub prevents this with sealed elevated containment. +50 XP earned! <i class="fa-solid fa-party-horn"></i></div>
+      </div>
+      <div class="section-label">Leaderboard</div>
+      <div class="leaderboard">
+        <div class="lb-item">
+          <div class="lb-rank gold">1</div>
+          <div class="lb-avatar" style="background:var(--teal-l)"><i class="fa-solid fa-user"></i></div>
+          <div class="lb-name">Fatima K.</div>
+          <div class="lb-pts">1,240 XP</div>
+        </div>
+        <div class="lb-item">
+          <div class="lb-rank silver">2</div>
+          <div class="lb-avatar" style="background:var(--sky-l)"><i class="fa-solid fa-user"></i></div>
+          <div class="lb-name">Issah M.</div>
+          <div class="lb-pts">980 XP</div>
+        </div>
+        <div class="lb-item" style="background:var(--teal-l);border-radius:var(--radius-xs);padding:10px;margin:0 -4px">
+          <div class="lb-rank" style="color:var(--teal)">4</div>
+          <div class="lb-avatar" style="background:#fff"><i class="fa-solid fa-user"></i></div>
+          <div class="lb-name" style="color:var(--teal);font-weight:700">You — Amina</div>
+          <div class="lb-pts">620 XP</div>
+        </div>
+        <div class="lb-item">
+          <div class="lb-rank bronze">3</div>
+          <div class="lb-avatar" style="background:var(--earth-l)"><i class="fa-solid fa-user"></i></div>
+          <div class="lb-name">Alhassan B.</div>
+          <div class="lb-pts">750 XP</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PROFILE ── -->
+  <div class="screen" id="profile-screen">
+    <div class="profile-hero">
+      <div class="profile-avatar"><i class="fa-solid fa-user"></i></div>
+      <div class="profile-name">Amina Issahaku</div>
+      <div class="profile-loc"><i class="fa-solid fa-location-dot"></i> Lang-Oullo, Jirapa District</div>
+      <div class="profile-stats">
+        <div class="pstat"><div class="pstat-val">3</div><div class="pstat-lbl">Orders</div></div>
+        <div class="pstat"><div class="pstat-val">620</div><div class="pstat-lbl">Game XP</div></div>
+        <div class="pstat"><div class="pstat-val">2</div><div class="pstat-lbl">Badges</div></div>
+      </div>
+    </div>
+    <div class="profile-content">
+      <div class="section-label">Accessibility Settings</div>
+      <div class="access-section">
+        <div class="access-row">
+          <div class="access-row-left">
+            <div class="access-row-icon"><i class="fa-solid fa-volume-high"></i></div>
+            <div><div class="access-row-title">Voice Assistance</div><div class="access-row-sub">Read content aloud for visually impaired users</div></div>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="access-row">
+          <div class="access-row-left">
+            <div class="access-row-icon"><i class="fa-solid fa-text-height"></i></div>
+            <div><div class="access-row-title">Large Text Mode</div><div class="access-row-sub">Increase font size for easier reading</div></div>
+          </div>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="access-row">
+          <div class="access-row-left">
+            <div class="access-row-icon"><i class="fa-solid fa-palette"></i></div>
+            <div><div class="access-row-title">High Contrast</div><div class="access-row-sub">Stronger color contrast for low vision</div></div>
+          </div>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="access-row">
+          <div class="access-row-left">
+            <div class="access-row-icon"><i class="fa-solid fa-mobile-screen-button"></i></div>
+            <div><div class="access-row-title">Haptic Feedback</div><div class="access-row-sub">Vibration feedback for actions</div></div>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+      <div class="section-label">Language / Lugan</div>
+      <div class="lang-grid">
+        <div class="lang-btn sel"><div class="lang-flag"><i class="fa-solid fa-flag"></i></div><div class="lang-name">English</div></div>
+        <div class="lang-btn"><div class="lang-flag"><i class="fa-solid fa-flag"></i></div><div class="lang-name">Dagbani</div></div>
+        <div class="lang-btn"><div class="lang-flag"><i class="fa-solid fa-flag"></i></div><div class="lang-name">Twi</div></div>
+        <div class="lang-btn"><div class="lang-flag"><i class="fa-solid fa-flag"></i></div><div class="lang-name">Hausa</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav" id="bottom-nav">
+    <div class="nav-item active" onclick="goTo('home');setNav(this)">
+      <div class="nav-icon"><i class="fa-solid fa-house"></i></div><div class="nav-label">Home</div>
+    </div>
+    <div class="nav-item" onclick="goTo('market');setNav(this)">
+      <div class="nav-icon"><i class="fa-solid fa-cart-shopping"></i></div><div class="nav-label">Market</div>
+    </div>
+    <div class="nav-item" onclick="goTo('book');setNav(this)">
+      <div class="nav-icon"><i class="fa-solid fa-truck"></i></div><div class="nav-label">Book</div>
+    </div>
+    <div class="nav-item" onclick="goTo('alerts-screen');setNav(this)">
+      <div class="nav-icon"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="nav-label">Alerts</div>
+    </div>
+    <div class="nav-item" onclick="goTo('game-screen');setNav(this)">
+      <div class="nav-icon"><i class="fa-solid fa-gamepad"></i></div><div class="nav-label">Game</div>
+    </div>
+    <div class="nav-item" onclick="goTo('profile-screen');setNav(this)">
+      <div class="nav-icon"><i class="fa-solid fa-user"></i></div><div class="nav-label">Profile</div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ORDER MODAL -->
+  <div class="modal-overlay" id="order-modal" onclick="closeModal('order-modal')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <div class="modal-title" id="modal-title">Order Clean Water</div>
+      <div class="modal-sub">Confirm your order details below. A Hub operator will contact you to arrange delivery.</div>
+      <div class="modal-row"><span class="modal-key">Product</span><span class="modal-val" id="modal-product">—</span></div>
+      <div class="modal-row"><span class="modal-key">Price</span><span class="modal-val" id="modal-price">—</span></div>
+      <div class="modal-row"><span class="modal-key">Delivery</span><span class="modal-val">Same day available</span></div>
+      <div class="modal-row"><span class="modal-key">Contact</span><span class="modal-val">+233 20 000 0000</span></div>
+      <button class="btn btn-primary" onclick="confirmOrder()">Place Order ✓</button>
+    </div>
+  </div>
+
+  <!-- BOOKING MODAL -->
+  <div class="modal-overlay" id="book-modal" onclick="closeModal('book-modal')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Booking Confirmed! <i class="fa-solid fa-party-horn"></i></div>
+      <div class="modal-sub">Your service has been scheduled. You'll receive an SMS confirmation.</div>
+      <div class="modal-row"><span class="modal-key">Service</span><span class="modal-val">Toilet Draining</span></div>
+      <div class="modal-row"><span class="modal-key">Date</span><span class="modal-val">Tuesday, 27 May</span></div>
+      <div class="modal-row"><span class="modal-key">Time</span><span class="modal-val">10:00 AM</span></div>
+      <div class="modal-row"><span class="modal-key">Location</span><span class="modal-val">Lang-Oullo</span></div>
+      <div class="modal-row"><span class="modal-key">Cost</span><span class="modal-val" style="color:var(--teal)">$8.00</span></div>
+      <button class="btn btn-primary" onclick="closeModal('book-modal')">Done ✓</button>
+    </div>
+  </div>
+
+</div><!-- end phone -->
+
+<script>
+// Clock
+function updateTime(){
+  const n=new Date();
+  const h=n.getHours().toString().padStart(2,'0');
+  const m=n.getMinutes().toString().padStart(2,'0');
+  document.getElementById('status-time').textContent=h+':'+m;
+}
+setInterval(updateTime,10000);updateTime();
+
+// Navigation
+function goTo(screenId){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const t=document.getElementById(screenId);
+  if(t){t.classList.add('active');t.scrollTop=0;}
+  // update nav
+  const navMap={home:0,market:1,book:2,'alerts-screen':3,'game-screen':4,'profile-screen':5};
+  if(navMap[screenId]!==undefined){
+    const items=document.querySelectorAll('.nav-item');
+    items.forEach(i=>i.classList.remove('active'));
+    items[navMap[screenId]].classList.add('active');
+  }
+  // hide nav on splash
+  document.getElementById('bottom-nav').style.display=screenId==='splash'?'none':'flex';
+}
+
+function setNav(el){
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// Init
+goTo('splash');
+document.getElementById('bottom-nav').style.display='none';
+
+// Toast
+function toast(msg,icon='<i class="fa-solid fa-circle-check" style="color:var(--green)"></i>'){
+  const t=document.getElementById('toast');
+  t.innerHTML=icon+' '+msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// Modal
+function showOrder(name,price,icon){
+  document.getElementById('modal-title').textContent=icon+' Order '+name;
+  document.getElementById('modal-product').textContent=name;
+  document.getElementById('modal-price').textContent=price;
+  document.getElementById('order-modal').classList.add('show');
+}
+function closeModal(id){document.getElementById(id).classList.remove('show')}
+function confirmOrder(){
+  closeModal('order-modal');
+  toast('Order placed! Hub team will contact you shortly.','<i class="fa-solid fa-circle-check" style="color:var(--green)"></i>');
+}
+function showBookConfirm(){document.getElementById('book-modal').classList.add('show')}
+
+// Service selection
+function selectService(el){
+  document.querySelectorAll('.service-option').forEach(s=>s.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+// Date/time selection
+document.querySelectorAll('.date-btn').forEach(b=>{
+  b.onclick=function(){document.querySelectorAll('.date-btn').forEach(x=>x.classList.remove('sel'));this.classList.add('sel')}
+});
+document.querySelectorAll('.time-btn').forEach(b=>{
+  b.onclick=function(){document.querySelectorAll('.time-btn').forEach(x=>x.classList.remove('sel'));this.classList.add('sel')}
+});
+
+// Filter chips
+document.querySelectorAll('.filter-chip').forEach(c=>{
+  c.onclick=function(){document.querySelectorAll('.filter-chip').forEach(x=>x.classList.remove('sel'));this.classList.add('sel')}
+});
+
+// Quiz
+let answered=false;
+function answer(el,correct){
+  if(answered)return;
+  answered=true;
+  el.classList.add(correct?'correct':'wrong');
+  if(!correct){
+    document.querySelectorAll('.quiz-opt').forEach(o=>{
+      if(o.textContent.includes('Fecal sludge'))o.classList.add('correct');
+    });
+  }
+  document.getElementById('quiz-feedback').classList.add('show');
+  if(correct)toast('Correct! +50 XP earned <i class="fa-solid fa-party-horn"></i>','<i class="fa-solid fa-trophy"></i>');
+  else toast('Not quite — see the correct answer above','<i class="fa-solid fa-circle-info" style="color:var(--sky)"></i>');
+}
+
+// Language buttons
+document.querySelectorAll('.lang-btn').forEach(b=>{
+  b.onclick=function(){document.querySelectorAll('.lang-btn').forEach(x=>x.classList.remove('sel'));this.classList.add('sel');toast('Language updated','<i class="fa-solid fa-globe"></i>')}
+});
+</script>
+</body>
+</html>
