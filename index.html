@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AquaHub Connect — Mobile App Prototype</title>
+<meta name="theme-color" content="#0D9E82"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="AquaHub"/>
+<title>AquaHub Connect</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
@@ -15,232 +21,235 @@
   --red:#dc3545;--red-l:#fdecea;
   --green:#1a9e4a;--green-l:#e8f7ee;
   --purple:#7c3aed;--purple-l:#f0ebfe;
-  --bg:#f0f4f3;--white:#ffffff;
+  --yellow:#f5a623;--yellow-l:#fff8ed;
+  --bg:#f0f4f3;--white:#fff;
   --text:#0f2420;--text2:#4a6660;--text3:#8aa8a3;
   --border:#dde8e6;
   --sans:'Plus Jakarta Sans',sans-serif;
   --display:'Space Grotesk',sans-serif;
   --radius:18px;--radius-sm:12px;--radius-xs:8px;
   --shadow:0 2px 16px rgba(0,0,0,0.08);
-  --shadow-lg:0 8px 32px rgba(0,0,0,0.12);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.14);
 }
-body{background:#1a2e2a;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--sans);padding:20px}
-body::before{content:'AquaHub Connect — Mobile App Prototype';position:fixed;top:14px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.3);font-size:11px;letter-spacing:2px;text-transform:uppercase;font-family:var(--display);white-space:nowrap}
-
-/* PHONE FRAME */
-.phone{
-  width:390px;height:844px;background:var(--white);border-radius:44px;
-  overflow:hidden;position:relative;
-  box-shadow:0 0 0 10px #0d1a16,0 0 0 12px #1e3530,0 32px 80px rgba(0,0,0,0.6);
-  flex-shrink:0;
-}
-/* notch */
-.phone::before{
-  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
-  width:120px;height:34px;background:#0d1a16;border-radius:0 0 20px 20px;z-index:1000;
-}
+html,body{height:100%;background:var(--bg);font-family:var(--sans);overflow:hidden}
+body{display:flex;flex-direction:column}
 
 /* SCREENS */
-.screen{position:absolute;inset:0;background:var(--bg);overflow-y:auto;overflow-x:hidden;display:none;flex-direction:column;padding-top:44px;padding-bottom:80px}
+.screen{position:fixed;inset:0;background:var(--bg);overflow-y:auto;overflow-x:hidden;display:none;flex-direction:column;padding-bottom:80px;padding-top:0}
 .screen.active{display:flex}
 .screen::-webkit-scrollbar{display:none}
 
 /* STATUS BAR */
-.status-bar{position:absolute;top:0;left:0;right:0;height:44px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 24px 6px;z-index:100;font-size:12px;font-weight:600;color:var(--text)}
-.status-bar.light{color:#fff}
-.status-time{font-family:var(--display)}
-.status-icons{display:flex;align-items:center;gap:4px;font-size:11px}
+.status-bar{height:44px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;background:transparent;flex-shrink:0;z-index:10}
+.status-bar.dark{color:#fff}
+.status-bar.light{color:var(--text)}
+.status-time{font-family:var(--display);font-size:13px;font-weight:600}
+.status-icons{display:flex;align-items:center;gap:5px;font-size:11px}
 
 /* BOTTOM NAV */
 .bottom-nav{
-  position:absolute;bottom:0;left:0;right:0;height:80px;
+  position:fixed;bottom:0;left:0;right:0;height:80px;
   background:var(--white);border-top:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-around;
-  padding:0 8px 16px;z-index:200;
+  padding:0 4px 16px;z-index:500;
+  box-shadow:0 -4px 20px rgba(0,0,0,0.06);
 }
-.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:8px 12px;border-radius:var(--radius-xs);transition:all .2s;min-width:56px}
-.nav-item.active .nav-icon{color:var(--teal)}
-.nav-item.active .nav-label{color:var(--teal);font-weight:700}
-.nav-icon{font-size:22px;color:var(--text3);transition:color .2s}
-.nav-label{font-size:9px;color:var(--text3);font-weight:500;letter-spacing:.3px;text-transform:uppercase}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:8px 10px;border-radius:var(--radius-xs);transition:all .2s;min-width:52px;position:relative}
+.nav-item.active .nav-ico{color:var(--teal)}
+.nav-item.active .nav-lbl{color:var(--teal);font-weight:700}
+.nav-ico{font-size:20px;color:var(--text3);transition:color .2s}
+.nav-lbl{font-size:9px;color:var(--text3);font-weight:500;letter-spacing:.3px;text-transform:uppercase}
+.nav-badge{position:absolute;top:4px;right:6px;background:var(--red);color:#fff;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center}
 
-/* SHARED COMPONENTS */
-.screen-header{padding:16px 20px 12px;background:var(--white);border-bottom:1px solid var(--border)}
-.screen-header h2{font-family:var(--display);font-size:20px;font-weight:700;color:var(--text)}
-.screen-header p{font-size:13px;color:var(--text2);margin-top:2px}
-
+/* CARDS */
 .card{background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
 .section-label{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px}
 .chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
 .chip.ok{background:var(--green-l);color:var(--green)}
-.chip.warn{background:#fff3cd;color:#856404}
+.chip.warn{background:var(--yellow-l);color:var(--yellow)}
 .chip.danger{background:var(--red-l);color:var(--red)}
-.chip.info{background:var(--sky-l);color:var(--sky)}
 .btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;border:none;width:100%;font-family:var(--sans)}
 .btn-primary{background:var(--teal);color:#fff}
-.btn-primary:hover{background:var(--teal-d)}
+.btn-primary:active{background:var(--teal-d);transform:scale(.98)}
 .btn-outline{background:transparent;color:var(--teal);border:2px solid var(--teal)}
 .btn-sm{padding:10px 16px;font-size:13px;border-radius:var(--radius-xs);width:auto}
+.btn-danger{background:var(--red);color:#fff}
 
-/* ── SCREEN 1: SPLASH ── */
-#splash{background:linear-gradient(160deg,#0d4a3a 0%,#0f6b52 50%,#1a8a6a 100%);padding-top:0;padding-bottom:0;justify-content:space-between}
+/* FORMS */
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;display:block;text-transform:uppercase;letter-spacing:.5px}
+.form-input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);font-family:var(--sans);background:var(--white);outline:none;transition:border-color .2s}
+.form-input:focus{border-color:var(--teal)}
+.form-select{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);font-family:var(--sans);background:var(--white);outline:none;appearance:none}
+
+/* ── SPLASH ── */
+#splash{background:linear-gradient(160deg,#0d4a3a,#0f6b52,#1a8a6a);padding-bottom:0;justify-content:space-between}
 .splash-top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 32px 24px}
-.splash-logo{width:80px;height:80px;background:rgba(255,255,255,0.15);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:40px;margin-bottom:20px;border:2px solid rgba(255,255,255,0.2)}
-.splash-name{font-family:var(--display);font-size:30px;font-weight:700;color:#fff;text-align:center;margin-bottom:6px}
-.splash-tagline{font-size:13px;color:rgba(255,255,255,0.7);text-align:center;line-height:1.5;max-width:240px}
-.splash-badges{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap;justify-content:center}
-.splash-badge{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 12px;font-size:11px;color:rgba(255,255,255,0.8);font-weight:500}
-.splash-bottom{padding:24px 24px 48px;display:flex;flex-direction:column;gap:10px}
-.splash-btn-main{background:#fff;color:var(--teal-d);font-size:15px;font-weight:800;padding:16px;border-radius:var(--radius);text-align:center;cursor:pointer;font-family:var(--display)}
-.splash-btn-main:hover{background:rgba(255,255,255,0.9)}
-.splash-access{display:flex;justify-content:center;gap:16px;margin-top:4px}
-.access-opt{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:10px 16px;background:rgba(255,255,255,0.08);border-radius:var(--radius-sm);border:1px solid rgba(255,255,255,0.15)}
-.access-opt span:first-child{font-size:22px}
-.access-opt span:last-child{font-size:10px;color:rgba(255,255,255,0.6);font-weight:500}
+.splash-logo{width:88px;height:88px;background:rgba(255,255,255,0.15);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:42px;margin-bottom:20px;border:2px solid rgba(255,255,255,0.25);color:#fff}
+.splash-name{font-family:var(--display);font-size:32px;font-weight:700;color:#fff;text-align:center;margin-bottom:6px}
+.splash-tag{font-size:13px;color:rgba(255,255,255,0.7);text-align:center;line-height:1.5;max-width:260px}
+.splash-badges{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;justify-content:center}
+.splash-badge{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 12px;font-size:11px;color:rgba(255,255,255,0.85);font-weight:500;display:flex;align-items:center;gap:5px}
+.splash-bottom{padding:20px 24px 48px;display:flex;flex-direction:column;gap:10px}
+.splash-main-btn{background:#fff;color:var(--teal-d);font-size:15px;font-weight:800;padding:16px;border-radius:var(--radius);text-align:center;cursor:pointer;font-family:var(--display)}
+.splash-access{display:flex;justify-content:center;gap:10px;margin-top:4px}
+.access-opt{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:10px 14px;background:rgba(255,255,255,0.08);border-radius:var(--radius-sm);border:1px solid rgba(255,255,255,0.15);flex:1;max-width:100px}
+.access-opt i{font-size:20px;color:rgba(255,255,255,0.85)}
+.access-opt span{font-size:10px;color:rgba(255,255,255,0.6);font-weight:500}
 
-/* ── SCREEN 2: HOME ── */
-#home .hero{background:linear-gradient(135deg,var(--teal-d),var(--teal));padding:20px;border-radius:0 0 28px 28px;margin-top:-1px;position:relative;overflow:hidden}
-#home .hero::before{content:'<i class="fa-solid fa-water"></i>';position:absolute;right:-10px;top:-10px;font-size:100px;opacity:.08}
+/* ── HOME ── */
+#home .hero{background:linear-gradient(135deg,var(--teal-d),var(--teal));padding:20px 20px 24px;position:relative;overflow:hidden}
+#home .hero::before{content:'';position:absolute;right:-30px;bottom:-30px;width:160px;height:160px;background:rgba(255,255,255,0.05);border-radius:50%}
 .hero-greeting{font-size:13px;color:rgba(255,255,255,0.75);margin-bottom:2px}
-.hero-name{font-family:var(--display);font-size:22px;font-weight:700;color:#fff;margin-bottom:12px}
-.hero-alert-pill{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px}
+.hero-name{font-family:var(--display);font-size:22px;font-weight:700;color:#fff;margin-bottom:14px}
+.alert-pill{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}
 .alert-pill-dot{width:8px;height:8px;border-radius:50%;background:#ffd166;animation:blink 1.5s infinite;flex-shrink:0}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.alert-pill-text{font-size:12px;color:#fff;line-height:1.4}
+.alert-pill-text{font-size:12px;color:#fff;line-height:1.4;flex:1}
 .alert-pill-text strong{color:#ffd166}
-.home-content{padding:16px}
-.quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.qa-card{background:var(--white);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .2s;box-shadow:var(--shadow);border:2px solid transparent}
-.qa-card:hover{border-color:var(--teal);transform:translateY(-2px)}
-.qa-icon{font-size:28px;margin-bottom:8px}
+.home-body{padding:16px}
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.qa-card{background:var(--white);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .2s;box-shadow:var(--shadow);border:2px solid transparent;active:transform scale(.97)}
+.qa-card:active{transform:scale(.97);border-color:var(--teal)}
+.qa-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:8px}
 .qa-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
 .qa-sub{font-size:11px;color:var(--text3)}
 .weather-card{background:linear-gradient(135deg,#1a4a7a,#1e6aaa);border-radius:var(--radius);padding:16px;margin-bottom:12px;position:relative;overflow:hidden}
-.weather-card::before{content:'<i class="fa-solid fa-sun"></i>';position:absolute;right:16px;top:12px;font-size:40px;opacity:.6}
-.weather-temp{font-family:var(--display);font-size:36px;font-weight:700;color:#fff}
-.weather-desc{font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:8px}
-.weather-row{display:flex;gap:12px}
-.weather-item{font-size:11px;color:rgba(255,255,255,0.7);display:flex;align-items:center;gap:4px}
-.news-item{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border)}
+.weather-card::before{content:'';position:absolute;right:16px;top:12px;font-size:50px;opacity:.15}
+.weather-temp{font-family:var(--display);font-size:38px;font-weight:700;color:#fff}
+.weather-desc{font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:10px}
+.weather-row{display:flex;gap:14px}
+.weather-item{font-size:11px;color:rgba(255,255,255,0.75);display:flex;align-items:center;gap:5px}
+.news-item{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--border)}
 .news-item:last-child{border:none;padding-bottom:0}
 .news-icon{width:40px;height:40px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .news-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;line-height:1.3}
 .news-meta{font-size:11px;color:var(--text3)}
 
-/* ── SCREEN 3: MARKETPLACE ── */
-#market .market-content{padding:16px}
-.product-card{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s}
-.product-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
-.product-header{display:flex;align-items:center;gap:14px;margin-bottom:12px}
-.product-icon{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
-.product-name{font-family:var(--display);font-size:16px;font-weight:700;color:var(--text);margin-bottom:2px}
-.product-desc{font-size:12px;color:var(--text2);line-height:1.4}
-.product-footer{display:flex;align-items:center;justify-content:space-between}
-.product-price{font-family:var(--display);font-size:18px;font-weight:700;color:var(--teal)}
-.product-unit{font-size:11px;color:var(--text3);margin-top:1px}
-.add-btn{background:var(--teal);color:#fff;border:none;border-radius:var(--radius-sm);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .2s}
-.add-btn:hover{background:var(--teal-d)}
-.avail-bar{height:4px;background:var(--border);border-radius:2px;margin:10px 0 4px;overflow:hidden}
-.avail-fill{height:100%;border-radius:2px;background:var(--teal)}
-.avail-label{font-size:10px;color:var(--text3)}
-.filter-row{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;background:var(--white);border-bottom:1px solid var(--border)}
+/* ── MARKET ── */
+.filter-row{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;background:var(--white);border-bottom:1px solid var(--border);flex-shrink:0}
 .filter-row::-webkit-scrollbar{display:none}
 .filter-chip{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);color:var(--text2);white-space:nowrap;background:transparent;transition:all .2s}
 .filter-chip.sel{background:var(--teal);color:#fff;border-color:var(--teal)}
+.market-body{padding:16px}
+.product-card{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s;border:2px solid transparent}
+.product-card:active{transform:scale(.98)}
+.product-hdr{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px}
+.product-ico{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.product-name{font-family:var(--display);font-size:16px;font-weight:700;color:var(--text);margin-bottom:3px}
+.product-desc{font-size:12px;color:var(--text2);line-height:1.4}
+.avail-bar{height:4px;background:var(--border);border-radius:2px;margin:10px 0 4px;overflow:hidden}
+.avail-fill{height:100%;border-radius:2px;background:var(--teal)}
+.avail-label{font-size:10px;color:var(--text3)}
+.product-footer{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
+.product-price{font-family:var(--display);font-size:20px;font-weight:700;color:var(--teal)}
+.product-unit{font-size:10px;color:var(--text3);margin-top:1px}
+.add-btn{border:none;border-radius:var(--radius-sm);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .2s;display:flex;align-items:center;gap:6px}
+.add-btn:active{transform:scale(.96)}
 
-/* ── SCREEN 4: BOOK SERVICE ── */
-#book .book-content{padding:16px}
-.service-option{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s;border:2px solid transparent}
-.service-option.sel{border-color:var(--teal);background:var(--teal-l)}
-.service-option:hover{border-color:var(--teal)}
-.service-header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
-.service-icon{font-size:28px}
+/* CART */
+.cart-bar{position:fixed;bottom:80px;left:16px;right:16px;background:var(--teal);color:#fff;border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-lg);z-index:400;transform:translateY(20px);opacity:0;transition:all .35s;pointer-events:none}
+.cart-bar.show{transform:translateY(0);opacity:1;pointer-events:all}
+.cart-info{font-size:13px;font-weight:600}
+.cart-total{font-family:var(--display);font-size:16px;font-weight:700}
+.cart-checkout{background:#fff;color:var(--teal);border:none;border-radius:var(--radius-sm);padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans)}
+
+/* ── BOOK ── */
+.book-body{padding:16px}
+.service-opt{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s;border:2px solid transparent}
+.service-opt.sel{border-color:var(--teal);background:var(--teal-l)}
+.service-opt:active{transform:scale(.98)}
+.service-hdr{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.service-ico{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
 .service-name{font-family:var(--display);font-size:15px;font-weight:700;color:var(--text)}
 .service-price{font-size:12px;color:var(--teal);font-weight:600;margin-top:1px}
 .service-desc{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:10px}
-.service-features{display:flex;flex-wrap:wrap;gap:6px}
+.feat-tags{display:flex;flex-wrap:wrap;gap:6px}
 .feat-tag{background:var(--teal-l);color:var(--teal);border-radius:20px;padding:3px 9px;font-size:10px;font-weight:600}
-.form-group{margin-bottom:14px}
-.form-label{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;display:block;text-transform:uppercase;letter-spacing:.5px}
-.form-input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);font-family:var(--sans);background:var(--white);outline:none;transition:border-color .2s}
-.form-input:focus{border-color:var(--teal)}
 .date-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
 .date-btn{padding:10px 6px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--white);text-align:center;cursor:pointer;transition:all .2s}
 .date-btn.sel{border-color:var(--teal);background:var(--teal-l)}
+.date-btn.disabled{opacity:.4;cursor:not-allowed}
 .date-day{font-size:10px;color:var(--text3);margin-bottom:2px}
 .date-num{font-size:16px;font-weight:700;color:var(--text)}
 .time-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
 .time-btn{padding:10px 6px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--white);text-align:center;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:all .2s}
 .time-btn.sel{border-color:var(--teal);background:var(--teal-l);color:var(--teal)}
+.booking-summary{background:var(--teal-l);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px}
+.bs-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
+.bs-key{color:var(--text2)}
+.bs-val{font-weight:700;color:var(--teal)}
 
-/* ── SCREEN 5: CLIMATE ALERTS ── */
-#alerts-screen .alerts-content{padding:16px}
+/* ── ALERTS ── */
+.alerts-body{padding:16px}
 .alert-hero{border-radius:var(--radius);padding:20px;margin-bottom:16px;position:relative;overflow:hidden}
 .alert-hero.flood{background:linear-gradient(135deg,#1a3a6a,#1e5aaa)}
 .alert-hero.heat{background:linear-gradient(135deg,#7a2a00,#cc4400)}
-.alert-hero-icon{font-size:48px;margin-bottom:8px}
+.alert-hero.ok{background:linear-gradient(135deg,#0d4a2a,#1a7a44)}
+.alert-hero-icon{font-size:44px;margin-bottom:8px;color:#fff}
 .alert-hero-title{font-family:var(--display);font-size:20px;font-weight:700;color:#fff;margin-bottom:4px}
 .alert-hero-sub{font-size:13px;color:rgba(255,255,255,0.8);line-height:1.5}
 .alert-level{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:#fff;margin-top:10px}
+.tips-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.tip-item{background:var(--teal-l);border-radius:var(--radius-xs);padding:10px;font-size:11px;color:var(--teal-d);font-weight:500;display:flex;align-items:flex-start;gap:6px;line-height:1.4}
 .alert-card{background:var(--white);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);border-left:4px solid transparent}
 .alert-card.flood{border-left-color:var(--sky)}
 .alert-card.heat{border-left-color:var(--red)}
 .alert-card.ok{border-left-color:var(--green)}
-.alert-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.alert-card.warn{border-left-color:var(--yellow)}
+.alert-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .alert-card-title{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px}
 .alert-card-time{font-size:10px;color:var(--text3)}
 .alert-card-body{font-size:12px;color:var(--text2);line-height:1.5}
-.tips-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
-.tip-item{background:var(--teal-l);border-radius:var(--radius-xs);padding:10px;font-size:11px;color:var(--teal-d);font-weight:500;display:flex;align-items:flex-start;gap:6px;line-height:1.4}
-.tip-icon{flex-shrink:0}
 
-/* ── SCREEN 6: GAME ── */
-#game-screen .game-content{padding:16px}
+/* ── GAME ── */
+.game-body{padding:16px}
 .game-hero{background:linear-gradient(135deg,#3a1a6a,#6a2aaa);border-radius:var(--radius);padding:20px;margin-bottom:16px;text-align:center;position:relative;overflow:hidden}
-.game-hero::before{content:'<i class="fa-solid fa-gamepad"></i>';position:absolute;right:-10px;bottom:-10px;font-size:80px;opacity:.15}
 .game-title{font-family:var(--display);font-size:22px;font-weight:700;color:#fff;margin-bottom:4px}
 .game-sub{font-size:13px;color:rgba(255,255,255,0.75);margin-bottom:14px}
-.xp-bar-wrap{background:rgba(255,255,255,0.15);border-radius:10px;height:10px;margin-bottom:6px;overflow:hidden}
-.xp-bar-fill{height:100%;background:linear-gradient(90deg,#ffd166,#ffaa00);border-radius:10px;width:62%}
+.xp-wrap{background:rgba(255,255,255,0.15);border-radius:10px;height:10px;margin-bottom:5px;overflow:hidden}
+.xp-fill{height:100%;background:linear-gradient(90deg,#ffd166,#ffaa00);border-radius:10px;transition:width .5s ease}
 .xp-label{font-size:11px;color:rgba(255,255,255,0.7);text-align:left}
-.badges-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.badges-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
 .badge-item{background:var(--white);border-radius:var(--radius-sm);padding:12px 8px;text-align:center;box-shadow:var(--shadow);cursor:pointer;transition:all .2s}
-.badge-item:hover{transform:translateY(-2px)}
-.badge-icon{font-size:28px;margin-bottom:4px}
-.badge-name{font-size:9px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.3px}
-.badge-item.locked{opacity:.4;filter:grayscale(1)}
+.badge-item:active{transform:scale(.95)}
+.badge-ico{font-size:26px;margin-bottom:4px}
+.badge-nm{font-size:9px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.3px}
+.badge-item.locked{opacity:.35;filter:grayscale(1)}
 .quiz-card{background:var(--white);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:12px}
+.quiz-num{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
 .quiz-q{font-size:15px;font-weight:700;color:var(--text);line-height:1.5;margin-bottom:14px}
 .quiz-opts{display:flex;flex-direction:column;gap:8px}
-.quiz-opt{padding:13px 16px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-size:13px;color:var(--text2);cursor:pointer;transition:all .2s;font-family:var(--sans);background:var(--white);text-align:left}
-.quiz-opt:hover{border-color:var(--teal);color:var(--teal)}
+.quiz-opt{padding:13px 16px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-size:13px;color:var(--text2);cursor:pointer;transition:all .2s;font-family:var(--sans);background:var(--white);text-align:left;display:flex;align-items:center;gap:10px}
+.quiz-opt:active{transform:scale(.98)}
 .quiz-opt.correct{border-color:var(--green);background:var(--green-l);color:var(--green);font-weight:700}
 .quiz-opt.wrong{border-color:var(--red);background:var(--red-l);color:var(--red)}
+.quiz-opt.disabled{pointer-events:none}
 .quiz-feedback{background:var(--teal-l);border-radius:var(--radius-sm);padding:12px;font-size:12px;color:var(--teal-d);line-height:1.5;margin-top:10px;display:none}
 .quiz-feedback.show{display:block}
-.leaderboard{background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.quiz-actions{display:flex;gap:8px;margin-top:12px}
 .lb-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
 .lb-item:last-child{border:none;padding-bottom:0}
 .lb-rank{font-family:var(--display);font-size:16px;font-weight:700;width:24px;text-align:center}
 .lb-rank.gold{color:#ffd700}.lb-rank.silver{color:#c0c0c0}.lb-rank.bronze{color:#cd7f32}
-.lb-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.lb-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 .lb-name{font-size:13px;font-weight:600;color:var(--text);flex:1}
 .lb-pts{font-size:12px;font-weight:700;color:var(--teal)}
+.lb-you{background:var(--teal-l);border-radius:var(--radius-xs);padding:8px;margin:0 -4px}
 
-/* ── SCREEN 7: PROFILE / ACCESSIBILITY ── */
-#profile-screen .profile-content{padding:16px}
-.profile-hero{background:linear-gradient(135deg,var(--teal-d),var(--teal));padding:24px 20px;border-radius:0 0 28px 28px;margin-top:-1px;text-align:center}
-.profile-avatar{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.2);border:3px solid rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 10px}
+/* ── PROFILE ── */
+#profile-screen .profile-hero{background:linear-gradient(135deg,var(--teal-d),var(--teal));padding:24px 20px 28px;text-align:center}
+.profile-avatar{width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,0.2);border:3px solid rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 10px;color:#fff}
 .profile-name{font-family:var(--display);font-size:18px;font-weight:700;color:#fff;margin-bottom:2px}
-.profile-loc{font-size:12px;color:rgba(255,255,255,0.75)}
+.profile-loc{font-size:12px;color:rgba(255,255,255,0.75);display:flex;align-items:center;justify-content:center;gap:4px}
 .profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,0.15);border-radius:var(--radius-sm);margin-top:14px;overflow:hidden}
 .pstat{background:rgba(255,255,255,0.1);padding:10px 6px;text-align:center}
 .pstat-val{font-family:var(--display);font-size:18px;font-weight:700;color:#fff}
 .pstat-lbl{font-size:9px;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:.5px}
-.access-section{margin-bottom:16px}
+.profile-body{padding:16px}
 .access-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--white);border-radius:var(--radius-sm);margin-bottom:8px;box-shadow:var(--shadow)}
 .access-row-left{display:flex;align-items:center;gap:12px}
-.access-row-icon{font-size:22px}
+.access-row-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
 .access-row-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:1px}
 .access-row-sub{font-size:11px;color:var(--text3)}
 .toggle{width:48px;height:28px;background:var(--border);border-radius:14px;position:relative;cursor:pointer;transition:background .3s;flex-shrink:0}
@@ -252,593 +261,1176 @@ body::before{content:'AquaHub Connect — Mobile App Prototype';position:fixed;t
 .lang-btn.sel{border-color:var(--teal);background:var(--teal-l)}
 .lang-flag{font-size:20px;margin-bottom:4px}
 .lang-name{font-size:12px;font-weight:600;color:var(--text)}
+.menu-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--white);border-radius:var(--radius-sm);margin-bottom:8px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s}
+.menu-item:active{background:var(--teal-l)}
+.menu-left{display:flex;align-items:center;gap:12px}
+.menu-ico{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.menu-title{font-size:13px;font-weight:600;color:var(--text)}
+.menu-sub{font-size:11px;color:var(--text3)}
 
 /* TOAST */
-.toast{
-  position:absolute;bottom:100px;left:20px;right:20px;
-  background:#0f2420;color:#fff;border-radius:var(--radius-sm);
-  padding:14px 16px;font-size:13px;font-weight:500;
-  display:flex;align-items:center;gap:10px;z-index:500;
-  transform:translateY(20px);opacity:0;transition:all .35s;pointer-events:none;
-}
+.toast{position:fixed;bottom:92px;left:16px;right:16px;background:#0f2420;color:#fff;border-radius:var(--radius-sm);padding:13px 16px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:10px;z-index:600;transform:translateY(20px);opacity:0;transition:all .35s;pointer-events:none;box-shadow:var(--shadow-lg)}
 .toast.show{transform:translateY(0);opacity:1}
 
-/* CONFIRM MODAL */
-.modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.5);z-index:400;display:none;align-items:flex-end;justify-content:center}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:700;display:none;align-items:flex-end;justify-content:center}
 .modal-overlay.show{display:flex}
-.modal-sheet{background:var(--white);border-radius:28px 28px 0 0;padding:24px 20px 40px;width:100%}
-.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px}
+.modal-sheet{background:var(--white);border-radius:28px 28px 0 0;padding:20px 20px 40px;width:100%;max-height:90vh;overflow-y:auto}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
 .modal-title{font-family:var(--display);font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px}
-.modal-sub{font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:20px}
+.modal-sub{font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:16px}
 .modal-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
-.modal-row:last-of-type{border:none;margin-bottom:12px}
+.modal-row:last-of-type{border:none;margin-bottom:14px}
 .modal-key{font-size:13px;color:var(--text2)}
 .modal-val{font-size:13px;font-weight:700;color:var(--text)}
+
+/* INSTALL BANNER */
+.install-banner{background:linear-gradient(135deg,var(--teal-d),var(--teal));border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.install-banner i{font-size:24px;color:#fff}
+.install-banner-text{flex:1}
+.install-banner-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:2px}
+.install-banner-sub{font-size:11px;color:rgba(255,255,255,0.8)}
+.install-banner-btn{background:#fff;color:var(--teal);border:none;border-radius:var(--radius-xs);padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--sans)}
+
+/* SCREEN HEADER */
+.screen-hdr{background:var(--white);border-bottom:1px solid var(--border);padding:14px 20px 12px;flex-shrink:0}
+.screen-hdr h2{font-family:var(--display);font-size:20px;font-weight:700;color:var(--text)}
+.screen-hdr p{font-size:13px;color:var(--text2);margin-top:2px}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .3s ease}
+
+/* GARBAGE SCREEN */
+.gc-hero{background:linear-gradient(135deg,#2d5a27,#4a8f3f);padding:20px;position:relative;overflow:hidden}
+.gc-hero::before{content:'';position:absolute;right:-20px;bottom:-20px;width:120px;height:120px;background:rgba(255,255,255,0.05);border-radius:50%}
+.gc-title{font-family:var(--display);font-size:20px;font-weight:700;color:#fff;margin-bottom:4px}
+.gc-sub{font-size:13px;color:rgba(255,255,255,0.75);line-height:1.4}
+.gc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.gc-stat{background:rgba(255,255,255,0.12);border-radius:var(--radius-xs);padding:10px 8px;text-align:center}
+.gc-stat-val{font-family:var(--display);font-size:18px;font-weight:700;color:#fff}
+.gc-stat-lbl{font-size:9px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:.5px}
+.gc-body{padding:16px}
+.waste-type{background:var(--white);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s;border:2px solid transparent;display:flex;align-items:center;gap:14px}
+.waste-type:active{transform:scale(.98)}
+.waste-type.sel{border-color:var(--green);background:var(--green-l)}
+.waste-ico{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.waste-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px}
+.waste-price{font-size:12px;color:var(--text3)}
+.waste-check{margin-left:auto;font-size:20px;color:var(--green);display:none}
+.waste-type.sel .waste-check{display:block}
+
+/* TRACKER */
+#tracker-screen .track-hero{background:linear-gradient(135deg,#1a3a6a,#1e5a9e);padding:20px}
+.track-title{font-family:var(--display);font-size:18px;font-weight:700;color:#fff;margin-bottom:4px}
+.track-sub{font-size:12px;color:rgba(255,255,255,0.75);margin-bottom:14px}
+.track-status{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.15);border-radius:var(--radius-sm);padding:10px 14px}
+.track-dot{width:10px;height:10px;border-radius:50%;background:#00e07a;animation:pulse2 1.5s infinite;flex-shrink:0}
+@keyframes pulse2{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.7}}
+.track-status-text{font-size:12px;color:#fff;flex:1}
+.track-eta{font-family:var(--display);font-size:14px;font-weight:700;color:#ffd166}
+#map{height:320px;border-radius:var(--radius);overflow:hidden;margin:12px 0;box-shadow:var(--shadow-lg);position:relative;z-index:1}
+.track-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.track-info-card{background:var(--white);border-radius:var(--radius-sm);padding:12px;box-shadow:var(--shadow);text-align:center}
+.track-info-val{font-family:var(--display);font-size:18px;font-weight:700;color:var(--teal);margin-bottom:2px}
+.track-info-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px}
+.track-steps{background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.track-step{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;position:relative}
+.track-step:not(:last-child)::after{content:'';position:absolute;left:15px;top:32px;width:2px;height:calc(100% - 10px);background:var(--border)}
+.step-circle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;z-index:1}
+.step-circle.done{background:var(--green-l);color:var(--green)}
+.step-circle.active{background:var(--teal);color:#fff;animation:pulse2 1.5s infinite}
+.step-circle.pending{background:var(--border);color:var(--text3)}
+.step-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
+.step-time{font-size:11px;color:var(--text3)}
+
 </style>
 </head>
 <body>
-<div class="phone">
 
-  <!-- STATUS BAR -->
-  <div class="status-bar" id="status-bar">
-    <span class="status-time" id="status-time">9:41</span>
-    <div class="status-icons">
-      <span>●●●</span><span>WiFi</span><span>🔋</span>
+<!-- ── SPLASH ── -->
+<div class="screen active" id="splash">
+  <div class="status-bar dark">
+    <span class="status-time" id="st1">9:41</span>
+    <div class="status-icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div>
+  </div>
+  <div class="splash-top">
+    <div class="splash-logo"><i class="fa-solid fa-droplet"></i></div>
+    <div class="splash-name">AquaHub Connect</div>
+    <div class="splash-tag">Clean water, safe sanitation and climate alerts for every community in Northern Ghana</div>
+    <div class="splash-badges">
+      <div class="splash-badge"><i class="fa-solid fa-wheelchair"></i> Accessible</div>
+      <div class="splash-badge"><i class="fa-solid fa-earth-africa"></i> Climate-Smart</div>
+      <div class="splash-badge"><i class="fa-solid fa-flag"></i> Made in Ghana</div>
     </div>
   </div>
-
-  <!-- ── SPLASH ── -->
-  <div class="screen active" id="splash">
-    <div class="splash-top">
-      <div class="splash-logo"><i class="fa-solid fa-droplet"></i></div>
-      <div class="splash-name">AquaHub Connect</div>
-      <div class="splash-tagline">Clean water, safe sanitation and climate alerts for every community in Northern Ghana</div>
-      <div class="splash-badges">
-        <div class="splash-badge"><i class="fa-solid fa-wheelchair"></i> Accessible</div>
-        <div class="splash-badge"><i class="fa-solid fa-earth-africa"></i> Climate-Smart</div>
-        <div class="splash-badge"><i class="fa-solid fa-flag"></i> Made in Ghana</div>
-      </div>
-    </div>
-    <div class="splash-bottom">
-      <div class="splash-btn-main" onclick="goTo('home')">Get Started →</div>
-      <div class="splash-access">
-        <div class="access-opt" onclick="goTo('home')">
-          <span><i class="fa-solid fa-volume-high"></i></span><span>Voice Mode</span>
-        </div>
-        <div class="access-opt" onclick="goTo('home')">
-          <span><i class="fa-solid fa-eye"></i></span><span>Large Text</span>
-        </div>
-        <div class="access-opt" onclick="goTo('home')">
-          <span><i class="fa-solid fa-globe"></i></span><span>Language</span>
-        </div>
-      </div>
+  <div class="splash-bottom">
+    <div class="splash-main-btn" onclick="goTo('home')">Get Started <i class="fa-solid fa-arrow-right"></i></div>
+    <div class="splash-access">
+      <div class="access-opt" onclick="enableVoice()"><i class="fa-solid fa-volume-high"></i><span>Voice Mode</span></div>
+      <div class="access-opt" onclick="enableLargeText()"><i class="fa-solid fa-text-height"></i><span>Large Text</span></div>
+      <div class="access-opt" onclick="goTo('profile-screen')"><i class="fa-solid fa-globe"></i><span>Language</span></div>
     </div>
   </div>
+</div>
 
-  <!-- ── HOME ── -->
-  <div class="screen" id="home">
-    <div class="hero">
-      <div class="hero-greeting">Good morning,</div>
-      <div class="hero-name">Amina </div>
-      <div class="hero-alert-pill">
-        <div class="alert-pill-dot"></div>
-        <div class="alert-pill-text"><strong>Flood Advisory:</strong> Risk rising in your area. Jirapa district — check alerts now.</div>
+<!-- ── HOME ── -->
+<div class="screen" id="home">
+  <div class="status-bar dark" style="position:absolute;top:0;left:0;right:0;z-index:10">
+    <span class="status-time" id="st2">9:41</span>
+    <div class="status-icons" style="color:#fff"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div>
+  </div>
+  <div class="hero" style="padding-top:60px">
+    <div class="hero-greeting">Good morning,</div>
+    <div class="hero-name" id="hero-name">Amina <i class="fa-solid fa-hand-wave"></i></div>
+    <div class="alert-pill" onclick="goTo('alerts-screen');setNav(3)">
+      <div class="alert-pill-dot"></div>
+      <div class="alert-pill-text"><strong>Flood Advisory:</strong> Risk rising in Jirapa district — tap to view details</div>
+      <i class="fa-solid fa-chevron-right" style="color:rgba(255,255,255,0.6);font-size:11px"></i>
+    </div>
+  </div>
+  <div class="home-body">
+    <div id="install-container"></div>
+    <div class="section-label" style="margin-top:4px">Quick Actions</div>
+    <div class="quick-grid">
+      <div class="qa-card" onclick="goTo('market');setNav(1)">
+        <div class="qa-icon" style="background:var(--teal-l)"><i class="fa-solid fa-cart-shopping" style="color:var(--teal)"></i></div>
+        <div class="qa-title">Buy Products</div>
+        <div class="qa-sub">Water, Biogas, Fertilizer</div>
+      </div>
+      <div class="qa-card" onclick="goTo('book');setNav(2)">
+        <div class="qa-icon" style="background:var(--sky-l)"><i class="fa-solid fa-truck" style="color:var(--sky)"></i></div>
+        <div class="qa-title">Book a Service</div>
+        <div class="qa-sub">Toilet draining & more</div>
+      </div>
+      <div class="qa-card" onclick="goTo('alerts-screen');setNav(3)">
+        <div class="qa-icon" style="background:var(--yellow-l)"><i class="fa-solid fa-triangle-exclamation" style="color:var(--yellow)"></i></div>
+        <div class="qa-title">Climate Alerts</div>
+        <div class="qa-sub">1 active warning</div>
+      </div>
+      <div class="qa-card" onclick="goTo('game-screen');setNav(4)">
+        <div class="qa-icon" style="background:var(--purple-l)"><i class="fa-solid fa-gamepad" style="color:var(--purple)"></i></div>
+        <div class="qa-title">EduGame</div>
+        <div class="qa-sub" id="xp-display">620 XP · Level 4</div>
       </div>
     </div>
-    <div class="home-content">
-      <div class="section-label" style="margin-top:4px">Quick Actions</div>
-      <div class="quick-actions">
-        <div class="qa-card" onclick="goTo('market')">
-          <div class="qa-icon"><i class="fa-solid fa-cart-shopping"></i></div>
-          <div class="qa-title">Buy Products</div>
-          <div class="qa-sub">Water, Biogas, Fertilizer</div>
-        </div>
-        <div class="qa-card" onclick="goTo('book')">
-          <div class="qa-icon"><i class="fa-solid fa-truck"></i></div>
-          <div class="qa-title">Book a Service</div>
-          <div class="qa-sub">Toilet draining & more</div>
-        </div>
-        <div class="qa-card" onclick="goTo('alerts-screen')">
-          <div class="qa-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-          <div class="qa-title">Climate Alerts</div>
-          <div class="qa-sub">1 active warning</div>
-        </div>
-        <div class="qa-card" onclick="goTo('game-screen')">
-          <div class="qa-icon"><i class="fa-solid fa-gamepad"></i></div>
-          <div class="qa-title">EduGame</div>
-          <div class="qa-sub">620 XP · Level 4</div>
-        </div>
+    <div class="weather-card">
+      <div class="weather-temp" id="w-temp">32°C</div>
+      <div class="weather-desc" id="w-desc">Mostly clear · Tamale, N. Ghana</div>
+      <div class="weather-row">
+        <div class="weather-item"><i class="fa-solid fa-droplet"></i> <span id="w-hum">68%</span></div>
+        <div class="weather-item"><i class="fa-solid fa-wind"></i> <span id="w-wind">14 km/h</span></div>
+        <div class="weather-item"><i class="fa-solid fa-cloud-rain"></i> <span id="w-rain">40%</span></div>
       </div>
-      <div class="weather-card">
-        <div class="weather-temp">32°C</div>
-        <div class="weather-desc">Mostly clear · Tamale, N. Ghana</div>
-        <div class="weather-row">
-          <div class="weather-item"><i class="fa-solid fa-droplet"></i> Humidity 68%</div>
-          <div class="weather-item"><i class="fa-solid fa-wind"></i> Wind 14 km/h</div>
-          <div class="weather-item"><i class="fa-solid fa-cloud-rain"></i> Rain 40%</div>
-        </div>
+    </div>
+    <div class="card" style="padding:14px 16px">
+      <div class="section-label">Latest Updates</div>
+      <div class="news-item" id="news1">
+        <div class="news-icon" style="background:var(--teal-l)"><i class="fa-solid fa-droplet" style="color:var(--teal)"></i></div>
+        <div><div class="news-title">Clean water available — 3,240L in stock</div><div class="news-meta">AquaHub Site · 2 min ago</div></div>
       </div>
-      <div class="card" style="padding:14px 16px">
-        <div class="section-label">Latest Updates</div>
-        <div class="news-item">
-          <div class="news-icon" style="background:var(--teal-l)"><i class="fa-solid fa-droplet"></i></div>
-          <div>
-            <div class="news-title">Clean water available — 800L in stock</div>
-            <div class="news-meta">AquaHub Site · 2 min ago</div>
-          </div>
-        </div>
-        <div class="news-item">
-          <div class="news-icon" style="background:#fff3cd"><i class="fa-solid fa-triangle-exclamation"></i></div>
-          <div>
-            <div class="news-title">Flood risk index rising to 5/10 this week</div>
-            <div class="news-meta">Climate Monitor · 1 hr ago</div>
-          </div>
-        </div>
-        <div class="news-item">
-          <div class="news-icon" style="background:var(--purple-l)"><i class="fa-solid fa-gamepad"></i></div>
-          <div>
-            <div class="news-title">You earned the Water Guardian badge!</div>
-            <div class="news-meta">EduGame · Yesterday</div>
-          </div>
-        </div>
+      <div class="news-item">
+        <div class="news-icon" style="background:var(--yellow-l)"><i class="fa-solid fa-triangle-exclamation" style="color:var(--yellow)"></i></div>
+        <div><div class="news-title">Flood risk index rising to 5/10 this week</div><div class="news-meta">Climate Monitor · 1 hr ago</div></div>
+      </div>
+      <div class="news-item">
+        <div class="news-icon" style="background:var(--purple-l)"><i class="fa-solid fa-trophy" style="color:var(--purple)"></i></div>
+        <div><div class="news-title">You earned the Water Guardian badge!</div><div class="news-meta">EduGame · Yesterday</div></div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ── MARKET ── -->
-  <div class="screen" id="market">
-    <div class="screen-header">
-      <h2>Marketplace</h2>
-      <p>Hub products delivered to your community</p>
-    </div>
-    <div class="filter-row">
-      <div class="filter-chip sel">All Products</div>
-      <div class="filter-chip"><i class="fa-solid fa-droplet"></i> Water</div>
-      <div class="filter-chip"><i class="fa-solid fa-fire"></i> Biogas</div>
-      <div class="filter-chip"><i class="fa-solid fa-seedling"></i> Fertilizer</div>
-    </div>
-    <div class="market-content">
-      <div class="product-card" onclick="showOrder('Clean Irrigation Water','$0.002 / litre','<i class="fa-solid fa-droplet"></i>')">
-        <div class="product-header">
-          <div class="product-icon" style="background:var(--sky-l)"><i class="fa-solid fa-droplet"></i></div>
-          <div>
-            <div class="product-name">Clean Irrigation Water</div>
-            <div class="product-desc">WHO-safe treated water. Ideal for vegetable farming, cleaning, and hygiene use. Same-day delivery available.</div>
-          </div>
-        </div>
-        <div class="avail-bar"><div class="avail-fill" style="width:72%"></div></div>
-        <div class="avail-label">3,240 L available of 4,500 L daily capacity</div>
-        <div class="product-footer" style="margin-top:10px">
-          <div>
-            <div class="product-price">$0.002<span style="font-size:13px;font-weight:400">/litre</span></div>
-            <div class="product-unit">Min. order: 100 litres</div>
-          </div>
-          <button class="add-btn" onclick="event.stopPropagation();showOrder('Clean Irrigation Water','$0.002 / litre','<i class="fa-solid fa-droplet"></i>')">Order Now</button>
-        </div>
+<!-- ── MARKET ── -->
+<div class="screen" id="market">
+  <div class="status-bar light"><span class="status-time" id="st3">9:41</span><div class="status-icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div></div>
+  <div class="screen-hdr"><h2>Marketplace</h2><p>Hub products for your community</p></div>
+  <div class="filter-row">
+    <div class="filter-chip sel" onclick="filterProducts('all',this)">All Products</div>
+    <div class="filter-chip" onclick="filterProducts('water',this)"><i class="fa-solid fa-droplet"></i> Water</div>
+    <div class="filter-chip" onclick="filterProducts('biogas',this)"><i class="fa-solid fa-fire"></i> Biogas</div>
+    <div class="filter-chip" onclick="filterProducts('fertilizer',this)"><i class="fa-solid fa-seedling"></i> Fertilizer</div>
+  </div>
+  <div class="market-body" id="market-body"></div>
+  <div class="cart-bar" id="cart-bar">
+    <div><div class="cart-info" id="cart-info">0 items</div><div class="cart-total" id="cart-total">$0.00</div></div>
+    <button class="cart-checkout" onclick="checkout()">Checkout <i class="fa-solid fa-arrow-right"></i></button>
+  </div>
+</div>
+
+<!-- ── BOOK ── -->
+<div class="screen" id="book">
+  <div class="status-bar light"><span class="status-time" id="st4">9:41</span><div class="status-icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div></div>
+  <div class="screen-hdr"><h2>Book a Service</h2><p>We come to you — licensed & affordable</p></div>
+  <div class="book-body">
+    <div class="section-label">Choose Service</div>
+    <div class="service-opt sel" id="svc-0" onclick="selectSvc(0)">
+      <div class="service-hdr">
+        <div class="service-ico" style="background:var(--sky-l)"><i class="fa-solid fa-truck" style="color:var(--sky)"></i></div>
+        <div><div class="service-name">Toilet / Pit Draining</div><div class="service-price">From $8.00 per visit</div></div>
       </div>
-      <div class="product-card" onclick="showOrder('Biogas Fuel','$0.08 / m³','<i class="fa-solid fa-fire"></i>')">
-        <div class="product-header">
-          <div class="product-icon" style="background:var(--earth-l)"><i class="fa-solid fa-fire"></i></div>
-          <div>
-            <div class="product-name">Biogas Fuel</div>
-            <div class="product-desc">Clean cooking energy captured during sludge treatment. Replaces charcoal and firewood. Delivered in portable canisters.</div>
-          </div>
-        </div>
-        <div class="avail-bar"><div class="avail-fill" style="width:74%;background:var(--earth)"></div></div>
-        <div class="avail-label">18.4 m³ available of 25 m³ daily capacity</div>
-        <div class="product-footer" style="margin-top:10px">
-          <div>
-            <div class="product-price" style="color:var(--earth)">$0.08<span style="font-size:13px;font-weight:400">/m³</span></div>
-            <div class="product-unit">Min. order: 2 m³</div>
-          </div>
-          <button class="add-btn" style="background:var(--earth)" onclick="event.stopPropagation();showOrder('Biogas Fuel','$0.08 / m³','<i class="fa-solid fa-fire"></i>')">Order Now</button>
-        </div>
+      <div class="service-desc">Our vacuum truck team collects fecal sludge from your toilet or pit latrine and safely transports it to the AquaHub for treatment.</div>
+      <div class="feat-tags"><span class="feat-tag">Licensed Operators</span><span class="feat-tag">Same-Week</span><span class="feat-tag">PWD Accessible</span></div>
+    </div>
+    <div class="service-opt" id="svc-1" onclick="selectSvc(1)">
+      <div class="service-hdr">
+        <div class="service-ico" style="background:var(--green-l)"><i class="fa-solid fa-wrench" style="color:var(--green)"></i></div>
+        <div><div class="service-name">Sanitation Assessment</div><div class="service-price">Free — NGO Supported</div></div>
       </div>
-      <div class="product-card" onclick="showOrder('Organic Fertilizer','$0.15 / kg','<i class="fa-solid fa-seedling"></i>')">
-        <div class="product-header">
-          <div class="product-icon" style="background:var(--green-l)"><i class="fa-solid fa-seedling"></i></div>
-          <div>
-            <div class="product-name">Organic Fertilizer</div>
-            <div class="product-desc">Nutrient-rich dried digestate. Boosts crop yields for smallholder farmers. Bagged and ready for collection or delivery.</div>
-          </div>
-        </div>
-        <div class="avail-bar"><div class="avail-fill" style="width:70%;background:var(--green)"></div></div>
-        <div class="avail-label">42 kg available of 60 kg daily capacity</div>
-        <div class="product-footer" style="margin-top:10px">
-          <div>
-            <div class="product-price" style="color:var(--green)">$0.15<span style="font-size:13px;font-weight:400">/kg</span></div>
-            <div class="product-unit">Min. order: 5 kg</div>
-          </div>
-          <button class="add-btn" style="background:var(--green)" onclick="event.stopPropagation();showOrder('Organic Fertilizer','$0.15 / kg','<i class="fa-solid fa-seedling"></i>')">Order Now</button>
-        </div>
+      <div class="service-desc">A trained officer visits your home to assess sanitation needs and recommend the right solution for your household.</div>
+      <div class="feat-tags"><span class="feat-tag">Free of Charge</span><span class="feat-tag">Wheelchair Friendly</span></div>
+    </div>
+    <div class="card">
+      <div class="section-label">Your Details</div>
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" id="book-name" placeholder="e.g. Amina Issahaku"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone Number</label>
+        <input class="form-input" id="book-phone" placeholder="e.g. 0244 000 000" type="tel"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Location / Address</label>
+        <input class="form-input" id="book-loc" placeholder="e.g. Lang-Oullo, Jirapa District"/>
+      </div>
+      <div class="section-label" style="margin-top:4px">Select Date</div>
+      <div class="date-grid" id="date-grid"></div>
+      <div class="section-label" style="margin-top:14px">Preferred Time</div>
+      <div class="time-grid" id="time-grid"></div>
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">Special Requirements</label>
+        <input class="form-input" id="book-special" placeholder="e.g. wheelchair access, elderly household..."/>
+      </div>
+      <div class="booking-summary" id="book-summary" style="display:none">
+        <div class="section-label" style="margin-bottom:8px">Booking Summary</div>
+        <div class="bs-row"><span class="bs-key">Service</span><span class="bs-val" id="bs-svc">—</span></div>
+        <div class="bs-row"><span class="bs-key">Date</span><span class="bs-val" id="bs-date">—</span></div>
+        <div class="bs-row"><span class="bs-key">Time</span><span class="bs-val" id="bs-time">—</span></div>
+        <div class="bs-row"><span class="bs-key">Cost</span><span class="bs-val" id="bs-cost">—</span></div>
+      </div>
+      <button class="btn btn-primary" onclick="submitBooking()"><i class="fa-solid fa-calendar-check"></i> Confirm Booking</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ALERTS ── -->
+<div class="screen" id="alerts-screen">
+  <div class="status-bar light"><span class="status-time" id="st5">9:41</span><div class="status-icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div></div>
+  <div class="screen-hdr"><h2>Climate Alerts</h2><p>Real-time warnings for your area</p></div>
+  <div class="alerts-body">
+    <div class="alert-hero flood">
+      <div class="alert-hero-icon"><i class="fa-solid fa-water"></i></div>
+      <div class="alert-hero-title">Flood Advisory — Jirapa District</div>
+      <div class="alert-hero-sub">River levels rising. Risk index 5/10 and increasing. Wet season approaching. Prepare now.</div>
+      <div class="alert-level"><i class="fa-solid fa-triangle-exclamation"></i> MODERATE RISK</div>
+    </div>
+    <div class="section-label">Protective Tips</div>
+    <div class="tips-grid">
+      <div class="tip-item"><i class="fa-solid fa-house" style="flex-shrink:0"></i>Move valuables to higher ground</div>
+      <div class="tip-item"><i class="fa-solid fa-droplet" style="flex-shrink:0"></i>Store clean drinking water</div>
+      <div class="tip-item"><i class="fa-solid fa-mobile-screen" style="flex-shrink:0"></i>Keep your phone charged</div>
+      <div class="tip-item"><i class="fa-solid fa-door-open" style="flex-shrink:0"></i>Know your evacuation route</div>
+    </div>
+    <div class="section-label">All Alerts</div>
+    <div class="alert-card flood">
+      <div class="alert-card-hdr">
+        <div class="alert-card-title"><i class="fa-solid fa-water" style="color:var(--sky)"></i> Flood Risk Rising</div>
+        <div class="alert-card-time">2 hrs ago</div>
+      </div>
+      <div class="alert-card-body">White Volta river level increased 0.8m in 24h. Communities within 2km of riverbanks advised to monitor closely and prepare for possible flooding.</div>
+    </div>
+    <div class="alert-card heat">
+      <div class="alert-card-hdr">
+        <div class="alert-card-title"><i class="fa-solid fa-temperature-high" style="color:var(--red)"></i> Heat Advisory</div>
+        <div class="alert-card-time">Yesterday</div>
+      </div>
+      <div class="alert-card-body">Temperatures expected to reach 38°C Thursday–Friday. Elderly people and children at highest risk. Stay hydrated. Avoid midday sun exposure.</div>
+    </div>
+    <div class="alert-card ok">
+      <div class="alert-card-hdr">
+        <div class="alert-card-title"><i class="fa-solid fa-circle-check" style="color:var(--green)"></i> AquaHub Hub Status</div>
+        <div class="alert-card-time">Live</div>
+      </div>
+      <div class="alert-card-body">Your local AquaHub is fully operational. Elevated platform protection active. Safe clean water available for collection and purchase today.</div>
+    </div>
+    <div class="alert-card warn">
+      <div class="alert-card-hdr">
+        <div class="alert-card-title"><i class="fa-solid fa-cloud-rain" style="color:var(--yellow)"></i> 3-Day Forecast</div>
+        <div class="alert-card-time">Updated now</div>
+      </div>
+      <div class="alert-card-body">Mon: Partly cloudy 31°C · Tue: Heavy rain expected 28°C · Wed: Showers, flooding possible 27°C. Prepare drainage channels now.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── GAME ── -->
+<div class="screen" id="game-screen">
+  <div class="status-bar light"><span class="status-time" id="st6">9:41</span><div class="status-icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div></div>
+  <div class="screen-hdr"><h2>Climate Quest</h2><p>Learn. Play. Protect your community.</p></div>
+  <div class="game-body">
+    <div class="game-hero">
+      <div class="game-title"><i class="fa-solid fa-gamepad"></i> Climate Quest</div>
+      <div class="game-sub">Learn. Play. Protect your community.</div>
+      <div class="xp-wrap"><div class="xp-fill" id="xp-bar" style="width:62%"></div></div>
+      <div class="xp-label" id="xp-lbl">620 / 1000 XP · Level 4 — Water Defender</div>
+    </div>
+    <div class="section-label">Your Badges</div>
+    <div class="badges-grid">
+      <div class="badge-item" onclick="toast('Flood Hero — Earned for completing flood module!','fa-medal')">
+        <div class="badge-ico"><i class="fa-solid fa-medal" style="color:#ffd700"></i></div>
+        <div class="badge-nm">Flood Hero</div>
+      </div>
+      <div class="badge-item" onclick="toast('Water Guardian — Earned for 5 correct answers!','fa-droplet')">
+        <div class="badge-ico"><i class="fa-solid fa-droplet" style="color:var(--sky)"></i></div>
+        <div class="badge-nm">Water Guard</div>
+      </div>
+      <div class="badge-item locked">
+        <div class="badge-ico"><i class="fa-solid fa-seedling" style="color:var(--green)"></i></div>
+        <div class="badge-nm">Green Star</div>
+      </div>
+      <div class="badge-item locked">
+        <div class="badge-ico"><i class="fa-solid fa-trophy" style="color:#ffd700"></i></div>
+        <div class="badge-nm">Champion</div>
+      </div>
+    </div>
+    <div class="section-label">Daily Challenge</div>
+    <div id="quiz-container"></div>
+    <div class="section-label">Leaderboard</div>
+    <div class="card" style="padding:14px 16px">
+      <div class="lb-item">
+        <div class="lb-rank gold">1</div>
+        <div class="lb-avatar" style="background:var(--teal-l)"><i class="fa-solid fa-user" style="color:var(--teal)"></i></div>
+        <div class="lb-name">Fatima K.</div><div class="lb-pts">1,240 XP</div>
+      </div>
+      <div class="lb-item">
+        <div class="lb-rank silver">2</div>
+        <div class="lb-avatar" style="background:var(--sky-l)"><i class="fa-solid fa-user" style="color:var(--sky)"></i></div>
+        <div class="lb-name">Issah M.</div><div class="lb-pts">980 XP</div>
+      </div>
+      <div class="lb-item">
+        <div class="lb-rank bronze">3</div>
+        <div class="lb-avatar" style="background:var(--earth-l)"><i class="fa-solid fa-user" style="color:var(--earth)"></i></div>
+        <div class="lb-name">Alhassan B.</div><div class="lb-pts">750 XP</div>
+      </div>
+      <div class="lb-item lb-you">
+        <div class="lb-rank" style="color:var(--teal)">4</div>
+        <div class="lb-avatar" style="background:var(--teal-l)"><i class="fa-solid fa-user" style="color:var(--teal)"></i></div>
+        <div class="lb-name" style="color:var(--teal);font-weight:700">You — Amina</div>
+        <div class="lb-pts" id="my-pts">620 XP</div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ── BOOK ── -->
-  <div class="screen" id="book">
-    <div class="screen-header">
-      <h2>Book a Service</h2>
-      <p>We come to you — licensed and affordable</p>
-    </div>
-    <div class="book-content">
-      <div class="section-label">Choose Service</div>
-      <div class="service-option sel" onclick="selectService(this)">
-        <div class="service-header">
-          <div class="service-icon"><i class="fa-solid fa-truck"></i></div>
-          <div>
-            <div class="service-name">Toilet / Pit Latrine Draining</div>
-            <div class="service-price">From $8.00 per visit</div>
-          </div>
-        </div>
-        <div class="service-desc">Our vacuum truck team collects fecal sludge from your toilet or pit latrine and safely transports it to the AquaHub for treatment. No mess, no odour.</div>
-        <div class="service-features">
-          <span class="feat-tag">Licensed Operators</span>
-          <span class="feat-tag">Same-Week Booking</span>
-          <span class="feat-tag">Accessible Support</span>
-        </div>
-      </div>
-      <div class="service-option" onclick="selectService(this)">
-        <div class="service-header">
-          <div class="service-icon"><i class="fa-solid fa-wrench"></i></div>
-          <div>
-            <div class="service-name">Sanitation Assessment</div>
-            <div class="service-price">Free — NGO supported</div>
-          </div>
-        </div>
-        <div class="service-desc">A trained officer visits your home to assess sanitation needs and recommend the right solution for your household.</div>
-        <div class="service-features">
-          <span class="feat-tag">Free of Charge</span>
-          <span class="feat-tag">PWD Friendly</span>
-        </div>
-      </div>
-      <div class="card">
-        <div class="section-label">Schedule Your Booking</div>
-        <div class="form-group">
-          <label class="form-label">Your Location / Address</label>
-          <input class="form-input" placeholder="e.g. Lang-Oullo, Jirapa District" value="Lang-Oullo, Jirapa District"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Select Date</label>
-          <div class="date-grid">
-            <div class="date-btn"><div class="date-day">MON</div><div class="date-num">26</div></div>
-            <div class="date-btn sel"><div class="date-day">TUE</div><div class="date-num">27</div></div>
-            <div class="date-btn"><div class="date-day">WED</div><div class="date-num">28</div></div>
-            <div class="date-btn"><div class="date-day">THU</div><div class="date-num">29</div></div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Preferred Time</label>
-          <div class="time-grid">
-            <div class="time-btn">8:00 AM</div>
-            <div class="time-btn sel">10:00 AM</div>
-            <div class="time-btn">2:00 PM</div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Special Requirements</label>
-          <input class="form-input" placeholder="e.g. wheelchair access needed, elderly household..."/>
-        </div>
-        <button class="btn btn-primary" onclick="showBookConfirm()">Confirm Booking →</button>
-      </div>
+<!-- ── PROFILE ── -->
+<div class="screen" id="profile-screen">
+  <div class="status-bar dark" style="position:absolute;top:0;left:0;right:0;z-index:10">
+    <span class="status-time" id="st7">9:41</span>
+    <div class="status-icons" style="color:#fff"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div>
+  </div>
+  <div class="profile-hero" style="padding-top:60px">
+    <div class="profile-avatar"><i class="fa-solid fa-user"></i></div>
+    <div class="profile-name" id="profile-name">Amina Issahaku</div>
+    <div class="profile-loc"><i class="fa-solid fa-location-dot"></i> Lang-Oullo, Jirapa District</div>
+    <div class="profile-stats">
+      <div class="pstat"><div class="pstat-val" id="ps-orders">3</div><div class="pstat-lbl">Orders</div></div>
+      <div class="pstat"><div class="pstat-val" id="ps-xp">620</div><div class="pstat-lbl">Game XP</div></div>
+      <div class="pstat"><div class="pstat-val">2</div><div class="pstat-lbl">Badges</div></div>
     </div>
   </div>
-
-  <!-- ── ALERTS ── -->
-  <div class="screen" id="alerts-screen">
-    <div class="screen-header">
-      <h2>Climate Alerts</h2>
-      <p>Real-time warnings for your area</p>
+  <div class="profile-body">
+    <div class="section-label">Accessibility</div>
+    <div class="access-row">
+      <div class="access-row-left">
+        <div class="access-row-ico" style="background:var(--teal-l)"><i class="fa-solid fa-volume-high" style="color:var(--teal)"></i></div>
+        <div><div class="access-row-title">Voice Assistance</div><div class="access-row-sub">Read content aloud</div></div>
+      </div>
+      <div class="toggle on" id="tgl-voice" onclick="toggleAccessibility('voice',this)"></div>
     </div>
-    <div class="alerts-content">
-      <div class="alert-hero flood">
-        <div class="alert-hero-icon"><i class="fa-solid fa-water"></i></div>
-        <div class="alert-hero-title">Flood Advisory — Jirapa District</div>
-        <div class="alert-hero-sub">River levels rising. Risk index now 5/10 and increasing. Wet season approaching. Prepare now.</div>
-        <div class="alert-level"><i class="fa-solid fa-triangle-exclamation"></i> MODERATE RISK — Stay Informed</div>
+    <div class="access-row">
+      <div class="access-row-left">
+        <div class="access-row-ico" style="background:var(--sky-l)"><i class="fa-solid fa-text-height" style="color:var(--sky)"></i></div>
+        <div><div class="access-row-title">Large Text</div><div class="access-row-sub">Increase font size</div></div>
       </div>
-      <div class="section-label">Protective Tips</div>
-      <div class="tips-grid">
-        <div class="tip-item"><span class="tip-icon"><i class="fa-solid fa-house"></i></span>Move valuables to higher ground</div>
-        <div class="tip-item"><span class="tip-icon"><i class="fa-solid fa-droplet"></i></span>Store clean drinking water</div>
-        <div class="tip-item"><span class="tip-icon"><i class="fa-solid fa-mobile-screen"></i></span>Keep phone charged</div>
-        <div class="tip-item"><span class="tip-icon"><i class="fa-solid fa-door-open"></i></span>Know your evacuation route</div>
-      </div>
-      <div class="section-label" style="margin-top:16px">All Alerts</div>
-      <div class="alert-card flood">
-        <div class="alert-card-header">
-          <div class="alert-card-title"><i class="fa-solid fa-water"></i> Flood Risk Rising</div>
-          <div class="alert-card-time">2 hrs ago</div>
-        </div>
-        <div class="alert-card-body">White Volta river level increased 0.8m in 24h. Communities within 2km of riverbanks advised to monitor closely.</div>
-      </div>
-      <div class="alert-card heat">
-        <div class="alert-card-header">
-          <div class="alert-card-title"><i class="fa-solid fa-temperature-high"></i> Heat Advisory</div>
-          <div class="alert-card-time">Yesterday</div>
-        </div>
-        <div class="alert-card-body">Temperatures expected to reach 38°C Thursday–Friday. Elderly and children at highest risk. Stay hydrated. Avoid midday sun.</div>
-      </div>
-      <div class="alert-card ok">
-        <div class="alert-card-header">
-          <div class="alert-card-title"><i class="fa-solid fa-circle-check" style="color:var(--green)"></i> AquaHub Hub Status</div>
-          <div class="alert-card-time">Live</div>
-        </div>
-        <div class="alert-card-body">Your local AquaHub is fully operational. Elevated platform protection active. Safe water available for collection today.</div>
-      </div>
-      <div class="alert-card flood">
-        <div class="alert-card-header">
-          <div class="alert-card-title"><i class="fa-solid fa-cloud-rain"></i>️ 3-Day Forecast</div>
-          <div class="alert-card-time">Updated now</div>
-        </div>
-        <div class="alert-card-body">Mon: Partly cloudy 31°C · Tue: Heavy rain expected 28°C · Wed: Showers, flooding possible 27°C. Prepare drainage.</div>
-      </div>
+      <div class="toggle" id="tgl-text" onclick="toggleAccessibility('text',this)"></div>
     </div>
-  </div>
-
-  <!-- ── GAME ── -->
-  <div class="screen" id="game-screen">
-    <div class="game-content">
-      <div class="game-hero">
-        <div class="game-title">Climate Quest</div>
-        <div class="game-sub">Learn. Play. Protect your community.</div>
-        <div class="xp-bar-wrap"><div class="xp-bar-fill"></div></div>
-        <div class="xp-label">620 / 1000 XP · Level 4 — Water Defender</div>
+    <div class="access-row">
+      <div class="access-row-left">
+        <div class="access-row-ico" style="background:var(--purple-l)"><i class="fa-solid fa-palette" style="color:var(--purple)"></i></div>
+        <div><div class="access-row-title">High Contrast</div><div class="access-row-sub">Stronger color contrast</div></div>
       </div>
-      <div class="section-label">Your Badges</div>
-      <div class="badges-row">
-        <div class="badge-item"><div class="badge-icon"><i class="fa-solid fa-medal"></i></div><div class="badge-name">Flood Hero</div></div>
-        <div class="badge-item"><div class="badge-icon"><i class="fa-solid fa-droplet"></i></div><div class="badge-name">Water Guard</div></div>
-        <div class="badge-item locked"><div class="badge-icon"><i class="fa-solid fa-seedling"></i></div><div class="badge-name">Green Star</div></div>
-        <div class="badge-item locked"><div class="badge-icon"><i class="fa-solid fa-trophy"></i></div><div class="badge-name">Champion</div></div>
+      <div class="toggle" id="tgl-contrast" onclick="toggleAccessibility('contrast',this)"></div>
+    </div>
+    <div class="access-row">
+      <div class="access-row-left">
+        <div class="access-row-ico" style="background:var(--earth-l)"><i class="fa-solid fa-mobile-screen-button" style="color:var(--earth)"></i></div>
+        <div><div class="access-row-title">Haptic Feedback</div><div class="access-row-sub">Vibration on actions</div></div>
       </div>
-      <div class="section-label">Daily Challenge</div>
-      <div class="quiz-card">
-        <div class="quiz-q" id="quiz-q">What is the main cause of waterborne disease during floods in Northern Ghana?</div>
-        <div class="quiz-opts" id="quiz-opts">
-          <button class="quiz-opt" onclick="answer(this, false)">A. Drinking too much water</button>
-          <button class="quiz-opt" onclick="answer(this, true)">B. Fecal sludge overflowing into water sources</button>
-          <button class="quiz-opt" onclick="answer(this, false)">C. Too much sunshine</button>
-          <button class="quiz-opt" onclick="answer(this, false)">D. Lack of electricity</button>
-        </div>
-        <div class="quiz-feedback" id="quiz-feedback"><i class="fa-solid fa-circle-check" style="color:var(--green)"></i> Correct! When pit latrines and septic tanks overflow during floods, fecal matter contaminates rivers and groundwater — spreading cholera, typhoid and diarrhoea. The AquaRecover Hub prevents this with sealed elevated containment. +50 XP earned! <i class="fa-solid fa-party-horn"></i></div>
+      <div class="toggle on" id="tgl-haptic" onclick="toggleAccessibility('haptic',this)"></div>
+    </div>
+    <div class="section-label" style="margin-top:4px">Language</div>
+    <div class="lang-grid" id="lang-grid">
+      <div class="lang-btn sel" onclick="setLang('English',this)"><div class="lang-flag">🇬🇧</div><div class="lang-name">English</div></div>
+      <div class="lang-btn" onclick="setLang('Dagbani',this)"><div class="lang-flag">🇬🇭</div><div class="lang-name">Dagbani</div></div>
+      <div class="lang-btn" onclick="setLang('Twi',this)"><div class="lang-flag">🇬🇭</div><div class="lang-name">Twi</div></div>
+      <div class="lang-btn" onclick="setLang('Hausa',this)"><div class="lang-flag">🇬🇭</div><div class="lang-name">Hausa</div></div>
+    </div>
+    <div class="section-label" style="margin-top:16px">Account</div>
+    <div class="menu-item" onclick="editProfile()">
+      <div class="menu-left">
+        <div class="menu-ico" style="background:var(--teal-l)"><i class="fa-solid fa-pen" style="color:var(--teal)"></i></div>
+        <div><div class="menu-title">Edit Profile</div><div class="menu-sub">Update your name and location</div></div>
       </div>
-      <div class="section-label">Leaderboard</div>
-      <div class="leaderboard">
-        <div class="lb-item">
-          <div class="lb-rank gold">1</div>
-          <div class="lb-avatar" style="background:var(--teal-l)"><i class="fa-solid fa-user"></i></div>
-          <div class="lb-name">Fatima K.</div>
-          <div class="lb-pts">1,240 XP</div>
-        </div>
-        <div class="lb-item">
-          <div class="lb-rank silver">2</div>
-          <div class="lb-avatar" style="background:var(--sky-l)"><i class="fa-solid fa-user"></i></div>
-          <div class="lb-name">Issah M.</div>
-          <div class="lb-pts">980 XP</div>
-        </div>
-        <div class="lb-item" style="background:var(--teal-l);border-radius:var(--radius-xs);padding:10px;margin:0 -4px">
-          <div class="lb-rank" style="color:var(--teal)">4</div>
-          <div class="lb-avatar" style="background:#fff"><i class="fa-solid fa-user"></i></div>
-          <div class="lb-name" style="color:var(--teal);font-weight:700">You — Amina</div>
-          <div class="lb-pts">620 XP</div>
-        </div>
-        <div class="lb-item">
-          <div class="lb-rank bronze">3</div>
-          <div class="lb-avatar" style="background:var(--earth-l)"><i class="fa-solid fa-user"></i></div>
-          <div class="lb-name">Alhassan B.</div>
-          <div class="lb-pts">750 XP</div>
-        </div>
+      <i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>
+    </div>
+    <div class="menu-item" onclick="goTo('game-screen');setNav(4)">
+      <div class="menu-left">
+        <div class="menu-ico" style="background:var(--purple-l)"><i class="fa-solid fa-gamepad" style="color:var(--purple)"></i></div>
+        <div><div class="menu-title">My Game History</div><div class="menu-sub" id="profile-xp">620 XP · Level 4</div></div>
       </div>
+      <i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>
+    </div>
+    <div class="menu-item" onclick="toast('Order history coming soon','fa-clock')">
+      <div class="menu-left">
+        <div class="menu-ico" style="background:var(--earth-l)"><i class="fa-solid fa-receipt" style="color:var(--earth)"></i></div>
+        <div><div class="menu-title">Order History</div><div class="menu-sub" id="profile-orders">3 orders placed</div></div>
+      </div>
+      <i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>
     </div>
   </div>
+</div>
 
-  <!-- ── PROFILE ── -->
-  <div class="screen" id="profile-screen">
-    <div class="profile-hero">
-      <div class="profile-avatar"><i class="fa-solid fa-user"></i></div>
-      <div class="profile-name">Amina Issahaku</div>
-      <div class="profile-loc"><i class="fa-solid fa-location-dot"></i> Lang-Oullo, Jirapa District</div>
-      <div class="profile-stats">
-        <div class="pstat"><div class="pstat-val">3</div><div class="pstat-lbl">Orders</div></div>
-        <div class="pstat"><div class="pstat-val">620</div><div class="pstat-lbl">Game XP</div></div>
-        <div class="pstat"><div class="pstat-val">2</div><div class="pstat-lbl">Badges</div></div>
+
+<!-- ── GARBAGE COLLECTOR ── -->
+<div class="screen" id="garbage-screen">
+  <div class="status-bar dark" style="position:absolute;top:0;left:0;right:0;z-index:10">
+    <span class="status-time" id="st8">9:41</span>
+    <div class="status-icons" style="color:#fff"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div>
+  </div>
+  <div class="gc-hero" style="padding-top:60px">
+    <div class="gc-title"><i class="fa-solid fa-recycle"></i> Garbage Collection</div>
+    <div class="gc-sub">Book a collector and track them live to your door</div>
+    <div class="gc-stats">
+      <div class="gc-stat"><div class="gc-stat-val">4</div><div class="gc-stat-lbl">Collectors Active</div></div>
+      <div class="gc-stat"><div class="gc-stat-val">12 min</div><div class="gc-stat-lbl">Avg Wait</div></div>
+      <div class="gc-stat"><div class="gc-stat-val">$2</div><div class="gc-stat-lbl">From</div></div>
+    </div>
+  </div>
+  <div class="gc-body">
+    <div class="section-label">Select Waste Type</div>
+    <div class="waste-type sel" id="wt-0" onclick="selectWaste(0)">
+      <div class="waste-ico" style="background:#e8f7ee"><i class="fa-solid fa-trash" style="color:var(--green)"></i></div>
+      <div><div class="waste-name">General Household Waste</div><div class="waste-price">From $2.00 per pickup</div></div>
+      <i class="fa-solid fa-circle-check waste-check"></i>
+    </div>
+    <div class="waste-type" id="wt-1" onclick="selectWaste(1)">
+      <div class="waste-ico" style="background:#e8f3fc"><i class="fa-solid fa-bottle-water" style="color:var(--sky)"></i></div>
+      <div><div class="waste-name">Recyclables (Plastic, Glass, Cans)</div><div class="waste-price">From $1.50 per pickup</div></div>
+      <i class="fa-solid fa-circle-check waste-check"></i>
+    </div>
+    <div class="waste-type" id="wt-2" onclick="selectWaste(2)">
+      <div class="waste-ico" style="background:#fdf3e7"><i class="fa-solid fa-leaf" style="color:var(--earth)"></i></div>
+      <div><div class="waste-name">Organic / Food Waste</div><div class="waste-price">From $1.00 per pickup</div></div>
+      <i class="fa-solid fa-circle-check waste-check"></i>
+    </div>
+    <div class="waste-type" id="wt-3" onclick="selectWaste(3)">
+      <div class="waste-ico" style="background:var(--red-l)"><i class="fa-solid fa-biohazard" style="color:var(--red)"></i></div>
+      <div><div class="waste-name">Hazardous / Medical Waste</div><div class="waste-price">From $5.00 per pickup</div></div>
+      <i class="fa-solid fa-circle-check waste-check"></i>
+    </div>
+    <div class="card" style="margin-top:4px">
+      <div class="section-label">Your Details</div>
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" id="gc-name" placeholder="e.g. Amina Issahaku"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone Number</label>
+        <input class="form-input" id="gc-phone" placeholder="0244 000 000" type="tel"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Pickup Location</label>
+        <input class="form-input" id="gc-loc" placeholder="e.g. House 12, Lang-Oullo"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Schedule</label>
+        <select class="form-select" id="gc-schedule">
+          <option>Today — As soon as possible</option>
+          <option>Today — Morning (8AM–12PM)</option>
+          <option>Today — Afternoon (12PM–5PM)</option>
+          <option>Tomorrow — Morning</option>
+          <option>Tomorrow — Afternoon</option>
+          <option>Weekly recurring pickup</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Special Notes</label>
+        <input class="form-input" id="gc-notes" placeholder="e.g. large amount, elderly household, gate code..."/>
+      </div>
+      <button class="btn btn-primary" onclick="bookGarbage()" style="background:#2d7a27"><i class="fa-solid fa-recycle"></i> Book Collector</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TRACKER ── -->
+<div class="screen" id="tracker-screen">
+  <div class="status-bar dark" style="position:absolute;top:0;left:0;right:0;z-index:10">
+    <span class="status-time" id="st9">9:41</span>
+    <div class="status-icons" style="color:#fff"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div>
+  </div>
+  <div class="track-hero" style="padding-top:60px">
+    <div class="track-title"><i class="fa-solid fa-location-dot"></i> Live Collector Tracking</div>
+    <div class="track-sub">Your collector is on the way — track them in real time</div>
+    <div class="track-status">
+      <div class="track-dot"></div>
+      <div class="track-status-text"><strong id="collector-name">Kwame A.</strong> is heading to your location</div>
+      <div class="track-eta">ETA <span id="eta-display">12 min</span></div>
+    </div>
+  </div>
+  <div style="padding:16px;padding-top:12px">
+    <div id="map"></div>
+    <div class="track-info-grid">
+      <div class="track-info-card">
+        <div class="track-info-val" id="track-dist">2.4 km</div>
+        <div class="track-info-lbl">Distance Away</div>
+      </div>
+      <div class="track-info-card">
+        <div class="track-info-val" id="track-eta2">12 min</div>
+        <div class="track-info-lbl">Estimated Arrival</div>
+      </div>
+      <div class="track-info-card">
+        <div class="track-info-val" id="track-speed">28 km/h</div>
+        <div class="track-info-lbl">Collector Speed</div>
+      </div>
+      <div class="track-info-card">
+        <div class="track-info-val" style="color:var(--green)" id="track-status-val">En Route</div>
+        <div class="track-info-lbl">Status</div>
       </div>
     </div>
-    <div class="profile-content">
-      <div class="section-label">Accessibility Settings</div>
-      <div class="access-section">
-        <div class="access-row">
-          <div class="access-row-left">
-            <div class="access-row-icon"><i class="fa-solid fa-volume-high"></i></div>
-            <div><div class="access-row-title">Voice Assistance</div><div class="access-row-sub">Read content aloud for visually impaired users</div></div>
-          </div>
-          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
-        </div>
-        <div class="access-row">
-          <div class="access-row-left">
-            <div class="access-row-icon"><i class="fa-solid fa-text-height"></i></div>
-            <div><div class="access-row-title">Large Text Mode</div><div class="access-row-sub">Increase font size for easier reading</div></div>
-          </div>
-          <div class="toggle" onclick="this.classList.toggle('on')"></div>
-        </div>
-        <div class="access-row">
-          <div class="access-row-left">
-            <div class="access-row-icon"><i class="fa-solid fa-palette"></i></div>
-            <div><div class="access-row-title">High Contrast</div><div class="access-row-sub">Stronger color contrast for low vision</div></div>
-          </div>
-          <div class="toggle" onclick="this.classList.toggle('on')"></div>
-        </div>
-        <div class="access-row">
-          <div class="access-row-left">
-            <div class="access-row-icon"><i class="fa-solid fa-mobile-screen-button"></i></div>
-            <div><div class="access-row-title">Haptic Feedback</div><div class="access-row-sub">Vibration feedback for actions</div></div>
-          </div>
-          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
-        </div>
+    <div class="track-steps">
+      <div class="section-label">Collection Progress</div>
+      <div class="track-step">
+        <div class="step-circle done"><i class="fa-solid fa-check"></i></div>
+        <div><div class="step-title">Booking Confirmed</div><div class="step-time" id="step-time-1">Just now</div></div>
       </div>
-      <div class="section-label">Language / Lugan</div>
-      <div class="lang-grid">
-        <div class="lang-btn sel"><div class="lang-flag"><i class="fa-solid fa-flag"></i></div><div class="lang-name">English</div></div>
-        <div class="lang-btn"><div class="lang-flag"><i class="fa-solid fa-flag"></i></div><div class="lang-name">Dagbani</div></div>
-        <div class="lang-btn"><div class="lang-flag"><i class="fa-solid fa-flag"></i></div><div class="lang-name">Twi</div></div>
-        <div class="lang-btn"><div class="lang-flag"><i class="fa-solid fa-flag"></i></div><div class="lang-name">Hausa</div></div>
+      <div class="track-step">
+        <div class="step-circle active"><i class="fa-solid fa-truck"></i></div>
+        <div><div class="step-title">Collector En Route</div><div class="step-time">Kwame A. is heading to you</div></div>
+      </div>
+      <div class="track-step">
+        <div class="step-circle pending"><i class="fa-solid fa-house"></i></div>
+        <div><div class="step-title">Arrived at Location</div><div class="step-time" id="step-time-3">ETA <span id="step-eta">12 min</span></div></div>
+      </div>
+      <div class="track-step">
+        <div class="step-circle pending"><i class="fa-solid fa-recycle"></i></div>
+        <div><div class="step-title">Waste Collected</div><div class="step-time">Pending</div></div>
+      </div>
+      <div class="track-step">
+        <div class="step-circle pending"><i class="fa-solid fa-circle-check"></i></div>
+        <div><div class="step-title">Job Complete</div><div class="step-time">Pending</div></div>
       </div>
     </div>
+    <button class="btn btn-outline" style="margin-top:12px" onclick="cancelTracking()"><i class="fa-solid fa-phone"></i> Call Collector</button>
   </div>
+</div>
 
-  <!-- BOTTOM NAV -->
-  <div class="bottom-nav" id="bottom-nav">
-    <div class="nav-item active" onclick="goTo('home');setNav(this)">
-      <div class="nav-icon"><i class="fa-solid fa-house"></i></div><div class="nav-label">Home</div>
+<!-- BOTTOM NAV -->
+<div class="bottom-nav" id="bottom-nav" style="display:none">
+  <div class="nav-item active" onclick="goTo('home');setNav(0)"><div class="nav-ico"><i class="fa-solid fa-house"></i></div><div class="nav-lbl">Home</div></div>
+  <div class="nav-item" onclick="goTo('market');setNav(1)"><div class="nav-ico"><i class="fa-solid fa-cart-shopping"></i></div><div class="nav-lbl">Market</div><div class="nav-badge" id="cart-badge" style="display:none">0</div></div>
+  <div class="nav-item" onclick="goTo('book');setNav(2)"><div class="nav-ico"><i class="fa-solid fa-truck"></i></div><div class="nav-lbl">Book</div></div>
+  <div class="nav-item" onclick="goTo('garbage-screen');setNav(6)"><div class="nav-ico"><i class="fa-solid fa-recycle"></i></div><div class="nav-lbl">Collect</div></div>
+  <div class="nav-item" onclick="goTo('alerts-screen');setNav(3)"><div class="nav-ico"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="nav-lbl">Alerts</div><div class="nav-badge">1</div></div>
+  <div class="nav-item" onclick="goTo('game-screen');setNav(4)"><div class="nav-ico"><i class="fa-solid fa-gamepad"></i></div><div class="nav-lbl">Game</div></div>
+  <div class="nav-item" onclick="goTo('profile-screen');setNav(5)"><div class="nav-ico"><i class="fa-solid fa-user"></i></div><div class="nav-lbl">Profile</div></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ORDER MODAL -->
+<div class="modal-overlay" id="order-modal" onclick="closeModal('order-modal')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="om-title">Order Product</div>
+    <div class="modal-sub">Choose quantity and confirm your order.</div>
+    <div class="form-group">
+      <label class="form-label">Quantity</label>
+      <input class="form-input" id="om-qty" type="number" min="1" placeholder="e.g. 100"/>
     </div>
-    <div class="nav-item" onclick="goTo('market');setNav(this)">
-      <div class="nav-icon"><i class="fa-solid fa-cart-shopping"></i></div><div class="nav-label">Market</div>
+    <div class="form-group">
+      <label class="form-label">Delivery Address</label>
+      <input class="form-input" id="om-addr" placeholder="Your location in Jirapa District"/>
     </div>
-    <div class="nav-item" onclick="goTo('book');setNav(this)">
-      <div class="nav-icon"><i class="fa-solid fa-truck"></i></div><div class="nav-label">Book</div>
+    <div class="form-group">
+      <label class="form-label">Phone Number</label>
+      <input class="form-input" id="om-phone" placeholder="0244 000 000" type="tel"/>
     </div>
-    <div class="nav-item" onclick="goTo('alerts-screen');setNav(this)">
-      <div class="nav-icon"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="nav-label">Alerts</div>
-    </div>
-    <div class="nav-item" onclick="goTo('game-screen');setNav(this)">
-      <div class="nav-icon"><i class="fa-solid fa-gamepad"></i></div><div class="nav-label">Game</div>
-    </div>
-    <div class="nav-item" onclick="goTo('profile-screen');setNav(this)">
-      <div class="nav-icon"><i class="fa-solid fa-user"></i></div><div class="nav-label">Profile</div>
-    </div>
+    <div class="modal-row"><span class="modal-key">Product</span><span class="modal-val" id="om-product">—</span></div>
+    <div class="modal-row"><span class="modal-key">Unit Price</span><span class="modal-val" id="om-price">—</span></div>
+    <div class="modal-row"><span class="modal-key">Estimated Total</span><span class="modal-val" id="om-total" style="color:var(--teal)">—</span></div>
+    <button class="btn btn-primary" style="margin-bottom:10px" onclick="confirmOrder()"><i class="fa-solid fa-check"></i> Place Order</button>
+    <button class="btn btn-outline" onclick="closeModal('order-modal')">Cancel</button>
   </div>
+</div>
 
-  <!-- TOAST -->
-  <div class="toast" id="toast"></div>
-
-  <!-- ORDER MODAL -->
-  <div class="modal-overlay" id="order-modal" onclick="closeModal('order-modal')">
-    <div class="modal-sheet" onclick="event.stopPropagation()">
-      <div class="modal-handle"></div>
-      <div class="modal-title" id="modal-title">Order Clean Water</div>
-      <div class="modal-sub">Confirm your order details below. A Hub operator will contact you to arrange delivery.</div>
-      <div class="modal-row"><span class="modal-key">Product</span><span class="modal-val" id="modal-product">—</span></div>
-      <div class="modal-row"><span class="modal-key">Price</span><span class="modal-val" id="modal-price">—</span></div>
-      <div class="modal-row"><span class="modal-key">Delivery</span><span class="modal-val">Same day available</span></div>
-      <div class="modal-row"><span class="modal-key">Contact</span><span class="modal-val">+233 20 000 0000</span></div>
-      <button class="btn btn-primary" onclick="confirmOrder()">Place Order ✓</button>
+<!-- BOOKING CONFIRM MODAL -->
+<div class="modal-overlay" id="book-modal" onclick="closeModal('book-modal')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="width:64px;height:64px;background:var(--green-l);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
+        <i class="fa-solid fa-calendar-check" style="font-size:28px;color:var(--green)"></i>
+      </div>
+      <div class="modal-title" style="text-align:center">Booking Confirmed!</div>
+      <div class="modal-sub" style="text-align:center">You'll receive an SMS confirmation shortly.</div>
     </div>
+    <div class="modal-row"><span class="modal-key">Service</span><span class="modal-val" id="bm-svc">—</span></div>
+    <div class="modal-row"><span class="modal-key">Name</span><span class="modal-val" id="bm-name">—</span></div>
+    <div class="modal-row"><span class="modal-key">Date</span><span class="modal-val" id="bm-date">—</span></div>
+    <div class="modal-row"><span class="modal-key">Time</span><span class="modal-val" id="bm-time">—</span></div>
+    <div class="modal-row"><span class="modal-key">Location</span><span class="modal-val" id="bm-loc">—</span></div>
+    <div class="modal-row"><span class="modal-key">Cost</span><span class="modal-val" id="bm-cost" style="color:var(--teal)">—</span></div>
+    <button class="btn btn-primary" onclick="closeModal('book-modal')"><i class="fa-solid fa-check"></i> Done</button>
   </div>
+</div>
 
-  <!-- BOOKING MODAL -->
-  <div class="modal-overlay" id="book-modal" onclick="closeModal('book-modal')">
-    <div class="modal-sheet" onclick="event.stopPropagation()">
-      <div class="modal-handle"></div>
-      <div class="modal-title">Booking Confirmed! <i class="fa-solid fa-party-horn"></i></div>
-      <div class="modal-sub">Your service has been scheduled. You'll receive an SMS confirmation.</div>
-      <div class="modal-row"><span class="modal-key">Service</span><span class="modal-val">Toilet Draining</span></div>
-      <div class="modal-row"><span class="modal-key">Date</span><span class="modal-val">Tuesday, 27 May</span></div>
-      <div class="modal-row"><span class="modal-key">Time</span><span class="modal-val">10:00 AM</span></div>
-      <div class="modal-row"><span class="modal-key">Location</span><span class="modal-val">Lang-Oullo</span></div>
-      <div class="modal-row"><span class="modal-key">Cost</span><span class="modal-val" style="color:var(--teal)">$8.00</span></div>
-      <button class="btn btn-primary" onclick="closeModal('book-modal')">Done ✓</button>
+<!-- CHECKOUT MODAL -->
+<div class="modal-overlay" id="checkout-modal" onclick="closeModal('checkout-modal')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Order Summary</div>
+    <div id="checkout-items"></div>
+    <div class="modal-row" style="border-top:2px solid var(--border)"><span class="modal-key" style="font-weight:700">Total</span><span class="modal-val" style="color:var(--teal);font-size:16px" id="checkout-total">—</span></div>
+    <div class="form-group" style="margin-top:10px">
+      <label class="form-label">Delivery Address</label>
+      <input class="form-input" id="co-addr" placeholder="Your location"/>
     </div>
+    <div class="form-group">
+      <label class="form-label">Phone Number</label>
+      <input class="form-input" id="co-phone" placeholder="0244 000 000" type="tel"/>
+    </div>
+    <button class="btn btn-primary" style="margin-bottom:10px" onclick="placeOrder()"><i class="fa-solid fa-paper-plane"></i> Place Order</button>
+    <button class="btn btn-outline" onclick="closeModal('checkout-modal')">Continue Shopping</button>
   </div>
+</div>
 
-</div><!-- end phone -->
+<!-- EDIT PROFILE MODAL -->
+<div class="modal-overlay" id="edit-modal" onclick="closeModal('edit-modal')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Edit Profile</div>
+    <div class="form-group">
+      <label class="form-label">Full Name</label>
+      <input class="form-input" id="edit-name" placeholder="Your name"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Location</label>
+      <input class="form-input" id="edit-loc" placeholder="Your community"/>
+    </div>
+    <button class="btn btn-primary" onclick="saveProfile()"><i class="fa-solid fa-save"></i> Save Changes</button>
+  </div>
+</div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-// Clock
-function updateTime(){
-  const n=new Date();
-  const h=n.getHours().toString().padStart(2,'0');
-  const m=n.getMinutes().toString().padStart(2,'0');
-  document.getElementById('status-time').textContent=h+':'+m;
-}
-setInterval(updateTime,10000);updateTime();
+// ── STATE ──────────────────────────────────────────────────────────────────
+const state = {
+  xp: 620, level: 4, orders: 3,
+  cart: [],
+  selectedSvc: 0, selectedDate: null, selectedTime: null,
+  name: 'Amina', lang: 'English',
+  voice: true, largeText: false, contrast: false, haptic: true,
+  quizIndex: 0, quizAnswered: false,
+  deferredPrompt: null,
+};
 
-// Navigation
-function goTo(screenId){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  const t=document.getElementById(screenId);
-  if(t){t.classList.add('active');t.scrollTop=0;}
-  // update nav
-  const navMap={home:0,market:1,book:2,'alerts-screen':3,'game-screen':4,'profile-screen':5};
-  if(navMap[screenId]!==undefined){
-    const items=document.querySelectorAll('.nav-item');
-    items.forEach(i=>i.classList.remove('active'));
-    items[navMap[screenId]].classList.add('active');
+// ── PWA ────────────────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  state.deferredPrompt = e;
+  showInstallBanner();
+});
+
+function showInstallBanner() {
+  const c = document.getElementById('install-container');
+  c.innerHTML = `
+    <div class="install-banner" onclick="installApp()">
+      <i class="fa-solid fa-mobile-screen" style="color:#fff;font-size:22px"></i>
+      <div class="install-banner-text">
+        <div class="install-banner-title">Install AquaHub Connect</div>
+        <div class="install-banner-sub">Add to your home screen for offline access</div>
+      </div>
+      <button class="install-banner-btn">Install</button>
+    </div>`;
+}
+
+function installApp() {
+  if (state.deferredPrompt) {
+    state.deferredPrompt.prompt();
+    state.deferredPrompt.userChoice.then(() => {
+      state.deferredPrompt = null;
+      document.getElementById('install-container').innerHTML = '';
+      toast('AquaHub Connect installed!', 'fa-mobile-screen');
+    });
+  } else {
+    toast('Open in Chrome/Safari and use "Add to Home Screen"', 'fa-circle-info');
   }
-  // hide nav on splash
-  document.getElementById('bottom-nav').style.display=screenId==='splash'?'none':'flex';
 }
 
-function setNav(el){
-  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
-  el.classList.add('active');
+// ── CLOCK ──────────────────────────────────────────────────────────────────
+function updateClocks() {
+  const t = new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit', hour12:false});
+  document.querySelectorAll('[id^="st"]').forEach(el => el.textContent = t);
+}
+setInterval(updateClocks, 10000); updateClocks();
+
+// ── NAV ────────────────────────────────────────────────────────────────────
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const s = document.getElementById(id);
+  if (s) { s.classList.add('active'); s.scrollTop = 0; }
+  document.getElementById('bottom-nav').style.display = id === 'splash' ? 'none' : 'flex';
+}
+
+function setNav(i) {
+  document.querySelectorAll('.nav-item').forEach((n,idx) => n.classList.toggle('active', idx === i));
+}
+
+// ── TOAST ──────────────────────────────────────────────────────────────────
+function toast(msg, icon='fa-circle-check') {
+  const t = document.getElementById('toast');
+  t.innerHTML = `<i class="fa-solid ${icon}"></i> ${msg}`;
+  t.classList.add('show');
+  if (state.haptic && navigator.vibrate) navigator.vibrate(30);
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── MODAL ──────────────────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+// ── PRODUCTS ───────────────────────────────────────────────────────────────
+const PRODUCTS = [
+  { id:'water', cat:'water', name:'Clean Irrigation Water', desc:'WHO-safe treated water for farming, cleaning and hygiene. Same-day delivery available.', icon:'fa-droplet', iconBg:'#e8f3fc', iconColor:'#1a7bc4', price:0.002, unit:'litre', minOrder:100, avail:3240, capacity:4500, color:'var(--sky)' },
+  { id:'biogas', cat:'biogas', name:'Biogas Fuel', desc:'Clean cooking energy from sludge treatment. Replaces charcoal and firewood. Delivered in canisters.', icon:'fa-fire', iconBg:'#fdf3e7', iconColor:'#c47c2b', price:0.08, unit:'m³', minOrder:2, avail:18.4, capacity:25, color:'var(--earth)' },
+  { id:'fertilizer', cat:'fertilizer', name:'Organic Fertilizer', desc:'Nutrient-rich dried digestate. Boosts crop yields for smallholder farmers. Bagged and ready.', icon:'fa-seedling', iconBg:'#e8f7ee', iconColor:'#1a9e4a', price:0.15, unit:'kg', minOrder:5, avail:42, capacity:60, color:'var(--green)' },
+];
+
+let currentFilter = 'all';
+
+function renderProducts() {
+  const body = document.getElementById('market-body');
+  const filtered = currentFilter === 'all' ? PRODUCTS : PRODUCTS.filter(p => p.cat === currentFilter);
+  body.innerHTML = filtered.map(p => {
+    const pct = Math.round(p.avail / p.capacity * 100);
+    const inCart = state.cart.find(c => c.id === p.id);
+    return `
+    <div class="product-card fade-in" onclick="openOrder('${p.id}')">
+      <div class="product-hdr">
+        <div class="product-ico" style="background:${p.iconBg}"><i class="fa-solid ${p.icon}" style="color:${p.iconColor};font-size:24px"></i></div>
+        <div><div class="product-name">${p.name}</div><div class="product-desc">${p.desc}</div></div>
+      </div>
+      <div class="avail-bar"><div class="avail-fill" style="width:${pct}%;background:${p.color}"></div></div>
+      <div class="avail-label">${p.avail.toLocaleString()} ${p.unit} available of ${p.capacity} ${p.unit} daily capacity</div>
+      <div class="product-footer">
+        <div><div class="product-price" style="color:${p.color}">$${p.price}<span style="font-size:13px;font-weight:400">/${p.unit}</span></div><div class="product-unit">Min. order: ${p.minOrder} ${p.unit}</div></div>
+        <button class="add-btn ${inCart?'':''}'" style="background:${p.color};color:#fff" onclick="event.stopPropagation();openOrder('${p.id}')">
+          <i class="fa-solid ${inCart?'fa-cart-shopping':'fa-plus'}"></i> ${inCart?'In Cart':'Order'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterProducts(cat, el) {
+  currentFilter = cat;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  renderProducts();
+}
+
+let currentProduct = null;
+function openOrder(id) {
+  currentProduct = PRODUCTS.find(p => p.id === id);
+  document.getElementById('om-title').textContent = `Order ${currentProduct.name}`;
+  document.getElementById('om-product').textContent = currentProduct.name;
+  document.getElementById('om-price').textContent = `$${currentProduct.price} per ${currentProduct.unit}`;
+  document.getElementById('om-qty').value = currentProduct.minOrder;
+  document.getElementById('om-qty').min = currentProduct.minOrder;
+  document.getElementById('om-qty').placeholder = `Min: ${currentProduct.minOrder} ${currentProduct.unit}`;
+  document.getElementById('om-total').textContent = `$${(currentProduct.price * currentProduct.minOrder).toFixed(2)}`;
+  document.getElementById('om-qty').oninput = function() {
+    const total = (currentProduct.price * (+this.value || 0)).toFixed(2);
+    document.getElementById('om-total').textContent = `$${total}`;
+  };
+  document.getElementById('order-modal').classList.add('show');
+}
+
+function confirmOrder() {
+  const qty = +document.getElementById('om-qty').value;
+  const addr = document.getElementById('om-addr').value;
+  const phone = document.getElementById('om-phone').value;
+  if (!qty || qty < currentProduct.minOrder) { toast(`Minimum order is ${currentProduct.minOrder} ${currentProduct.unit}`, 'fa-triangle-exclamation'); return; }
+  if (!addr) { toast('Please enter your delivery address', 'fa-triangle-exclamation'); return; }
+  if (!phone) { toast('Please enter your phone number', 'fa-triangle-exclamation'); return; }
+  const existing = state.cart.find(c => c.id === currentProduct.id);
+  if (existing) { existing.qty += qty; existing.total += currentProduct.price * qty; }
+  else { state.cart.push({ id: currentProduct.id, name: currentProduct.name, qty, unit: currentProduct.unit, price: currentProduct.price, total: currentProduct.price * qty, color: currentProduct.color }); }
+  closeModal('order-modal');
+  updateCart();
+  renderProducts();
+  toast(`${currentProduct.name} added to cart!`, 'fa-cart-shopping');
+}
+
+function updateCart() {
+  const total = state.cart.reduce((s, i) => s + i.total, 0);
+  const count = state.cart.length;
+  const bar = document.getElementById('cart-bar');
+  const badge = document.getElementById('cart-badge');
+  document.getElementById('cart-info').textContent = `${count} item${count!==1?'s':''}`;
+  document.getElementById('cart-total').textContent = `$${total.toFixed(2)}`;
+  if (count > 0) { bar.classList.add('show'); badge.style.display='block'; badge.textContent=count; }
+  else { bar.classList.remove('show'); badge.style.display='none'; }
+}
+
+function checkout() {
+  const items = state.cart.map(i => `<div class="modal-row"><span class="modal-key">${i.name} (${i.qty} ${i.unit})</span><span class="modal-val">$${i.total.toFixed(2)}</span></div>`).join('');
+  document.getElementById('checkout-items').innerHTML = items;
+  document.getElementById('checkout-total').textContent = `$${state.cart.reduce((s,i)=>s+i.total,0).toFixed(2)}`;
+  closeModal('order-modal');
+  document.getElementById('checkout-modal').classList.add('show');
+}
+
+function placeOrder() {
+  const addr = document.getElementById('co-addr').value;
+  const phone = document.getElementById('co-phone').value;
+  if (!addr) { toast('Please enter your delivery address', 'fa-triangle-exclamation'); return; }
+  if (!phone) { toast('Please enter your phone number', 'fa-triangle-exclamation'); return; }
+  state.orders += state.cart.length;
+  state.cart = [];
+  updateCart();
+  renderProducts();
+  closeModal('checkout-modal');
+  document.getElementById('ps-orders').textContent = state.orders;
+  document.getElementById('profile-orders').textContent = `${state.orders} orders placed`;
+  toast('Order placed! Hub team will contact you shortly.', 'fa-circle-check');
+}
+
+// ── BOOKING ────────────────────────────────────────────────────────────────
+const SERVICES = [
+  { name:'Toilet / Pit Draining', price:'$8.00', cost:'$8.00' },
+  { name:'Sanitation Assessment', price:'Free', cost:'Free' },
+];
+
+function selectSvc(i) {
+  state.selectedSvc = i;
+  document.querySelectorAll('.service-opt').forEach((s,idx) => s.classList.toggle('sel', idx===i));
+  updateBookSummary();
+}
+
+// Generate dates
+function renderDates() {
+  const grid = document.getElementById('date-grid');
+  const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const now = new Date();
+  let html = '';
+  for (let i=1; i<=4; i++) {
+    const d = new Date(now); d.setDate(d.getDate()+i);
+    html += `<div class="date-btn" onclick="selectDate(this,'${d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'})}')">
+      <div class="date-day">${days[d.getDay()]}</div>
+      <div class="date-num">${d.getDate()}</div>
+    </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function selectDate(el, label) {
+  document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+  state.selectedDate = label;
+  updateBookSummary();
+}
+
+function renderTimes() {
+  const times = ['8:00 AM','10:00 AM','12:00 PM','2:00 PM','4:00 PM','6:00 PM'];
+  document.getElementById('time-grid').innerHTML = times.map(t =>
+    `<div class="time-btn" onclick="selectTime(this,'${t}')">${t}</div>`
+  ).join('');
+}
+
+function selectTime(el, t) {
+  document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+  state.selectedTime = t;
+  updateBookSummary();
+}
+
+function updateBookSummary() {
+  const s = document.getElementById('book-summary');
+  if (state.selectedDate && state.selectedTime) {
+    s.style.display = 'block';
+    document.getElementById('bs-svc').textContent = SERVICES[state.selectedSvc].name;
+    document.getElementById('bs-date').textContent = state.selectedDate;
+    document.getElementById('bs-time').textContent = state.selectedTime;
+    document.getElementById('bs-cost').textContent = SERVICES[state.selectedSvc].cost;
+  }
+}
+
+function submitBooking() {
+  const name = document.getElementById('book-name').value;
+  const phone = document.getElementById('book-phone').value;
+  const loc = document.getElementById('book-loc').value;
+  if (!name) { toast('Please enter your name', 'fa-triangle-exclamation'); return; }
+  if (!phone) { toast('Please enter your phone number', 'fa-triangle-exclamation'); return; }
+  if (!loc) { toast('Ple  if (!loc) { toast('Please enter your location', 'fa-triangle-exclamation'); return; }
+  if (!state.selectedDate) { toast('Please select a date', 'fa-triangle-exclamation'); return; }
+  if (!state.selectedTime) { toast('Please select a time', 'fa-triangle-exclamation'); return; }
+  document.getElementById('bm-svc').textContent = SERVICES[state.selectedSvc].name;
+  document.getElementById('bm-name').textContent = name;
+  document.getElementById('bm-date').textContent = state.selectedDate;
+  document.getElementById('bm-time').textContent = state.selectedTime;
+  document.getElementById('bm-loc').textContent = loc;
+  document.getElementById('bm-cost').textContent = SERVICES[state.selectedSvc].cost;
+  document.getElementById('book-modal').classList.add('show');
+}
+
+const QUESTIONS = [
+  { q:'What is the main cause of waterborne disease during floods in Northern Ghana?', opts:['Drinking too much water','Fecal sludge overflowing into water sources','Too much sunshine','Lack of electricity'], correct:1, feedback:'When pit latrines overflow during floods, fecal matter contaminates rivers and groundwater — spreading cholera and typhoid. The AquaRecover Hub prevents this with sealed elevated containment. +50 XP!' },
+  { q:'What does the AquaRecover Hub convert fecal sludge into?', opts:['Plastics and rubber','Clean water, biogas and organic fertilizer','Diesel fuel','Drinking water only'], correct:1, feedback:'The Hub converts waste into clean water for irrigation, biogas for cooking energy, and organic fertilizer for farming. +50 XP!' },
+  { q:'Why is the AquaRecover Hub built on an elevated platform?', opts:['To look impressive','For trucks to park under','To stay above flood water','For better solar angle'], correct:2, feedback:'The platform is elevated 1.5m above the highest flood line so the system keeps working during floods — protecting communities when they need it most. +50 XP!' },
+  { q:'How should communities prepare for flooding?', opts:['Do nothing','Move valuables high, store water, know your evacuation route','Build bigger houses','Only pray'], correct:1, feedback:'Preparation saves lives! Move valuables to higher ground, store clean water, keep your phone charged, and know your route. AquaHub sends early warnings to help. +50 XP!' },
+  { q:'What is biogas used for in the AquaRecover Hub?', opts:['Fuel for cars','Cooking and electricity — replacing charcoal','A cleaning chemical','Collecting rainwater'], correct:1, feedback:'Biogas is produced when bacteria break down organic waste. The Hub captures it for cooking and facility power — replacing harmful charcoal and firewood. +50 XP!' },
+];
+
+function renderQuiz() {
+  const q = QUESTIONS[state.quizIndex];
+  document.getElementById('quiz-container').innerHTML = `
+    <div class="quiz-card fade-in">
+      <div class="quiz-num">Question ${state.quizIndex+1} of ${QUESTIONS.length}</div>
+      <div class="quiz-q">${q.q}</div>
+      <div class="quiz-opts">
+        ${q.opts.map((o,i)=>`<button class="quiz-opt" onclick="answer(this,${i===q.correct},${i})">${String.fromCharCode(65+i)}. ${o}</button>`).join('')}
+      </div>
+      <div class="quiz-feedback" id="quiz-fb"></div>
+      <div class="quiz-actions" id="quiz-actions" style="display:none">
+        ${state.quizIndex < QUESTIONS.length-1
+          ? `<button class="btn btn-primary btn-sm" onclick="nextQuestion()"><i class="fa-solid fa-arrow-right"></i> Next</button>`
+          : `<button class="btn btn-primary btn-sm" onclick="finishQuiz()"><i class="fa-solid fa-trophy"></i> Finish</button>`}
+      </div>
+    </div>`;
+  state.quizAnswered = false;
+}
+
+function answer(el, correct, idx) {
+  if (state.quizAnswered) return;
+  state.quizAnswered = true;
+  const q = QUESTIONS[state.quizIndex];
+  document.querySelectorAll('.quiz-opt').forEach((o,i) => {
+    o.classList.add('disabled');
+    if (i===q.correct) o.classList.add('correct');
+    else if (i===idx && !correct) o.classList.add('wrong');
+  });
+  const fb = document.getElementById('quiz-fb');
+  fb.textContent = q.feedback;
+  fb.classList.add('show');
+  document.getElementById('quiz-actions').style.display='flex';
+  if (correct) { state.xp+=50; updateXP(); toast('Correct! +50 XP earned','fa-trophy'); }
+  else toast('Not quite — see correct answer above','fa-circle-info');
+}
+
+function nextQuestion() { state.quizIndex=(state.quizIndex+1)%QUESTIONS.length; renderQuiz(); }
+function finishQuiz() { state.xp+=100; updateXP(); toast('Quiz complete! +100 XP bonus!','fa-trophy'); state.quizIndex=0; renderQuiz(); }
+
+function updateXP() {
+  state.level = Math.floor(state.xp/250)+1;
+  const pct = (state.xp%1000)/10;
+  document.getElementById('xp-bar').style.width=pct+'%';
+  document.getElementById('xp-lbl').textContent=`${state.xp} XP · Level ${state.level}`;
+  document.getElementById('xp-display').textContent=`${state.xp} XP · Level ${state.level}`;
+  document.getElementById('my-pts').textContent=`${state.xp} XP`;
+  document.getElementById('ps-xp').textContent=state.xp;
+  document.getElementById('profile-xp').textContent=`${state.xp} XP · Level ${state.level}`;
+}
+
+function toggleAccessibility(type,el) {
+  el.classList.toggle('on');
+  const on=el.classList.contains('on');
+  state[type]=on;
+  if(type==='text') document.body.style.fontSize=on?'15px':'';
+  toast(`${type.charAt(0).toUpperCase()+type.slice(1)} ${on?'enabled':'disabled'}`, 'fa-circle-check');
+}
+function enableVoice(){state.voice=true;document.getElementById('tgl-voice').classList.add('on');toast('Voice mode enabled','fa-volume-high');goTo('home');}
+function enableLargeText(){state.largeText=true;document.getElementById('tgl-text').classList.add('on');document.body.style.fontSize='15px';toast('Large text enabled','fa-text-height');goTo('home');}
+function setLang(lang,el){state.lang=lang;document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');toast(`Language set to ${lang}`,'fa-globe');}
+
+function editProfile(){
+  document.getElementById('edit-name').value=state.name;
+  document.getElementById('edit-modal').classList.add('show');
+}
+function saveProfile(){
+  const name=document.getElementById('edit-name').value.trim();
+  if(!name){toast('Please enter your name','fa-triangle-exclamation');return;}
+  state.name=name;
+  document.getElementById('hero-name').innerHTML=`${name} <i class="fa-solid fa-hand-wave"></i>`;
+  document.getElementById('profile-name').textContent=name;
+  closeModal('edit-modal');
+  toast('Profile updated!','fa-circle-check');
+}
+
+function installApp(){
+  if(state.deferredPrompt){
+    state.deferredPrompt.prompt();
+    state.deferredPrompt.userChoice.then(()=>{state.deferredPrompt=null;document.getElementById('install-container').innerHTML='';toast('AquaHub Connect installed!','fa-mobile-screen');});
+  } else toast('Open in Chrome and use "Add to Home Screen"','fa-circle-info');
+}
+
+function showInstallBanner(){
+  const c=document.getElementById('install-container');
+  c.innerHTML=`<div class="install-banner" onclick="installApp()"><i class="fa-solid fa-mobile-screen" style="color:#fff;font-size:22px"></i><div class="install-banner-text"><div class="install-banner-title">Install AquaHub Connect</div><div class="install-banner-sub">Add to home screen for offline access</div></div><button class="install-banner-btn">Install</button></div>`;
+}
+
+// PWA
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();state.deferredPrompt=e;showInstallBanner();});
+
+// Clock
+function updateClocks(){const t=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});document.querySelectorAll('[id^="st"]').forEach(el=>el.textContent=t);}
+setInterval(updateClocks,10000);updateClocks();
+
+// Nav
+function goTo(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const s=document.getElementById(id);if(s){s.classList.add('active');s.scrollTop=0;}document.getElementById('bottom-nav').style.display=id==='splash'?'none':'flex';}
+function setNav(i){document.querySelectorAll('.nav-item').forEach((n,idx)=>n.classList.toggle('active',idx===i));}
+function toast(msg,icon='fa-circle-check'){const t=document.getElementById('toast');t.innerHTML=`<i class="fa-solid ${icon}"></i> ${msg}`;t.classList.add('show');if(state.haptic&&navigator.vibrate)navigator.vibrate(30);setTimeout(()=>t.classList.remove('show'),3000);}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+
+
+// ── GARBAGE COLLECTOR ──────────────────────────────────────────────────────
+let selectedWaste = 0;
+const WASTE_TYPES = [
+  {name:'General Household Waste', price:'$2.00'},
+  {name:'Recyclables', price:'$1.50'},
+  {name:'Organic / Food Waste', price:'$1.00'},
+  {name:'Hazardous / Medical Waste', price:'$5.00'},
+];
+
+function selectWaste(i) {
+  selectedWaste = i;
+  document.querySelectorAll('.waste-type').forEach((w,idx) => w.classList.toggle('sel', idx===i));
+}
+
+function bookGarbage() {
+  const name = document.getElementById('gc-name').value;
+  const phone = document.getElementById('gc-phone').value;
+  const loc = document.getElementById('gc-loc').value;
+  if (!name) { toast('Please enter your name','fa-triangle-exclamation'); return; }
+  if (!phone) { toast('Please enter your phone number','fa-triangle-exclamation'); return; }
+  if (!loc) { toast('Please enter your pickup location','fa-triangle-exclamation'); return; }
+  toast('Collector booked! Tracking your collector now...','fa-recycle');
+  setTimeout(() => {
+    goTo('tracker-screen');
+    setNav(6);
+    initMap();
+    startTracking();
+  }, 1200);
+}
+
+// ── LIVE MAP TRACKER ───────────────────────────────────────────────────────
+let map = null, collectorMarker = null, userMarker = null, routeLine = null;
+let trackInterval = null, etaSeconds = 720;
+
+// Northern Ghana coordinates (Tamale area)
+const USER_POS = [9.4008, -0.8393];
+const COLLECTOR_START = [9.3850, -0.8200];
+
+function initMap() {
+  if (map) { map.remove(); map = null; }
+  map = L.map('map', { zoomControl: false, attributionControl: false }).setView(USER_POS, 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+  // User marker
+  const userIcon = L.divIcon({
+    className: '',
+    html: '<div style="width:36px;height:36px;background:var(--teal);border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-size:16px;color:#fff"><i class=\"fa-solid fa-house\"></i></div>',
+    iconSize: [36,36], iconAnchor: [18,18]
+  });
+  userMarker = L.marker(USER_POS, {icon: userIcon}).addTo(map).bindPopup('Your Location');
+
+  // Collector marker
+  const truckIcon = L.divIcon({
+    className: '',
+    html: '<div style="width:40px;height:40px;background:#2d7a27;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.4);font-size:18px;color:#fff;animation:pulse2 1.5s infinite"><i class=\"fa-solid fa-truck\"></i></div>',
+    iconSize: [40,40], iconAnchor: [20,20]
+  });
+  collectorMarker = L.marker(COLLECTOR_START, {icon: truckIcon}).addTo(map).bindPopup('Kwame A. — Your Collector');
+
+  // Route line
+  routeLine = L.polyline([COLLECTOR_START, USER_POS], {
+    color: '#2d7a27', weight: 3, dashArray: '8 6', opacity: 0.7
+  }).addTo(map);
+
+  map.fitBounds([COLLECTOR_START, USER_POS], {padding: [40,40]});
+}
+
+function startTracking() {
+  if (trackInterval) clearInterval(trackInterval);
+  etaSeconds = 720;
+  let step = 0;
+  const totalSteps = 60;
+  const latDiff = USER_POS[0] - COLLECTOR_START[0];
+  const lngDiff = USER_POS[1] - COLLECTOR_START[1];
+
+  trackInterval = setInterval(() => {
+    step++;
+    etaSeconds = Math.max(0, 720 - step * 12);
+    const progress = step / totalSteps;
+    const newLat = COLLECTOR_START[0] + latDiff * progress + (Math.random()-0.5)*0.001;
+    const newLng = COLLECTOR_START[1] + lngDiff * progress + (Math.random()-0.5)*0.001;
+    const newPos = [newLat, newLng];
+
+    if (collectorMarker) collectorMarker.setLatLng(newPos);
+    if (routeLine) routeLine.setLatLngs([newPos, USER_POS]);
+
+    const dist = Math.max(0, 2.4 - (progress * 2.4)).toFixed(1);
+    const mins = Math.ceil(etaSeconds / 60);
+    const speed = Math.round(20 + Math.random()*20);
+
+    document.getElementById('eta-display').textContent = mins + ' min';
+    document.getElementById('track-eta2').textContent = mins + ' min';
+    document.getElementById('track-dist').textContent = dist + ' km';
+    document.getElementById('track-speed').textContent = speed + ' km/h';
+    document.getElementById('step-eta').textContent = mins + ' min';
+
+    if (step >= totalSteps) {
+      clearInterval(trackInterval);
+      document.getElementById('track-status-val').textContent = 'Arrived!';
+      document.getElementById('track-status-val').style.color = 'var(--green)';
+      document.getElementById('track-eta2').textContent = 'Now';
+      document.getElementById('eta-display').textContent = 'Now';
+      document.getElementById('track-dist').textContent = '0.0 km';
+      // Update steps
+      document.querySelectorAll('.step-circle.pending')[0].className = 'step-circle done';
+      document.querySelectorAll('.step-circle.done')[0].innerHTML = '<i class="fa-solid fa-check"></i>';
+      document.querySelectorAll('.step-circle.active')[0].className = 'step-circle done';
+      toast('Your collector has arrived!', 'fa-recycle');
+    }
+  }, 1500);
+}
+
+function cancelTracking() {
+  toast('Calling Kwame A. — +233 24 000 0000','fa-phone');
 }
 
 // Init
 goTo('splash');
-document.getElementById('bottom-nav').style.display='none';
-
-// Toast
-function toast(msg,icon='<i class="fa-solid fa-circle-check" style="color:var(--green)"></i>'){
-  const t=document.getElementById('toast');
-  t.innerHTML=icon+' '+msg;
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),3000);
-}
-
-// Modal
-function showOrder(name,price,icon){
-  document.getElementById('modal-title').textContent=icon+' Order '+name;
-  document.getElementById('modal-product').textContent=name;
-  document.getElementById('modal-price').textContent=price;
-  document.getElementById('order-modal').classList.add('show');
-}
-function closeModal(id){document.getElementById(id).classList.remove('show')}
-function confirmOrder(){
-  closeModal('order-modal');
-  toast('Order placed! Hub team will contact you shortly.','<i class="fa-solid fa-circle-check" style="color:var(--green)"></i>');
-}
-function showBookConfirm(){document.getElementById('book-modal').classList.add('show')}
-
-// Service selection
-function selectService(el){
-  document.querySelectorAll('.service-option').forEach(s=>s.classList.remove('sel'));
-  el.classList.add('sel');
-}
-
-// Date/time selection
-document.querySelectorAll('.date-btn').forEach(b=>{
-  b.onclick=function(){document.querySelectorAll('.date-btn').forEach(x=>x.classList.remove('sel'));this.classList.add('sel')}
-});
-document.querySelectorAll('.time-btn').forEach(b=>{
-  b.onclick=function(){document.querySelectorAll('.time-btn').forEach(x=>x.classList.remove('sel'));this.classList.add('sel')}
-});
-
-// Filter chips
-document.querySelectorAll('.filter-chip').forEach(c=>{
-  c.onclick=function(){document.querySelectorAll('.filter-chip').forEach(x=>x.classList.remove('sel'));this.classList.add('sel')}
-});
-
-// Quiz
-let answered=false;
-function answer(el,correct){
-  if(answered)return;
-  answered=true;
-  el.classList.add(correct?'correct':'wrong');
-  if(!correct){
-    document.querySelectorAll('.quiz-opt').forEach(o=>{
-      if(o.textContent.includes('Fecal sludge'))o.classList.add('correct');
-    });
-  }
-  document.getElementById('quiz-feedback').classList.add('show');
-  if(correct)toast('Correct! +50 XP earned <i class="fa-solid fa-party-horn"></i>','<i class="fa-solid fa-trophy"></i>');
-  else toast('Not quite — see the correct answer above','<i class="fa-solid fa-circle-info" style="color:var(--sky)"></i>');
-}
-
-// Language buttons
-document.querySelectorAll('.lang-btn').forEach(b=>{
-  b.onclick=function(){document.querySelectorAll('.lang-btn').forEach(x=>x.classList.remove('sel'));this.classList.add('sel');toast('Language updated','<i class="fa-solid fa-globe"></i>')}
-});
+renderProducts();
+renderDates();
+renderTimes();
+renderQuiz();
+updateXP();
 </script>
 </body>
 </html>
