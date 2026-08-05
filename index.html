@@ -35,16 +35,11 @@ html,body{height:100%;background:var(--bg);font-family:var(--sans);overflow:hidd
 body{display:flex;flex-direction:column}
 
 /* SCREENS */
-.screen{position:fixed;inset:0;background:var(--bg);overflow-y:auto;overflow-x:hidden;display:none;flex-direction:column;padding-bottom:80px;padding-top:0}
+.screen{position:fixed;inset:0;background:var(--bg);overflow-y:auto;overflow-x:hidden;display:none;flex-direction:column;padding-bottom:80px;padding-top:env(safe-area-inset-top,0px)}
 .screen.active{display:flex}
 .screen::-webkit-scrollbar{display:none}
 
-/* STATUS BAR */
-.status-bar{height:44px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;background:transparent;flex-shrink:0;z-index:10}
-.status-bar.dark{color:#fff}
-.status-bar.light{color:var(--text)}
-.status-time{font-family:var(--display);font-size:13px;font-weight:600}
-.status-icons{display:flex;align-items:center;gap:5px;font-size:11px}
+/* STATUS BAR REMOVED */
 
 /* BOTTOM NAV */
 .bottom-nav{
@@ -349,10 +344,7 @@ body{display:flex;flex-direction:column}
 
 <!-- ── SPLASH ── -->
 <div class="screen active" id="splash">
-  <div class="status-bar dark">
-    <span class="status-time" id="st1">9:41</span>
-    <div class="status-icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div>
-  </div>
+</div>
   <div class="splash-top">
     <div class="splash-logo"><i class="fa-solid fa-droplet"></i></div>
     <div class="splash-name">AquaHub Connect</div>
@@ -375,11 +367,8 @@ body{display:flex;flex-direction:column}
 
 <!-- ── HOME ── -->
 <div class="screen" id="home">
-  <div class="status-bar dark" style="position:absolute;top:0;left:0;right:0;z-index:10">
-    <span class="status-time" id="st2">9:41</span>
-    <div class="status-icons" style="color:#fff"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div>
-  </div>
-  <div class="hero" style="padding-top:60px">
+</div>
+  <div class="hero" style="padding-top:52px">
     <div class="hero-greeting">Good morning,</div>
     <div class="hero-name" id="hero-name">Amina <i class="fa-solid fa-hand-wave"></i></div>
     <div class="alert-pill" onclick="goTo('alerts-screen');setNav(3)">
@@ -442,7 +431,7 @@ body{display:flex;flex-direction:column}
 
 <!-- ── MARKET ── -->
 <div class="screen" id="market">
-  <div class="status-bar light"><span class="status-time" id="st3">9:41</span><div class="status-icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div></div>
+</div>
   <div class="screen-hdr"><h2>Marketplace</h2><p>Hub products for your community</p></div>
   <div class="filter-row">
     <div class="filter-chip sel" onclick="filterProducts('all',this)">All Products</div>
@@ -459,7 +448,7 @@ body{display:flex;flex-direction:column}
 
 <!-- ── BOOK ── -->
 <div class="screen" id="book">
-  <div class="status-bar light"><span class="status-time" id="st4">9:41</span><div class="status-icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div></div>
+</div>
   <div class="screen-hdr"><h2>Book a Service</h2><p>We come to you — licensed & affordable</p></div>
   <div class="book-body">
     <div class="section-label">Choose Service</div>
@@ -515,7 +504,7 @@ body{display:flex;flex-direction:column}
 
 <!-- ── ALERTS ── -->
 <div class="screen" id="alerts-screen">
-  <div class="status-bar light"><span class="status-time" id="st5">9:41</span><div class="status-icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div></div>
+</div>
   <div class="screen-hdr"><h2>Climate Alerts</h2><p>Real-time warnings for your area</p></div>
   <div class="alerts-body">
     <div class="alert-hero flood">
@@ -565,7 +554,7 @@ body{display:flex;flex-direction:column}
 
 <!-- ── GAME ── -->
 <div class="screen" id="game-screen">
-  <div class="status-bar light"><span class="status-time" id="st6">9:41</span><div class="status-icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div></div>
+</div>
   <div class="screen-hdr"><h2>Climate Quest</h2><p>Learn. Play. Protect your community.</p></div>
   <div class="game-body">
     <div class="game-hero">
@@ -624,11 +613,8 @@ body{display:flex;flex-direction:column}
 
 <!-- ── PROFILE ── -->
 <div class="screen" id="profile-screen">
-  <div class="status-bar dark" style="position:absolute;top:0;left:0;right:0;z-index:10">
-    <span class="status-time" id="st7">9:41</span>
-    <div class="status-icons" style="color:#fff"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div>
-  </div>
-  <div class="profile-hero" style="padding-top:60px">
+</div>
+  <div class="profile-hero" style="padding-top:52px">
     <div class="profile-avatar"><i class="fa-solid fa-user"></i></div>
     <div class="profile-name" id="profile-name">Amina Issahaku</div>
     <div class="profile-loc"><i class="fa-solid fa-location-dot"></i> Lang-Oullo, Jirapa District</div>
@@ -703,11 +689,8 @@ body{display:flex;flex-direction:column}
 
 <!-- ── GARBAGE COLLECTOR ── -->
 <div class="screen" id="garbage-screen">
-  <div class="status-bar dark" style="position:absolute;top:0;left:0;right:0;z-index:10">
-    <span class="status-time" id="st8">9:41</span>
-    <div class="status-icons" style="color:#fff"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div>
-  </div>
-  <div class="gc-hero" style="padding-top:60px">
+</div>
+  <div class="gc-hero" style="padding-top:52px">
     <div class="gc-title"><i class="fa-solid fa-recycle"></i> Garbage Collection</div>
     <div class="gc-sub">Book a collector and track them live to your door</div>
     <div class="gc-stats">
@@ -774,11 +757,8 @@ body{display:flex;flex-direction:column}
 
 <!-- ── TRACKER ── -->
 <div class="screen" id="tracker-screen">
-  <div class="status-bar dark" style="position:absolute;top:0;left:0;right:0;z-index:10">
-    <span class="status-time" id="st9">9:41</span>
-    <div class="status-icons" style="color:#fff"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-full"></i></div>
-  </div>
-  <div class="track-hero" style="padding-top:60px">
+</div>
+  <div class="track-hero" style="padding-top:52px">
     <div class="track-title"><i class="fa-solid fa-location-dot"></i> Live Collector Tracking</div>
     <div class="track-sub">Your collector is on the way — track them in real time</div>
     <div class="track-status">
@@ -1281,31 +1261,23 @@ function saveProfile(){
   toast('Profile updated!','fa-circle-check');
 }
 
-function installApp(){
-  if(state.deferredPrompt){
-    state.deferredPrompt.prompt();
-    state.deferredPrompt.userChoice.then(()=>{state.deferredPrompt=null;document.getElementById('install-container').innerHTML='';toast('AquaHub Connect installed!','fa-mobile-screen');});
-  } else toast('Open in Chrome and use "Add to Home Screen"','fa-circle-info');
-}
 
-function showInstallBanner(){
-  const c=document.getElementById('install-container');
-  c.innerHTML=`<div class="install-banner" onclick="installApp()"><i class="fa-solid fa-mobile-screen" style="color:#fff;font-size:22px"></i><div class="install-banner-text"><div class="install-banner-title">Install AquaHub Connect</div><div class="install-banner-sub">Add to home screen for offline access</div></div><button class="install-banner-btn">Install</button></div>`;
-}
+
+
 
 // PWA
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();state.deferredPrompt=e;showInstallBanner();});
 
 // Clock
-function updateClocks(){const t=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});document.querySelectorAll('[id^="st"]').forEach(el=>el.textContent=t);}
+
 setInterval(updateClocks,10000);updateClocks();
 
 // Nav
-function goTo(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const s=document.getElementById(id);if(s){s.classList.add('active');s.scrollTop=0;}document.getElementById('bottom-nav').style.display=id==='splash'?'none':'flex';}
-function setNav(i){document.querySelectorAll('.nav-item').forEach((n,idx)=>n.classList.toggle('active',idx===i));}
-function toast(msg,icon='fa-circle-check'){const t=document.getElementById('toast');t.innerHTML=`<i class="fa-solid ${icon}"></i> ${msg}`;t.classList.add('show');if(state.haptic&&navigator.vibrate)navigator.vibrate(30);setTimeout(()=>t.classList.remove('show'),3000);}
-function closeModal(id){document.getElementById(id).classList.remove('show');}
+// (removed duplicate)
+// (removed duplicate)
+// (removed duplicate)
+// (removed duplicate)
 
 
 // ── GARBAGE COLLECTOR ──────────────────────────────────────────────────────
