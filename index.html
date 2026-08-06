@@ -2,15 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <meta name="theme-color" content="#0D9E82"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="AquaHub"/>
 <title>AquaHub Connect</title>
 <link rel="manifest" href="manifest.json"/>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -27,717 +26,500 @@
   --border:#dde8e6;
   --sans:'Plus Jakarta Sans',sans-serif;
   --display:'Space Grotesk',sans-serif;
-  --radius:18px;--radius-sm:12px;--radius-xs:8px;
-  --shadow:0 2px 16px rgba(0,0,0,0.08);
-  --shadow-lg:0 8px 32px rgba(0,0,0,0.14);
+  --r:18px;--rsm:12px;--rxs:8px;
+  --sh:0 2px 16px rgba(0,0,0,0.08);
+  --shl:0 8px 32px rgba(0,0,0,0.14);
 }
-html,body{height:100%;background:var(--bg);font-family:var(--sans);overflow:hidden}
-body{display:flex;flex-direction:column}
+html,body{height:100%;background:var(--bg);font-family:var(--sans);overflow:hidden;color:var(--text)}
 
 /* SCREENS */
-.screen{position:fixed;inset:0;background:var(--bg);overflow-y:auto;overflow-x:hidden;display:none;flex-direction:column;padding-bottom:80px;padding-top:env(safe-area-inset-top,0px)}
+.screen{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  overflow-y:auto;overflow-x:hidden;
+  display:none;flex-direction:column;
+  padding-bottom:80px;
+  -webkit-overflow-scrolling:touch;
+}
 .screen.active{display:flex}
 .screen::-webkit-scrollbar{display:none}
 
-/* STATUS BAR REMOVED */
-
 /* BOTTOM NAV */
-.bottom-nav{
-  position:fixed;bottom:0;left:0;right:0;height:80px;
-  background:var(--white);border-top:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-around;
-  padding:0 4px 16px;z-index:500;
-  box-shadow:0 -4px 20px rgba(0,0,0,0.06);
+.bnav{
+  position:fixed;bottom:0;left:0;right:0;height:72px;
+  background:#fff;border-top:1px solid var(--border);
+  display:none;align-items:center;justify-content:space-around;
+  padding:0 2px 8px;z-index:999;
+  box-shadow:0 -2px 12px rgba(0,0,0,0.06);
 }
-.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:8px 10px;border-radius:var(--radius-xs);transition:all .2s;min-width:52px;position:relative}
-.nav-item.active .nav-ico{color:var(--teal)}
-.nav-item.active .nav-lbl{color:var(--teal);font-weight:700}
-.nav-ico{font-size:20px;color:var(--text3);transition:color .2s}
-.nav-lbl{font-size:9px;color:var(--text3);font-weight:500;letter-spacing:.3px;text-transform:uppercase}
-.nav-badge{position:absolute;top:4px;right:6px;background:var(--red);color:#fff;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center}
+.bnav.show{display:flex}
+.ni{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 8px;border-radius:8px;min-width:48px;position:relative}
+.ni.on .ni-i{color:var(--teal)}
+.ni.on .ni-l{color:var(--teal);font-weight:700}
+.ni-i{font-size:19px;color:var(--text3)}
+.ni-l{font-size:9px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.3px}
+.nbadge{position:absolute;top:2px;right:4px;background:var(--red);color:#fff;border-radius:10px;font-size:9px;font-weight:700;padding:1px 4px;min-width:14px;text-align:center}
 
-/* CARDS */
-.card{background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
-.section-label{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px}
-.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
-.chip.ok{background:var(--green-l);color:var(--green)}
-.chip.warn{background:var(--yellow-l);color:var(--yellow)}
-.chip.danger{background:var(--red-l);color:var(--red)}
-.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;border:none;width:100%;font-family:var(--sans)}
-.btn-primary{background:var(--teal);color:#fff}
-.btn-primary:active{background:var(--teal-d);transform:scale(.98)}
-.btn-outline{background:transparent;color:var(--teal);border:2px solid var(--teal)}
-.btn-sm{padding:10px 16px;font-size:13px;border-radius:var(--radius-xs);width:auto}
-.btn-danger{background:var(--red);color:#fff}
-
-/* FORMS */
-.form-group{margin-bottom:14px}
-.form-label{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;display:block;text-transform:uppercase;letter-spacing:.5px}
-.form-input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);font-family:var(--sans);background:var(--white);outline:none;transition:border-color .2s}
-.form-input:focus{border-color:var(--teal)}
-.form-select{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);font-family:var(--sans);background:var(--white);outline:none;appearance:none}
-
-/* ── SPLASH ── */
-#splash{background:linear-gradient(160deg,#0d4a3a,#0f6b52,#1a8a6a);padding-bottom:0;justify-content:space-between}
-.splash-top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 32px 24px}
-.splash-logo{width:88px;height:88px;background:rgba(255,255,255,0.15);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:42px;margin-bottom:20px;border:2px solid rgba(255,255,255,0.25);color:#fff}
-.splash-name{font-family:var(--display);font-size:32px;font-weight:700;color:#fff;text-align:center;margin-bottom:6px}
-.splash-tag{font-size:13px;color:rgba(255,255,255,0.7);text-align:center;line-height:1.5;max-width:260px}
-.splash-badges{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;justify-content:center}
-.splash-badge{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 12px;font-size:11px;color:rgba(255,255,255,0.85);font-weight:500;display:flex;align-items:center;gap:5px}
-.splash-bottom{padding:20px 24px 48px;display:flex;flex-direction:column;gap:10px}
-.splash-main-btn{background:#fff;color:var(--teal-d);font-size:15px;font-weight:800;padding:16px;border-radius:var(--radius);text-align:center;cursor:pointer;font-family:var(--display)}
-.splash-access{display:flex;justify-content:center;gap:10px;margin-top:4px}
-.access-opt{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:10px 14px;background:rgba(255,255,255,0.08);border-radius:var(--radius-sm);border:1px solid rgba(255,255,255,0.15);flex:1;max-width:100px}
-.access-opt i{font-size:20px;color:rgba(255,255,255,0.85)}
-.access-opt span{font-size:10px;color:rgba(255,255,255,0.6);font-weight:500}
-
-/* ── HOME ── */
-#home .hero{background:linear-gradient(135deg,var(--teal-d),var(--teal));padding:20px 20px 24px;position:relative;overflow:hidden}
-#home .hero::before{content:'';position:absolute;right:-30px;bottom:-30px;width:160px;height:160px;background:rgba(255,255,255,0.05);border-radius:50%}
-.hero-greeting{font-size:13px;color:rgba(255,255,255,0.75);margin-bottom:2px}
-.hero-name{font-family:var(--display);font-size:22px;font-weight:700;color:#fff;margin-bottom:14px}
-.alert-pill{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}
-.alert-pill-dot{width:8px;height:8px;border-radius:50%;background:#ffd166;animation:blink 1.5s infinite;flex-shrink:0}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.alert-pill-text{font-size:12px;color:#fff;line-height:1.4;flex:1}
-.alert-pill-text strong{color:#ffd166}
-.home-body{padding:16px}
-.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.qa-card{background:var(--white);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .2s;box-shadow:var(--shadow);border:2px solid transparent;active:transform scale(.97)}
-.qa-card:active{transform:scale(.97);border-color:var(--teal)}
-.qa-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:8px}
-.qa-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
-.qa-sub{font-size:11px;color:var(--text3)}
-.weather-card{background:linear-gradient(135deg,#1a4a7a,#1e6aaa);border-radius:var(--radius);padding:16px;margin-bottom:12px;position:relative;overflow:hidden}
-.weather-card::before{content:'';position:absolute;right:16px;top:12px;font-size:50px;opacity:.15}
-.weather-temp{font-family:var(--display);font-size:38px;font-weight:700;color:#fff}
-.weather-desc{font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:10px}
-.weather-row{display:flex;gap:14px}
-.weather-item{font-size:11px;color:rgba(255,255,255,0.75);display:flex;align-items:center;gap:5px}
-.news-item{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--border)}
-.news-item:last-child{border:none;padding-bottom:0}
-.news-icon{width:40px;height:40px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.news-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;line-height:1.3}
-.news-meta{font-size:11px;color:var(--text3)}
-
-/* ── MARKET ── */
-.filter-row{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;background:var(--white);border-bottom:1px solid var(--border);flex-shrink:0}
-.filter-row::-webkit-scrollbar{display:none}
-.filter-chip{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);color:var(--text2);white-space:nowrap;background:transparent;transition:all .2s}
-.filter-chip.sel{background:var(--teal);color:#fff;border-color:var(--teal)}
-.market-body{padding:16px}
-.product-card{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s;border:2px solid transparent}
-.product-card:active{transform:scale(.98)}
-.product-hdr{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px}
-.product-ico{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
-.product-name{font-family:var(--display);font-size:16px;font-weight:700;color:var(--text);margin-bottom:3px}
-.product-desc{font-size:12px;color:var(--text2);line-height:1.4}
-.avail-bar{height:4px;background:var(--border);border-radius:2px;margin:10px 0 4px;overflow:hidden}
-.avail-fill{height:100%;border-radius:2px;background:var(--teal)}
-.avail-label{font-size:10px;color:var(--text3)}
-.product-footer{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
-.product-price{font-family:var(--display);font-size:20px;font-weight:700;color:var(--teal)}
-.product-unit{font-size:10px;color:var(--text3);margin-top:1px}
-.add-btn{border:none;border-radius:var(--radius-sm);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .2s;display:flex;align-items:center;gap:6px}
-.add-btn:active{transform:scale(.96)}
-
-/* CART */
-.cart-bar{position:fixed;bottom:80px;left:16px;right:16px;background:var(--teal);color:#fff;border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-lg);z-index:400;transform:translateY(20px);opacity:0;transition:all .35s;pointer-events:none}
-.cart-bar.show{transform:translateY(0);opacity:1;pointer-events:all}
-.cart-info{font-size:13px;font-weight:600}
-.cart-total{font-family:var(--display);font-size:16px;font-weight:700}
-.cart-checkout{background:#fff;color:var(--teal);border:none;border-radius:var(--radius-sm);padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans)}
-
-/* ── BOOK ── */
-.book-body{padding:16px}
-.service-opt{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s;border:2px solid transparent}
-.service-opt.sel{border-color:var(--teal);background:var(--teal-l)}
-.service-opt:active{transform:scale(.98)}
-.service-hdr{display:flex;align-items:center;gap:12px;margin-bottom:8px}
-.service-ico{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-.service-name{font-family:var(--display);font-size:15px;font-weight:700;color:var(--text)}
-.service-price{font-size:12px;color:var(--teal);font-weight:600;margin-top:1px}
-.service-desc{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:10px}
-.feat-tags{display:flex;flex-wrap:wrap;gap:6px}
-.feat-tag{background:var(--teal-l);color:var(--teal);border-radius:20px;padding:3px 9px;font-size:10px;font-weight:600}
-.date-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
-.date-btn{padding:10px 6px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--white);text-align:center;cursor:pointer;transition:all .2s}
-.date-btn.sel{border-color:var(--teal);background:var(--teal-l)}
-.date-btn.disabled{opacity:.4;cursor:not-allowed}
-.date-day{font-size:10px;color:var(--text3);margin-bottom:2px}
-.date-num{font-size:16px;font-weight:700;color:var(--text)}
-.time-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
-.time-btn{padding:10px 6px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--white);text-align:center;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:all .2s}
-.time-btn.sel{border-color:var(--teal);background:var(--teal-l);color:var(--teal)}
-.booking-summary{background:var(--teal-l);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px}
-.bs-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
-.bs-key{color:var(--text2)}
-.bs-val{font-weight:700;color:var(--teal)}
-
-/* ── ALERTS ── */
-.alerts-body{padding:16px}
-.alert-hero{border-radius:var(--radius);padding:20px;margin-bottom:16px;position:relative;overflow:hidden}
-.alert-hero.flood{background:linear-gradient(135deg,#1a3a6a,#1e5aaa)}
-.alert-hero.heat{background:linear-gradient(135deg,#7a2a00,#cc4400)}
-.alert-hero.ok{background:linear-gradient(135deg,#0d4a2a,#1a7a44)}
-.alert-hero-icon{font-size:44px;margin-bottom:8px;color:#fff}
-.alert-hero-title{font-family:var(--display);font-size:20px;font-weight:700;color:#fff;margin-bottom:4px}
-.alert-hero-sub{font-size:13px;color:rgba(255,255,255,0.8);line-height:1.5}
-.alert-level{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:#fff;margin-top:10px}
-.tips-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
-.tip-item{background:var(--teal-l);border-radius:var(--radius-xs);padding:10px;font-size:11px;color:var(--teal-d);font-weight:500;display:flex;align-items:flex-start;gap:6px;line-height:1.4}
-.alert-card{background:var(--white);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);border-left:4px solid transparent}
-.alert-card.flood{border-left-color:var(--sky)}
-.alert-card.heat{border-left-color:var(--red)}
-.alert-card.ok{border-left-color:var(--green)}
-.alert-card.warn{border-left-color:var(--yellow)}
-.alert-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.alert-card-title{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px}
-.alert-card-time{font-size:10px;color:var(--text3)}
-.alert-card-body{font-size:12px;color:var(--text2);line-height:1.5}
-
-/* ── GAME ── */
-.game-body{padding:16px}
-.game-hero{background:linear-gradient(135deg,#3a1a6a,#6a2aaa);border-radius:var(--radius);padding:20px;margin-bottom:16px;text-align:center;position:relative;overflow:hidden}
-.game-title{font-family:var(--display);font-size:22px;font-weight:700;color:#fff;margin-bottom:4px}
-.game-sub{font-size:13px;color:rgba(255,255,255,0.75);margin-bottom:14px}
-.xp-wrap{background:rgba(255,255,255,0.15);border-radius:10px;height:10px;margin-bottom:5px;overflow:hidden}
-.xp-fill{height:100%;background:linear-gradient(90deg,#ffd166,#ffaa00);border-radius:10px;transition:width .5s ease}
-.xp-label{font-size:11px;color:rgba(255,255,255,0.7);text-align:left}
-.badges-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
-.badge-item{background:var(--white);border-radius:var(--radius-sm);padding:12px 8px;text-align:center;box-shadow:var(--shadow);cursor:pointer;transition:all .2s}
-.badge-item:active{transform:scale(.95)}
-.badge-ico{font-size:26px;margin-bottom:4px}
-.badge-nm{font-size:9px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.3px}
-.badge-item.locked{opacity:.35;filter:grayscale(1)}
-.quiz-card{background:var(--white);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:12px}
-.quiz-num{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
-.quiz-q{font-size:15px;font-weight:700;color:var(--text);line-height:1.5;margin-bottom:14px}
-.quiz-opts{display:flex;flex-direction:column;gap:8px}
-.quiz-opt{padding:13px 16px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-size:13px;color:var(--text2);cursor:pointer;transition:all .2s;font-family:var(--sans);background:var(--white);text-align:left;display:flex;align-items:center;gap:10px}
-.quiz-opt:active{transform:scale(.98)}
-.quiz-opt.correct{border-color:var(--green);background:var(--green-l);color:var(--green);font-weight:700}
-.quiz-opt.wrong{border-color:var(--red);background:var(--red-l);color:var(--red)}
-.quiz-opt.disabled{pointer-events:none}
-.quiz-feedback{background:var(--teal-l);border-radius:var(--radius-sm);padding:12px;font-size:12px;color:var(--teal-d);line-height:1.5;margin-top:10px;display:none}
-.quiz-feedback.show{display:block}
-.quiz-actions{display:flex;gap:8px;margin-top:12px}
-.lb-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
-.lb-item:last-child{border:none;padding-bottom:0}
-.lb-rank{font-family:var(--display);font-size:16px;font-weight:700;width:24px;text-align:center}
-.lb-rank.gold{color:#ffd700}.lb-rank.silver{color:#c0c0c0}.lb-rank.bronze{color:#cd7f32}
-.lb-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-.lb-name{font-size:13px;font-weight:600;color:var(--text);flex:1}
-.lb-pts{font-size:12px;font-weight:700;color:var(--teal)}
-.lb-you{background:var(--teal-l);border-radius:var(--radius-xs);padding:8px;margin:0 -4px}
-
-/* ── PROFILE ── */
-#profile-screen .profile-hero{background:linear-gradient(135deg,var(--teal-d),var(--teal));padding:24px 20px 28px;text-align:center}
-.profile-avatar{width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,0.2);border:3px solid rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 10px;color:#fff}
-.profile-name{font-family:var(--display);font-size:18px;font-weight:700;color:#fff;margin-bottom:2px}
-.profile-loc{font-size:12px;color:rgba(255,255,255,0.75);display:flex;align-items:center;justify-content:center;gap:4px}
-.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,0.15);border-radius:var(--radius-sm);margin-top:14px;overflow:hidden}
-.pstat{background:rgba(255,255,255,0.1);padding:10px 6px;text-align:center}
-.pstat-val{font-family:var(--display);font-size:18px;font-weight:700;color:#fff}
-.pstat-lbl{font-size:9px;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:.5px}
-.profile-body{padding:16px}
-.access-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--white);border-radius:var(--radius-sm);margin-bottom:8px;box-shadow:var(--shadow)}
-.access-row-left{display:flex;align-items:center;gap:12px}
-.access-row-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
-.access-row-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:1px}
-.access-row-sub{font-size:11px;color:var(--text3)}
-.toggle{width:48px;height:28px;background:var(--border);border-radius:14px;position:relative;cursor:pointer;transition:background .3s;flex-shrink:0}
-.toggle.on{background:var(--teal)}
-.toggle::after{content:'';position:absolute;width:22px;height:22px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform .3s;box-shadow:0 1px 4px rgba(0,0,0,0.2)}
-.toggle.on::after{transform:translateX(20px)}
-.lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.lang-btn{padding:12px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--white);text-align:center;cursor:pointer;transition:all .2s;font-family:var(--sans)}
-.lang-btn.sel{border-color:var(--teal);background:var(--teal-l)}
-.lang-flag{font-size:20px;margin-bottom:4px}
-.lang-name{font-size:12px;font-weight:600;color:var(--text)}
-.menu-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--white);border-radius:var(--radius-sm);margin-bottom:8px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s}
-.menu-item:active{background:var(--teal-l)}
-.menu-left{display:flex;align-items:center;gap:12px}
-.menu-ico{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px}
-.menu-title{font-size:13px;font-weight:600;color:var(--text)}
-.menu-sub{font-size:11px;color:var(--text3)}
+/* SHARED */
+.card{background:#fff;border-radius:var(--r);padding:16px;box-shadow:var(--sh);margin-bottom:12px}
+.slbl{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;border-radius:var(--rsm);font-size:14px;font-weight:700;cursor:pointer;border:none;width:100%;font-family:var(--sans);transition:all .2s}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--teal);color:#fff}
+.btn-o{background:transparent;color:var(--teal);border:2px solid var(--teal)}
+.fg{margin-bottom:14px}
+.fl{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px;display:block;text-transform:uppercase;letter-spacing:.5px}
+.fi{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--rsm);font-size:14px;color:var(--text);font-family:var(--sans);background:#fff;outline:none}
+.fi:focus{border-color:var(--teal)}
+.fsel{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--rsm);font-size:14px;color:var(--text);font-family:var(--sans);background:#fff;outline:none;appearance:none}
+.shdr{background:#fff;border-bottom:1px solid var(--border);padding:14px 20px 12px;flex-shrink:0}
+.shdr h2{font-family:var(--display);font-size:20px;font-weight:700}
+.shdr p{font-size:13px;color:var(--text2);margin-top:2px}
 
 /* TOAST */
-.toast{position:fixed;bottom:92px;left:16px;right:16px;background:#0f2420;color:#fff;border-radius:var(--radius-sm);padding:13px 16px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:10px;z-index:600;transform:translateY(20px);opacity:0;transition:all .35s;pointer-events:none;box-shadow:var(--shadow-lg)}
+.toast{position:fixed;bottom:84px;left:16px;right:16px;background:#0f2420;color:#fff;border-radius:var(--rsm);padding:13px 16px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:10px;z-index:9999;transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;box-shadow:var(--shl)}
 .toast.show{transform:translateY(0);opacity:1}
 
 /* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:700;display:none;align-items:flex-end;justify-content:center}
-.modal-overlay.show{display:flex}
-.modal-sheet{background:var(--white);border-radius:28px 28px 0 0;padding:20px 20px 40px;width:100%;max-height:90vh;overflow-y:auto}
-.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
-.modal-title{font-family:var(--display);font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px}
-.modal-sub{font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:16px}
-.modal-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
-.modal-row:last-of-type{border:none;margin-bottom:14px}
-.modal-key{font-size:13px;color:var(--text2)}
-.modal-val{font-size:13px;font-weight:700;color:var(--text)}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:flex-end}
+.mo.show{display:flex}
+.ms{background:#fff;border-radius:24px 24px 0 0;padding:20px 20px 40px;width:100%;max-height:92vh;overflow-y:auto}
+.mh{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.mt{font-family:var(--display);font-size:18px;font-weight:700;margin-bottom:6px}
+.msub{font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:16px}
+.mr{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.mr:last-of-type{border:none;margin-bottom:12px}
+.mk{font-size:13px;color:var(--text2)}
+.mv{font-size:13px;font-weight:700}
 
-/* INSTALL BANNER */
-.install-banner{background:linear-gradient(135deg,var(--teal-d),var(--teal));border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer}
-.install-banner i{font-size:24px;color:#fff}
-.install-banner-text{flex:1}
-.install-banner-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:2px}
-.install-banner-sub{font-size:11px;color:rgba(255,255,255,0.8)}
-.install-banner-btn{background:#fff;color:var(--teal);border:none;border-radius:var(--radius-xs);padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--sans)}
+/* ── SPLASH ─────────────────────────────────────────── */
+#splash{background:linear-gradient(160deg,#0d4a3a,#0f6b52,#1a8a6a);padding-bottom:0;justify-content:space-between}
+.sp-top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px 20px}
+.sp-logo{width:90px;height:90px;background:rgba(255,255,255,0.15);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:44px;color:#fff;margin-bottom:22px;border:2px solid rgba(255,255,255,0.25)}
+.sp-name{font-family:var(--display);font-size:32px;font-weight:700;color:#fff;text-align:center;margin-bottom:8px}
+.sp-tag{font-size:14px;color:rgba(255,255,255,0.72);text-align:center;line-height:1.5;max-width:270px}
+.sp-badges{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;justify-content:center}
+.sp-badge{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 12px;font-size:11px;color:rgba(255,255,255,0.88);font-weight:500;display:flex;align-items:center;gap:5px}
+.sp-bot{padding:20px 20px 44px;display:flex;flex-direction:column;gap:10px}
+.sp-btn{background:#fff;color:var(--teal-d);font-size:16px;font-weight:800;padding:17px;border-radius:var(--r);text-align:center;cursor:pointer;font-family:var(--display);border:none;width:100%}
+.sp-acc{display:flex;gap:10px}
+.sp-ao{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:12px 8px;background:rgba(255,255,255,0.1);border-radius:var(--rsm);border:1px solid rgba(255,255,255,0.15);flex:1}
+.sp-ao i{font-size:22px;color:rgba(255,255,255,0.88)}
+.sp-ao span{font-size:10px;color:rgba(255,255,255,0.65);font-weight:500}
 
-/* SCREEN HEADER */
-.screen-hdr{background:var(--white);border-bottom:1px solid var(--border);padding:14px 20px 12px;flex-shrink:0}
-.screen-hdr h2{font-family:var(--display);font-size:20px;font-weight:700;color:var(--text)}
-.screen-hdr p{font-size:13px;color:var(--text2);margin-top:2px}
+/* ── HOME ────────────────────────────────────────────── */
+#home .hero{background:linear-gradient(135deg,var(--teal-d),var(--teal));padding:24px 20px 20px}
+.hg{font-size:13px;color:rgba(255,255,255,0.75);margin-bottom:2px}
+.hn{font-family:var(--display);font-size:22px;font-weight:700;color:#fff;margin-bottom:14px}
+.ap{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.apd{width:8px;height:8px;border-radius:50%;background:#ffd166;animation:blink 1.5s infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.apt{font-size:12px;color:#fff;line-height:1.4;flex:1}
+.apt strong{color:#ffd166}
+.hbody{padding:16px}
+.qg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.qc{background:#fff;border-radius:var(--r);padding:16px;cursor:pointer;box-shadow:var(--sh);border:2px solid transparent;transition:all .2s}
+.qc:active{transform:scale(.97);border-color:var(--teal)}
+.qi{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:8px}
+.qt{font-size:13px;font-weight:700;margin-bottom:2px}
+.qs{font-size:11px;color:var(--text3)}
+.wc{background:linear-gradient(135deg,#1a4a7a,#1e6aaa);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.wt{font-family:var(--display);font-size:38px;font-weight:700;color:#fff}
+.wd{font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:10px}
+.wr{display:flex;gap:14px}
+.wi{font-size:11px;color:rgba(255,255,255,0.75);display:flex;align-items:center;gap:5px}
+.ni2{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--border)}
+.ni2:last-child{border:none;padding-bottom:0}
+.nii{width:40px;height:40px;border-radius:var(--rxs);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.nit{font-size:13px;font-weight:600;margin-bottom:2px;line-height:1.3}
+.nim{font-size:11px;color:var(--text3)}
 
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.fade-in{animation:fadeIn .3s ease}
+/* ── MARKET ──────────────────────────────────────────── */
+.frow{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0}
+.frow::-webkit-scrollbar{display:none}
+.fc{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);color:var(--text2);white-space:nowrap;background:transparent;transition:all .2s}
+.fc.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+.mbody{padding:16px}
+.pc{background:#fff;border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:var(--sh);cursor:pointer;transition:all .2s}
+.pc:active{transform:scale(.98)}
+.ph{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px}
+.pi{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.pn{font-family:var(--display);font-size:16px;font-weight:700;margin-bottom:3px}
+.pd{font-size:12px;color:var(--text2);line-height:1.4}
+.ab{height:4px;background:var(--border);border-radius:2px;margin:10px 0 4px;overflow:hidden}
+.af{height:100%;border-radius:2px}
+.al{font-size:10px;color:var(--text3)}
+.pf{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
+.pp{font-family:var(--display);font-size:20px;font-weight:700}
+.pu{font-size:10px;color:var(--text3);margin-top:1px}
+.abtn{border:none;border-radius:var(--rsm);padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;color:#fff}
+.abtn:active{transform:scale(.96)}
+.cbar{position:fixed;bottom:72px;left:16px;right:16px;background:var(--teal);color:#fff;border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shl);z-index:400;transform:translateY(20px);opacity:0;transition:all .35s;pointer-events:none}
+.cbar.show{transform:translateY(0);opacity:1;pointer-events:all}
+.ci{font-size:13px;font-weight:600}
+.ct{font-family:var(--display);font-size:16px;font-weight:700}
+.cbtn{background:#fff;color:var(--teal);border:none;border-radius:var(--rsm);padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans)}
 
-/* GARBAGE SCREEN */
-.gc-hero{background:linear-gradient(135deg,#2d5a27,#4a8f3f);padding:20px;position:relative;overflow:hidden}
-.gc-hero::before{content:'';position:absolute;right:-20px;bottom:-20px;width:120px;height:120px;background:rgba(255,255,255,0.05);border-radius:50%}
-.gc-title{font-family:var(--display);font-size:20px;font-weight:700;color:#fff;margin-bottom:4px}
-.gc-sub{font-size:13px;color:rgba(255,255,255,0.75);line-height:1.4}
-.gc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
-.gc-stat{background:rgba(255,255,255,0.12);border-radius:var(--radius-xs);padding:10px 8px;text-align:center}
-.gc-stat-val{font-family:var(--display);font-size:18px;font-weight:700;color:#fff}
-.gc-stat-lbl{font-size:9px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:.5px}
-.gc-body{padding:16px}
-.waste-type{background:var(--white);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s;border:2px solid transparent;display:flex;align-items:center;gap:14px}
-.waste-type:active{transform:scale(.98)}
-.waste-type.sel{border-color:var(--green);background:var(--green-l)}
-.waste-ico{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-.waste-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px}
-.waste-price{font-size:12px;color:var(--text3)}
-.waste-check{margin-left:auto;font-size:20px;color:var(--green);display:none}
-.waste-type.sel .waste-check{display:block}
+/* ── BOOK ────────────────────────────────────────────── */
+.bbody{padding:16px}
+.so{background:#fff;border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--sh);cursor:pointer;border:2px solid transparent;transition:all .2s}
+.so:active{transform:scale(.98)}
+.so.on{border-color:var(--teal);background:var(--teal-l)}
+.sh2{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.sic{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
+.sn{font-family:var(--display);font-size:14px;font-weight:700}
+.sp2{font-size:12px;color:var(--teal);font-weight:600;margin-top:1px}
+.sd{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px}
+.ftags{display:flex;flex-wrap:wrap;gap:6px}
+.ftag{background:var(--teal-l);color:var(--teal);border-radius:20px;padding:3px 9px;font-size:10px;font-weight:600}
+.dgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+.db{padding:10px 6px;border-radius:var(--rsm);border:1.5px solid var(--border);background:#fff;text-align:center;cursor:pointer;transition:all .2s}
+.db.on{border-color:var(--teal);background:var(--teal-l)}
+.dd{font-size:10px;color:var(--text3);margin-bottom:2px}
+.dn{font-size:16px;font-weight:700}
+.tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.tb{padding:10px 6px;border-radius:var(--rsm);border:1.5px solid var(--border);background:#fff;text-align:center;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:all .2s}
+.tb.on{border-color:var(--teal);background:var(--teal-l);color:var(--teal)}
+.bsum{background:var(--teal-l);border-radius:var(--rsm);padding:12px;margin-bottom:14px;display:none}
+.bsr{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
+.bsk{color:var(--text2)}
+.bsv{font-weight:700;color:var(--teal)}
 
-/* TRACKER */
-#tracker-screen .track-hero{background:linear-gradient(135deg,#1a3a6a,#1e5a9e);padding:20px}
-.track-title{font-family:var(--display);font-size:18px;font-weight:700;color:#fff;margin-bottom:4px}
-.track-sub{font-size:12px;color:rgba(255,255,255,0.75);margin-bottom:14px}
-.track-status{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.15);border-radius:var(--radius-sm);padding:10px 14px}
-.track-dot{width:10px;height:10px;border-radius:50%;background:#00e07a;animation:pulse2 1.5s infinite;flex-shrink:0}
-@keyframes pulse2{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.7}}
-.track-status-text{font-size:12px;color:#fff;flex:1}
-.track-eta{font-family:var(--display);font-size:14px;font-weight:700;color:#ffd166}
-#map{height:320px;border-radius:var(--radius);overflow:hidden;margin:12px 0;box-shadow:var(--shadow-lg);position:relative;z-index:1}
-.track-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.track-info-card{background:var(--white);border-radius:var(--radius-sm);padding:12px;box-shadow:var(--shadow);text-align:center}
-.track-info-val{font-family:var(--display);font-size:18px;font-weight:700;color:var(--teal);margin-bottom:2px}
-.track-info-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px}
-.track-steps{background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
-.track-step{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;position:relative}
-.track-step:not(:last-child)::after{content:'';position:absolute;left:15px;top:32px;width:2px;height:calc(100% - 10px);background:var(--border)}
-.step-circle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;z-index:1}
-.step-circle.done{background:var(--green-l);color:var(--green)}
-.step-circle.active{background:var(--teal);color:#fff;animation:pulse2 1.5s infinite}
-.step-circle.pending{background:var(--border);color:var(--text3)}
-.step-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
-.step-time{font-size:11px;color:var(--text3)}
+/* ── ALERTS ──────────────────────────────────────────── */
+.abody2{padding:16px}
+.ah{border-radius:var(--r);padding:20px;margin-bottom:14px}
+.ah.flood{background:linear-gradient(135deg,#1a3a6a,#1e5aaa)}
+.ah.heat{background:linear-gradient(135deg,#7a2a00,#cc4400)}
+.ah-i{font-size:44px;margin-bottom:8px;color:#fff}
+.ah-t{font-family:var(--display);font-size:20px;font-weight:700;color:#fff;margin-bottom:4px}
+.ah-s{font-size:13px;color:rgba(255,255,255,0.8);line-height:1.5}
+.al2{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:#fff;margin-top:10px}
+.tgrid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.ti{background:var(--teal-l);border-radius:var(--rxs);padding:10px;font-size:11px;color:var(--teal-d);font-weight:500;display:flex;align-items:flex-start;gap:6px;line-height:1.4}
+.ac{background:#fff;border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--sh);border-left:4px solid transparent}
+.ac.flood{border-left-color:var(--sky)}
+.ac.heat{border-left-color:var(--red)}
+.ac.ok{border-left-color:var(--green)}
+.ac.warn{border-left-color:var(--yellow)}
+.ach{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.act{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px}
+.actime{font-size:10px;color:var(--text3)}
+.acb{font-size:12px;color:var(--text2);line-height:1.5}
 
+/* ── GAME ────────────────────────────────────────────── */
+.gbody{padding:16px}
+.ghero{background:linear-gradient(135deg,#3a1a6a,#6a2aaa);border-radius:var(--r);padding:20px;margin-bottom:14px;text-align:center}
+.gt{font-family:var(--display);font-size:22px;font-weight:700;color:#fff;margin-bottom:4px}
+.gsub{font-size:13px;color:rgba(255,255,255,0.75);margin-bottom:14px}
+.xpw{background:rgba(255,255,255,0.15);border-radius:10px;height:10px;margin-bottom:5px;overflow:hidden}
+.xpf{height:100%;background:linear-gradient(90deg,#ffd166,#ffaa00);border-radius:10px;transition:width .5s}
+.xpl{font-size:11px;color:rgba(255,255,255,0.7);text-align:left}
+.bgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.bi{background:#fff;border-radius:var(--rsm);padding:12px 8px;text-align:center;box-shadow:var(--sh);cursor:pointer;transition:all .2s}
+.bi:active{transform:scale(.95)}
+.bic{font-size:26px;margin-bottom:4px}
+.bn{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.bi.lk{opacity:.35;filter:grayscale(1)}
+.qcard{background:#fff;border-radius:var(--r);padding:18px;box-shadow:var(--sh);margin-bottom:12px}
+.qnum{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+.qq{font-size:15px;font-weight:700;line-height:1.5;margin-bottom:14px}
+.qopts{display:flex;flex-direction:column;gap:8px}
+.qo{padding:13px 16px;border-radius:var(--rsm);border:1.5px solid var(--border);font-size:13px;color:var(--text2);cursor:pointer;font-family:var(--sans);background:#fff;text-align:left;transition:all .2s}
+.qo:active{transform:scale(.98)}
+.qo.ok{border-color:var(--green);background:var(--green-l);color:var(--green);font-weight:700}
+.qo.no{border-color:var(--red);background:var(--red-l);color:var(--red)}
+.qo.dis{pointer-events:none}
+.qfb{background:var(--teal-l);border-radius:var(--rsm);padding:12px;font-size:12px;color:var(--teal-d);line-height:1.5;margin-top:10px;display:none}
+.qfb.show{display:block}
+.lbi{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.lbi:last-child{border:none;padding-bottom:0}
+.lbr{font-family:var(--display);font-size:16px;font-weight:700;width:24px;text-align:center}
+.lbr.g{color:#ffd700}.lbr.s{color:#c0c0c0}.lbr.b{color:#cd7f32}
+.lba{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.lbn{font-size:13px;font-weight:600;flex:1}
+.lbp{font-size:12px;font-weight:700;color:var(--teal)}
+.lbme{background:var(--teal-l);border-radius:var(--rxs);padding:8px;margin:0 -4px}
+
+/* ── PROFILE ─────────────────────────────────────────── */
+.prohero{background:linear-gradient(135deg,var(--teal-d),var(--teal));padding:28px 20px 24px;text-align:center}
+.pav{width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,0.2);border:3px solid rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 10px;color:#fff}
+.pname{font-family:var(--display);font-size:18px;font-weight:700;color:#fff;margin-bottom:2px}
+.ploc{font-size:12px;color:rgba(255,255,255,0.75);display:flex;align-items:center;justify-content:center;gap:4px}
+.pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,0.15);border-radius:var(--rsm);margin-top:14px;overflow:hidden}
+.pst{background:rgba(255,255,255,0.1);padding:10px 6px;text-align:center}
+.pstv{font-family:var(--display);font-size:18px;font-weight:700;color:#fff}
+.pstl{font-size:9px;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:.5px}
+.probody{padding:16px}
+.ar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#fff;border-radius:var(--rsm);margin-bottom:8px;box-shadow:var(--sh)}
+.arl{display:flex;align-items:center;gap:12px}
+.ari{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.art{font-size:13px;font-weight:600;margin-bottom:1px}
+.ars{font-size:11px;color:var(--text3)}
+.tgl{width:48px;height:28px;background:var(--border);border-radius:14px;position:relative;cursor:pointer;transition:background .3s;flex-shrink:0}
+.tgl.on{background:var(--teal)}
+.tgl::after{content:'';position:absolute;width:22px;height:22px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform .3s;box-shadow:0 1px 4px rgba(0,0,0,0.2)}
+.tgl.on::after{transform:translateX(20px)}
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lb2{padding:12px;border-radius:var(--rsm);border:1.5px solid var(--border);background:#fff;text-align:center;cursor:pointer;transition:all .2s}
+.lb2.on{border-color:var(--teal);background:var(--teal-l)}
+.lf{font-size:20px;margin-bottom:4px}
+.ln{font-size:12px;font-weight:600}
+.mi{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#fff;border-radius:var(--rsm);margin-bottom:8px;box-shadow:var(--sh);cursor:pointer}
+.mi:active{background:var(--teal-l)}
+.mil{display:flex;align-items:center;gap:12px}
+.mii{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.mit{font-size:13px;font-weight:600}
+.mis{font-size:11px;color:var(--text3)}
+
+/* ── GARBAGE ─────────────────────────────────────────── */
+.gchero{background:linear-gradient(135deg,#2d5a27,#4a8f3f);padding:24px 20px 20px}
+.gcti{font-family:var(--display);font-size:20px;font-weight:700;color:#fff;margin-bottom:4px}
+.gcsu{font-size:13px;color:rgba(255,255,255,0.75);line-height:1.4}
+.gcst{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.gcsi{background:rgba(255,255,255,0.12);border-radius:var(--rxs);padding:10px 8px;text-align:center}
+.gcsiv{font-family:var(--display);font-size:18px;font-weight:700;color:#fff}
+.gcsil{font-size:9px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:.5px}
+.gcbody{padding:16px}
+.wt{background:#fff;border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--sh);cursor:pointer;border:2px solid transparent;display:flex;align-items:center;gap:14px;transition:all .2s}
+.wt:active{transform:scale(.98)}
+.wt.on{border-color:var(--green);background:var(--green-l)}
+.wtic{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.wtn{font-size:14px;font-weight:700;margin-bottom:2px}
+.wtp{font-size:12px;color:var(--text3)}
+.wtck{margin-left:auto;font-size:20px;color:var(--green);display:none}
+.wt.on .wtck{display:block}
+
+/* ── TRACKER ─────────────────────────────────────────── */
+.tkhero{background:linear-gradient(135deg,#1a3a6a,#1e5a9e);padding:24px 20px 20px}
+.tkti{font-family:var(--display);font-size:18px;font-weight:700;color:#fff;margin-bottom:4px}
+.tksu{font-size:12px;color:rgba(255,255,255,0.75);margin-bottom:14px}
+.tkst{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.15);border-radius:var(--rsm);padding:10px 14px}
+.tkd{width:10px;height:10px;border-radius:50%;background:#00e07a;animation:pulse2 1.5s infinite;flex-shrink:0}
+@keyframes pulse2{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
+.tkst-t{font-size:12px;color:#fff;flex:1}
+.tketa{font-family:var(--display);font-size:14px;font-weight:700;color:#ffd166}
+#map{height:300px;border-radius:var(--r);overflow:hidden;margin:12px 0;box-shadow:var(--shl)}
+.tkig{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.tkic{background:#fff;border-radius:var(--rsm);padding:12px;box-shadow:var(--sh);text-align:center}
+.tkiv{font-family:var(--display);font-size:18px;font-weight:700;color:var(--teal);margin-bottom:2px}
+.tkil{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px}
+.tkbody{padding:16px}
+.steps{background:#fff;border-radius:var(--r);padding:16px;box-shadow:var(--sh)}
+.step{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;position:relative}
+.step:not(:last-child)::after{content:'';position:absolute;left:15px;top:32px;width:2px;height:calc(100% - 8px);background:var(--border)}
+.stc{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;z-index:1}
+.stc.done{background:var(--green-l);color:var(--green)}
+.stc.act{background:var(--teal);color:#fff;animation:pulse2 1.5s infinite}
+.stc.pend{background:var(--border);color:var(--text3)}
+.stt{font-size:13px;font-weight:700;margin-bottom:2px}
+.sts{font-size:11px;color:var(--text3)}
+
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fi2{animation:fi .3s ease}
 </style>
 </head>
 <body>
 
-<!-- ── SPLASH ── -->
+<!-- SPLASH -->
 <div class="screen active" id="splash">
-</div>
-  <div class="splash-top">
-    <div class="splash-logo"><i class="fa-solid fa-droplet"></i></div>
-    <div class="splash-name">AquaHub Connect</div>
-    <div class="splash-tag">Clean water, safe sanitation and climate alerts for every community in Northern Ghana</div>
-    <div class="splash-badges">
-      <div class="splash-badge"><i class="fa-solid fa-wheelchair"></i> Accessible</div>
-      <div class="splash-badge"><i class="fa-solid fa-earth-africa"></i> Climate-Smart</div>
-      <div class="splash-badge"><i class="fa-solid fa-flag"></i> Made in Ghana</div>
+  <div class="sp-top">
+    <div class="sp-logo"><i class="fa-solid fa-droplet"></i></div>
+    <div class="sp-name">AquaHub Connect</div>
+    <div class="sp-tag">Clean water, safe sanitation and climate alerts for every community in Northern Ghana</div>
+    <div class="sp-badges">
+      <div class="sp-badge"><i class="fa-solid fa-wheelchair"></i> Accessible</div>
+      <div class="sp-badge"><i class="fa-solid fa-earth-africa"></i> Climate-Smart</div>
+      <div class="sp-badge"><i class="fa-solid fa-flag"></i> Made in Ghana</div>
     </div>
   </div>
-  <div class="splash-bottom">
-    <div class="splash-main-btn" onclick="goTo('home')">Get Started <i class="fa-solid fa-arrow-right"></i></div>
-    <div class="splash-access">
-      <div class="access-opt" onclick="enableVoice()"><i class="fa-solid fa-volume-high"></i><span>Voice Mode</span></div>
-      <div class="access-opt" onclick="enableLargeText()"><i class="fa-solid fa-text-height"></i><span>Large Text</span></div>
-      <div class="access-opt" onclick="goTo('profile-screen')"><i class="fa-solid fa-globe"></i><span>Language</span></div>
+  <div class="sp-bot">
+    <button class="sp-btn" onclick="goTo('home')">Get Started <i class="fa-solid fa-arrow-right"></i></button>
+    <div class="sp-acc">
+      <div class="sp-ao" onclick="enableVoice()"><i class="fa-solid fa-volume-high"></i><span>Voice Mode</span></div>
+      <div class="sp-ao" onclick="enableLargeText()"><i class="fa-solid fa-text-height"></i><span>Large Text</span></div>
+      <div class="sp-ao" onclick="goTo('profile-screen');setNav(5)"><i class="fa-solid fa-globe"></i><span>Language</span></div>
     </div>
   </div>
 </div>
 
-<!-- ── HOME ── -->
+<!-- HOME -->
 <div class="screen" id="home">
-</div>
-  <div class="hero" style="padding-top:52px">
-    <div class="hero-greeting">Good morning,</div>
-    <div class="hero-name" id="hero-name">Amina <i class="fa-solid fa-hand-wave"></i></div>
-    <div class="alert-pill" onclick="goTo('alerts-screen');setNav(3)">
-      <div class="alert-pill-dot"></div>
-      <div class="alert-pill-text"><strong>Flood Advisory:</strong> Risk rising in Jirapa district — tap to view details</div>
-      <i class="fa-solid fa-chevron-right" style="color:rgba(255,255,255,0.6);font-size:11px"></i>
+  <div class="hero">
+    <div class="hg">Good morning,</div>
+    <div class="hn" id="hero-name">Amina <i class="fa-solid fa-hand-wave"></i></div>
+    <div class="ap" onclick="goTo('alerts-screen');setNav(3)">
+      <div class="apd"></div>
+      <div class="apt"><strong>Flood Advisory:</strong> Risk rising in Jirapa district — tap for details</div>
+      <i class="fa-solid fa-chevron-right" style="color:rgba(255,255,255,0.5);font-size:11px"></i>
     </div>
   </div>
-  <div class="home-body">
-    <div id="install-container"></div>
-    <div class="section-label" style="margin-top:4px">Quick Actions</div>
-    <div class="quick-grid">
-      <div class="qa-card" onclick="goTo('market');setNav(1)">
-        <div class="qa-icon" style="background:var(--teal-l)"><i class="fa-solid fa-cart-shopping" style="color:var(--teal)"></i></div>
-        <div class="qa-title">Buy Products</div>
-        <div class="qa-sub">Water, Biogas, Fertilizer</div>
+  <div class="hbody">
+    <div id="install-box"></div>
+    <div class="slbl" style="margin-top:4px">Quick Actions</div>
+    <div class="qg">
+      <div class="qc" onclick="goTo('market');setNav(1)">
+        <div class="qi" style="background:var(--teal-l)"><i class="fa-solid fa-cart-shopping" style="color:var(--teal)"></i></div>
+        <div class="qt">Buy Products</div><div class="qs">Water, Biogas, Fertilizer</div>
       </div>
-      <div class="qa-card" onclick="goTo('book');setNav(2)">
-        <div class="qa-icon" style="background:var(--sky-l)"><i class="fa-solid fa-truck" style="color:var(--sky)"></i></div>
-        <div class="qa-title">Book a Service</div>
-        <div class="qa-sub">Toilet draining & more</div>
+      <div class="qc" onclick="goTo('book');setNav(2)">
+        <div class="qi" style="background:var(--sky-l)"><i class="fa-solid fa-truck" style="color:var(--sky)"></i></div>
+        <div class="qt">Book Service</div><div class="qs">Toilet draining & more</div>
       </div>
-      <div class="qa-card" onclick="goTo('alerts-screen');setNav(3)">
-        <div class="qa-icon" style="background:var(--yellow-l)"><i class="fa-solid fa-triangle-exclamation" style="color:var(--yellow)"></i></div>
-        <div class="qa-title">Climate Alerts</div>
-        <div class="qa-sub">1 active warning</div>
+      <div class="qc" onclick="goTo('alerts-screen');setNav(3)">
+        <div class="qi" style="background:var(--yellow-l)"><i class="fa-solid fa-triangle-exclamation" style="color:var(--yellow)"></i></div>
+        <div class="qt">Climate Alerts</div><div class="qs">1 active warning</div>
       </div>
-      <div class="qa-card" onclick="goTo('game-screen');setNav(4)">
-        <div class="qa-icon" style="background:var(--purple-l)"><i class="fa-solid fa-gamepad" style="color:var(--purple)"></i></div>
-        <div class="qa-title">EduGame</div>
-        <div class="qa-sub" id="xp-display">620 XP · Level 4</div>
+      <div class="qc" onclick="goTo('garbage-screen');setNav(4)">
+        <div class="qi" style="background:var(--green-l)"><i class="fa-solid fa-recycle" style="color:var(--green)"></i></div>
+        <div class="qt">Garbage Collect</div><div class="qs">Book & track live</div>
       </div>
     </div>
-    <div class="weather-card">
-      <div class="weather-temp" id="w-temp">32°C</div>
-      <div class="weather-desc" id="w-desc">Mostly clear · Tamale, N. Ghana</div>
-      <div class="weather-row">
-        <div class="weather-item"><i class="fa-solid fa-droplet"></i> <span id="w-hum">68%</span></div>
-        <div class="weather-item"><i class="fa-solid fa-wind"></i> <span id="w-wind">14 km/h</span></div>
-        <div class="weather-item"><i class="fa-solid fa-cloud-rain"></i> <span id="w-rain">40%</span></div>
+    <div class="wc">
+      <div class="wt" style="font-size:38px;font-family:var(--display);font-weight:700;color:#fff">32°C</div>
+      <div class="wd">Mostly clear · Tamale, N. Ghana</div>
+      <div class="wr">
+        <div class="wi"><i class="fa-solid fa-droplet"></i> 68% humidity</div>
+        <div class="wi"><i class="fa-solid fa-wind"></i> 14 km/h</div>
+        <div class="wi"><i class="fa-solid fa-cloud-rain"></i> 40% rain</div>
       </div>
     </div>
     <div class="card" style="padding:14px 16px">
-      <div class="section-label">Latest Updates</div>
-      <div class="news-item" id="news1">
-        <div class="news-icon" style="background:var(--teal-l)"><i class="fa-solid fa-droplet" style="color:var(--teal)"></i></div>
-        <div><div class="news-title">Clean water available — 3,240L in stock</div><div class="news-meta">AquaHub Site · 2 min ago</div></div>
-      </div>
-      <div class="news-item">
-        <div class="news-icon" style="background:var(--yellow-l)"><i class="fa-solid fa-triangle-exclamation" style="color:var(--yellow)"></i></div>
-        <div><div class="news-title">Flood risk index rising to 5/10 this week</div><div class="news-meta">Climate Monitor · 1 hr ago</div></div>
-      </div>
-      <div class="news-item">
-        <div class="news-icon" style="background:var(--purple-l)"><i class="fa-solid fa-trophy" style="color:var(--purple)"></i></div>
-        <div><div class="news-title">You earned the Water Guardian badge!</div><div class="news-meta">EduGame · Yesterday</div></div>
-      </div>
+      <div class="slbl">Latest Updates</div>
+      <div class="ni2"><div class="nii" style="background:var(--teal-l)"><i class="fa-solid fa-droplet" style="color:var(--teal)"></i></div><div><div class="nit">Clean water available — 3,240L in stock</div><div class="nim">AquaHub · 2 min ago</div></div></div>
+      <div class="ni2"><div class="nii" style="background:var(--yellow-l)"><i class="fa-solid fa-triangle-exclamation" style="color:var(--yellow)"></i></div><div><div class="nit">Flood risk index rising to 5/10 this week</div><div class="nim">Climate Monitor · 1 hr ago</div></div></div>
+      <div class="ni2"><div class="nii" style="background:var(--purple-l)"><i class="fa-solid fa-trophy" style="color:var(--purple)"></i></div><div><div class="nit">You earned the Water Guardian badge!</div><div class="nim">EduGame · Yesterday</div></div></div>
     </div>
   </div>
 </div>
 
-<!-- ── MARKET ── -->
+<!-- MARKET -->
 <div class="screen" id="market">
-</div>
-  <div class="screen-hdr"><h2>Marketplace</h2><p>Hub products for your community</p></div>
-  <div class="filter-row">
-    <div class="filter-chip sel" onclick="filterProducts('all',this)">All Products</div>
-    <div class="filter-chip" onclick="filterProducts('water',this)"><i class="fa-solid fa-droplet"></i> Water</div>
-    <div class="filter-chip" onclick="filterProducts('biogas',this)"><i class="fa-solid fa-fire"></i> Biogas</div>
-    <div class="filter-chip" onclick="filterProducts('fertilizer',this)"><i class="fa-solid fa-seedling"></i> Fertilizer</div>
+  <div class="shdr"><h2>Marketplace</h2><p>Hub products for your community</p></div>
+  <div class="frow">
+    <div class="fc on" onclick="filterP('all',this)">All</div>
+    <div class="fc" onclick="filterP('water',this)"><i class="fa-solid fa-droplet"></i> Water</div>
+    <div class="fc" onclick="filterP('biogas',this)"><i class="fa-solid fa-fire"></i> Biogas</div>
+    <div class="fc" onclick="filterP('fertilizer',this)"><i class="fa-solid fa-seedling"></i> Fertilizer</div>
   </div>
-  <div class="market-body" id="market-body"></div>
-  <div class="cart-bar" id="cart-bar">
-    <div><div class="cart-info" id="cart-info">0 items</div><div class="cart-total" id="cart-total">$0.00</div></div>
-    <button class="cart-checkout" onclick="checkout()">Checkout <i class="fa-solid fa-arrow-right"></i></button>
+  <div class="mbody" id="market-body"></div>
+  <div class="cbar" id="cart-bar">
+    <div><div class="ci" id="cart-info">0 items</div><div class="ct" id="cart-total">$0.00</div></div>
+    <button class="cbtn" onclick="checkout()">Checkout <i class="fa-solid fa-arrow-right"></i></button>
   </div>
 </div>
 
-<!-- ── BOOK ── -->
+<!-- BOOK -->
 <div class="screen" id="book">
-</div>
-  <div class="screen-hdr"><h2>Book a Service</h2><p>We come to you — licensed & affordable</p></div>
-  <div class="book-body">
-    <div class="section-label">Choose Service</div>
-    <div class="service-opt sel" id="svc-0" onclick="selectSvc(0)">
-      <div class="service-hdr">
-        <div class="service-ico" style="background:var(--sky-l)"><i class="fa-solid fa-truck" style="color:var(--sky)"></i></div>
-        <div><div class="service-name">Toilet / Pit Draining</div><div class="service-price">From $8.00 per visit</div></div>
-      </div>
-      <div class="service-desc">Our vacuum truck team collects fecal sludge from your toilet or pit latrine and safely transports it to the AquaHub for treatment.</div>
-      <div class="feat-tags"><span class="feat-tag">Licensed Operators</span><span class="feat-tag">Same-Week</span><span class="feat-tag">PWD Accessible</span></div>
+  <div class="shdr"><h2>Book a Service</h2><p>We come to you — licensed & affordable</p></div>
+  <div class="bbody">
+    <div class="slbl">Choose Service</div>
+    <div class="so on" id="svc0" onclick="selSvc(0)">
+      <div class="sh2"><div class="sic" style="background:var(--sky-l)"><i class="fa-solid fa-truck" style="color:var(--sky)"></i></div><div><div class="sn">Toilet / Pit Draining</div><div class="sp2">From $8.00 per visit</div></div></div>
+      <div class="sd">Our vacuum truck team collects fecal sludge from your toilet or pit latrine and safely transports it to the AquaHub for treatment. No mess, no odour.</div>
+      <div class="ftags"><span class="ftag">Licensed</span><span class="ftag">Same-Week</span><span class="ftag">PWD Friendly</span></div>
     </div>
-    <div class="service-opt" id="svc-1" onclick="selectSvc(1)">
-      <div class="service-hdr">
-        <div class="service-ico" style="background:var(--green-l)"><i class="fa-solid fa-wrench" style="color:var(--green)"></i></div>
-        <div><div class="service-name">Sanitation Assessment</div><div class="service-price">Free — NGO Supported</div></div>
-      </div>
-      <div class="service-desc">A trained officer visits your home to assess sanitation needs and recommend the right solution for your household.</div>
-      <div class="feat-tags"><span class="feat-tag">Free of Charge</span><span class="feat-tag">Wheelchair Friendly</span></div>
+    <div class="so" id="svc1" onclick="selSvc(1)">
+      <div class="sh2"><div class="sic" style="background:var(--green-l)"><i class="fa-solid fa-wrench" style="color:var(--green)"></i></div><div><div class="sn">Sanitation Assessment</div><div class="sp2">Free — NGO Supported</div></div></div>
+      <div class="sd">A trained officer visits your home to assess sanitation needs and recommend the right solution.</div>
+      <div class="ftags"><span class="ftag">Free</span><span class="ftag">Wheelchair Friendly</span></div>
     </div>
     <div class="card">
-      <div class="section-label">Your Details</div>
-      <div class="form-group">
-        <label class="form-label">Full Name</label>
-        <input class="form-input" id="book-name" placeholder="e.g. Amina Issahaku"/>
+      <div class="slbl">Your Details</div>
+      <div class="fg"><label class="fl">Full Name</label><input class="fi" id="bname" placeholder="e.g. Amina Issahaku"/></div>
+      <div class="fg"><label class="fl">Phone Number</label><input class="fi" id="bphone" placeholder="0244 000 000" type="tel"/></div>
+      <div class="fg"><label class="fl">Location</label><input class="fi" id="bloc" placeholder="e.g. Lang-Oullo, Jirapa District"/></div>
+      <div class="fg"><label class="fl">Select Date</label><div class="dgrid" id="dgrid"></div></div>
+      <div class="fg"><label class="fl">Preferred Time</label><div class="tgrid" id="tgrid"></div></div>
+      <div class="fg"><label class="fl">Special Requirements</label><input class="fi" id="bspecial" placeholder="e.g. wheelchair access, elderly household..."/></div>
+      <div class="bsum" id="bsum">
+        <div class="slbl" style="margin-bottom:8px">Summary</div>
+        <div class="bsr"><span class="bsk">Service</span><span class="bsv" id="bs-svc">—</span></div>
+        <div class="bsr"><span class="bsk">Date</span><span class="bsv" id="bs-date">—</span></div>
+        <div class="bsr"><span class="bsk">Time</span><span class="bsv" id="bs-time">—</span></div>
+        <div class="bsr"><span class="bsk">Cost</span><span class="bsv" id="bs-cost">—</span></div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Phone Number</label>
-        <input class="form-input" id="book-phone" placeholder="e.g. 0244 000 000" type="tel"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Location / Address</label>
-        <input class="form-input" id="book-loc" placeholder="e.g. Lang-Oullo, Jirapa District"/>
-      </div>
-      <div class="section-label" style="margin-top:4px">Select Date</div>
-      <div class="date-grid" id="date-grid"></div>
-      <div class="section-label" style="margin-top:14px">Preferred Time</div>
-      <div class="time-grid" id="time-grid"></div>
-      <div class="form-group" style="margin-top:14px">
-        <label class="form-label">Special Requirements</label>
-        <input class="form-input" id="book-special" placeholder="e.g. wheelchair access, elderly household..."/>
-      </div>
-      <div class="booking-summary" id="book-summary" style="display:none">
-        <div class="section-label" style="margin-bottom:8px">Booking Summary</div>
-        <div class="bs-row"><span class="bs-key">Service</span><span class="bs-val" id="bs-svc">—</span></div>
-        <div class="bs-row"><span class="bs-key">Date</span><span class="bs-val" id="bs-date">—</span></div>
-        <div class="bs-row"><span class="bs-key">Time</span><span class="bs-val" id="bs-time">—</span></div>
-        <div class="bs-row"><span class="bs-key">Cost</span><span class="bs-val" id="bs-cost">—</span></div>
-      </div>
-      <button class="btn btn-primary" onclick="submitBooking()"><i class="fa-solid fa-calendar-check"></i> Confirm Booking</button>
+      <button class="btn btn-p" onclick="submitBooking()"><i class="fa-solid fa-calendar-check"></i> Confirm Booking</button>
     </div>
   </div>
 </div>
 
-<!-- ── ALERTS ── -->
+<!-- ALERTS -->
 <div class="screen" id="alerts-screen">
-</div>
-  <div class="screen-hdr"><h2>Climate Alerts</h2><p>Real-time warnings for your area</p></div>
-  <div class="alerts-body">
-    <div class="alert-hero flood">
-      <div class="alert-hero-icon"><i class="fa-solid fa-water"></i></div>
-      <div class="alert-hero-title">Flood Advisory — Jirapa District</div>
-      <div class="alert-hero-sub">River levels rising. Risk index 5/10 and increasing. Wet season approaching. Prepare now.</div>
-      <div class="alert-level"><i class="fa-solid fa-triangle-exclamation"></i> MODERATE RISK</div>
+  <div class="shdr"><h2>Climate Alerts</h2><p>Real-time warnings for your area</p></div>
+  <div class="abody2">
+    <div class="ah flood">
+      <div class="ah-i"><i class="fa-solid fa-water"></i></div>
+      <div class="ah-t">Flood Advisory — Jirapa District</div>
+      <div class="ah-s">River levels rising. Risk index 5/10 and increasing. Wet season approaching. Prepare now.</div>
+      <div class="al2"><i class="fa-solid fa-triangle-exclamation"></i> MODERATE RISK</div>
     </div>
-    <div class="section-label">Protective Tips</div>
-    <div class="tips-grid">
-      <div class="tip-item"><i class="fa-solid fa-house" style="flex-shrink:0"></i>Move valuables to higher ground</div>
-      <div class="tip-item"><i class="fa-solid fa-droplet" style="flex-shrink:0"></i>Store clean drinking water</div>
-      <div class="tip-item"><i class="fa-solid fa-mobile-screen" style="flex-shrink:0"></i>Keep your phone charged</div>
-      <div class="tip-item"><i class="fa-solid fa-door-open" style="flex-shrink:0"></i>Know your evacuation route</div>
+    <div class="slbl">Protective Tips</div>
+    <div class="tgrid2">
+      <div class="ti"><i class="fa-solid fa-house" style="flex-shrink:0"></i>Move valuables to higher ground</div>
+      <div class="ti"><i class="fa-solid fa-droplet" style="flex-shrink:0"></i>Store clean drinking water</div>
+      <div class="ti"><i class="fa-solid fa-mobile-screen" style="flex-shrink:0"></i>Keep your phone charged</div>
+      <div class="ti"><i class="fa-solid fa-door-open" style="flex-shrink:0"></i>Know your evacuation route</div>
     </div>
-    <div class="section-label">All Alerts</div>
-    <div class="alert-card flood">
-      <div class="alert-card-hdr">
-        <div class="alert-card-title"><i class="fa-solid fa-water" style="color:var(--sky)"></i> Flood Risk Rising</div>
-        <div class="alert-card-time">2 hrs ago</div>
-      </div>
-      <div class="alert-card-body">White Volta river level increased 0.8m in 24h. Communities within 2km of riverbanks advised to monitor closely and prepare for possible flooding.</div>
-    </div>
-    <div class="alert-card heat">
-      <div class="alert-card-hdr">
-        <div class="alert-card-title"><i class="fa-solid fa-temperature-high" style="color:var(--red)"></i> Heat Advisory</div>
-        <div class="alert-card-time">Yesterday</div>
-      </div>
-      <div class="alert-card-body">Temperatures expected to reach 38°C Thursday–Friday. Elderly people and children at highest risk. Stay hydrated. Avoid midday sun exposure.</div>
-    </div>
-    <div class="alert-card ok">
-      <div class="alert-card-hdr">
-        <div class="alert-card-title"><i class="fa-solid fa-circle-check" style="color:var(--green)"></i> AquaHub Hub Status</div>
-        <div class="alert-card-time">Live</div>
-      </div>
-      <div class="alert-card-body">Your local AquaHub is fully operational. Elevated platform protection active. Safe clean water available for collection and purchase today.</div>
-    </div>
-    <div class="alert-card warn">
-      <div class="alert-card-hdr">
-        <div class="alert-card-title"><i class="fa-solid fa-cloud-rain" style="color:var(--yellow)"></i> 3-Day Forecast</div>
-        <div class="alert-card-time">Updated now</div>
-      </div>
-      <div class="alert-card-body">Mon: Partly cloudy 31°C · Tue: Heavy rain expected 28°C · Wed: Showers, flooding possible 27°C. Prepare drainage channels now.</div>
-    </div>
+    <div class="slbl">All Alerts</div>
+    <div class="ac flood"><div class="ach"><div class="act"><i class="fa-solid fa-water" style="color:var(--sky)"></i> Flood Risk Rising</div><div class="actime">2 hrs ago</div></div><div class="acb">White Volta river level increased 0.8m in 24h. Communities within 2km of riverbanks advised to monitor closely.</div></div>
+    <div class="ac heat"><div class="ach"><div class="act"><i class="fa-solid fa-temperature-high" style="color:var(--red)"></i> Heat Advisory</div><div class="actime">Yesterday</div></div><div class="acb">Temperatures expected to reach 38°C Thursday–Friday. Elderly and children at highest risk. Stay hydrated.</div></div>
+    <div class="ac ok"><div class="ach"><div class="act"><i class="fa-solid fa-circle-check" style="color:var(--green)"></i> AquaHub Status</div><div class="actime">Live</div></div><div class="acb">Your local AquaHub is fully operational. Elevated platform protection active. Clean water available today.</div></div>
+    <div class="ac warn"><div class="ach"><div class="act"><i class="fa-solid fa-cloud-rain" style="color:var(--yellow)"></i> 3-Day Forecast</div><div class="actime">Now</div></div><div class="acb">Mon: Partly cloudy 31°C · Tue: Heavy rain 28°C · Wed: Showers, flooding possible 27°C.</div></div>
   </div>
 </div>
 
-<!-- ── GAME ── -->
+<!-- GAME -->
 <div class="screen" id="game-screen">
-</div>
-  <div class="screen-hdr"><h2>Climate Quest</h2><p>Learn. Play. Protect your community.</p></div>
-  <div class="game-body">
-    <div class="game-hero">
-      <div class="game-title"><i class="fa-solid fa-gamepad"></i> Climate Quest</div>
-      <div class="game-sub">Learn. Play. Protect your community.</div>
-      <div class="xp-wrap"><div class="xp-fill" id="xp-bar" style="width:62%"></div></div>
-      <div class="xp-label" id="xp-lbl">620 / 1000 XP · Level 4 — Water Defender</div>
+  <div class="shdr"><h2>Climate Quest</h2><p>Learn. Play. Protect your community.</p></div>
+  <div class="gbody">
+    <div class="ghero">
+      <div class="gt"><i class="fa-solid fa-gamepad"></i> Climate Quest</div>
+      <div class="gsub">Answer questions. Earn XP. Unlock badges.</div>
+      <div class="xpw"><div class="xpf" id="xp-bar" style="width:62%"></div></div>
+      <div class="xpl" id="xp-lbl">620 / 1000 XP · Level 4 — Water Defender</div>
     </div>
-    <div class="section-label">Your Badges</div>
-    <div class="badges-grid">
-      <div class="badge-item" onclick="toast('Flood Hero — Earned for completing flood module!','fa-medal')">
-        <div class="badge-ico"><i class="fa-solid fa-medal" style="color:#ffd700"></i></div>
-        <div class="badge-nm">Flood Hero</div>
-      </div>
-      <div class="badge-item" onclick="toast('Water Guardian — Earned for 5 correct answers!','fa-droplet')">
-        <div class="badge-ico"><i class="fa-solid fa-droplet" style="color:var(--sky)"></i></div>
-        <div class="badge-nm">Water Guard</div>
-      </div>
-      <div class="badge-item locked">
-        <div class="badge-ico"><i class="fa-solid fa-seedling" style="color:var(--green)"></i></div>
-        <div class="badge-nm">Green Star</div>
-      </div>
-      <div class="badge-item locked">
-        <div class="badge-ico"><i class="fa-solid fa-trophy" style="color:#ffd700"></i></div>
-        <div class="badge-nm">Champion</div>
-      </div>
+    <div class="slbl">Your Badges</div>
+    <div class="bgrid">
+      <div class="bi" onclick="toast('Flood Hero — Earned for flood module!','fa-medal')"><div class="bic"><i class="fa-solid fa-medal" style="color:#ffd700"></i></div><div class="bn">Flood Hero</div></div>
+      <div class="bi" onclick="toast('Water Guardian — 5 correct answers!','fa-droplet')"><div class="bic"><i class="fa-solid fa-droplet" style="color:var(--sky)"></i></div><div class="bn">Water Guard</div></div>
+      <div class="bi lk"><div class="bic"><i class="fa-solid fa-seedling" style="color:var(--green)"></i></div><div class="bn">Green Star</div></div>
+      <div class="bi lk"><div class="bic"><i class="fa-solid fa-trophy" style="color:#ffd700"></i></div><div class="bn">Champion</div></div>
     </div>
-    <div class="section-label">Daily Challenge</div>
-    <div id="quiz-container"></div>
-    <div class="section-label">Leaderboard</div>
+    <div class="slbl">Daily Challenge</div>
+    <div id="quiz-box"></div>
+    <div class="slbl">Leaderboard</div>
     <div class="card" style="padding:14px 16px">
-      <div class="lb-item">
-        <div class="lb-rank gold">1</div>
-        <div class="lb-avatar" style="background:var(--teal-l)"><i class="fa-solid fa-user" style="color:var(--teal)"></i></div>
-        <div class="lb-name">Fatima K.</div><div class="lb-pts">1,240 XP</div>
-      </div>
-      <div class="lb-item">
-        <div class="lb-rank silver">2</div>
-        <div class="lb-avatar" style="background:var(--sky-l)"><i class="fa-solid fa-user" style="color:var(--sky)"></i></div>
-        <div class="lb-name">Issah M.</div><div class="lb-pts">980 XP</div>
-      </div>
-      <div class="lb-item">
-        <div class="lb-rank bronze">3</div>
-        <div class="lb-avatar" style="background:var(--earth-l)"><i class="fa-solid fa-user" style="color:var(--earth)"></i></div>
-        <div class="lb-name">Alhassan B.</div><div class="lb-pts">750 XP</div>
-      </div>
-      <div class="lb-item lb-you">
-        <div class="lb-rank" style="color:var(--teal)">4</div>
-        <div class="lb-avatar" style="background:var(--teal-l)"><i class="fa-solid fa-user" style="color:var(--teal)"></i></div>
-        <div class="lb-name" style="color:var(--teal);font-weight:700">You — Amina</div>
-        <div class="lb-pts" id="my-pts">620 XP</div>
-      </div>
+      <div class="lbi"><div class="lbr g">1</div><div class="lba" style="background:var(--teal-l)"><i class="fa-solid fa-user" style="color:var(--teal)"></i></div><div class="lbn">Fatima K.</div><div class="lbp">1,240 XP</div></div>
+      <div class="lbi"><div class="lbr s">2</div><div class="lba" style="background:var(--sky-l)"><i class="fa-solid fa-user" style="color:var(--sky)"></i></div><div class="lbn">Issah M.</div><div class="lbp">980 XP</div></div>
+      <div class="lbi"><div class="lbr b">3</div><div class="lba" style="background:var(--earth-l)"><i class="fa-solid fa-user" style="color:var(--earth)"></i></div><div class="lbn">Alhassan B.</div><div class="lbp">750 XP</div></div>
+      <div class="lbi lbme"><div class="lbr" style="color:var(--teal)">4</div><div class="lba" style="background:var(--teal-l)"><i class="fa-solid fa-user" style="color:var(--teal)"></i></div><div class="lbn" style="color:var(--teal);font-weight:700">You — Amina</div><div class="lbp" id="my-xp">620 XP</div></div>
     </div>
   </div>
 </div>
 
-<!-- ── PROFILE ── -->
-<div class="screen" id="profile-screen">
-</div>
-  <div class="profile-hero" style="padding-top:52px">
-    <div class="profile-avatar"><i class="fa-solid fa-user"></i></div>
-    <div class="profile-name" id="profile-name">Amina Issahaku</div>
-    <div class="profile-loc"><i class="fa-solid fa-location-dot"></i> Lang-Oullo, Jirapa District</div>
-    <div class="profile-stats">
-      <div class="pstat"><div class="pstat-val" id="ps-orders">3</div><div class="pstat-lbl">Orders</div></div>
-      <div class="pstat"><div class="pstat-val" id="ps-xp">620</div><div class="pstat-lbl">Game XP</div></div>
-      <div class="pstat"><div class="pstat-val">2</div><div class="pstat-lbl">Badges</div></div>
-    </div>
-  </div>
-  <div class="profile-body">
-    <div class="section-label">Accessibility</div>
-    <div class="access-row">
-      <div class="access-row-left">
-        <div class="access-row-ico" style="background:var(--teal-l)"><i class="fa-solid fa-volume-high" style="color:var(--teal)"></i></div>
-        <div><div class="access-row-title">Voice Assistance</div><div class="access-row-sub">Read content aloud</div></div>
-      </div>
-      <div class="toggle on" id="tgl-voice" onclick="toggleAccessibility('voice',this)"></div>
-    </div>
-    <div class="access-row">
-      <div class="access-row-left">
-        <div class="access-row-ico" style="background:var(--sky-l)"><i class="fa-solid fa-text-height" style="color:var(--sky)"></i></div>
-        <div><div class="access-row-title">Large Text</div><div class="access-row-sub">Increase font size</div></div>
-      </div>
-      <div class="toggle" id="tgl-text" onclick="toggleAccessibility('text',this)"></div>
-    </div>
-    <div class="access-row">
-      <div class="access-row-left">
-        <div class="access-row-ico" style="background:var(--purple-l)"><i class="fa-solid fa-palette" style="color:var(--purple)"></i></div>
-        <div><div class="access-row-title">High Contrast</div><div class="access-row-sub">Stronger color contrast</div></div>
-      </div>
-      <div class="toggle" id="tgl-contrast" onclick="toggleAccessibility('contrast',this)"></div>
-    </div>
-    <div class="access-row">
-      <div class="access-row-left">
-        <div class="access-row-ico" style="background:var(--earth-l)"><i class="fa-solid fa-mobile-screen-button" style="color:var(--earth)"></i></div>
-        <div><div class="access-row-title">Haptic Feedback</div><div class="access-row-sub">Vibration on actions</div></div>
-      </div>
-      <div class="toggle on" id="tgl-haptic" onclick="toggleAccessibility('haptic',this)"></div>
-    </div>
-    <div class="section-label" style="margin-top:4px">Language</div>
-    <div class="lang-grid" id="lang-grid">
-      <div class="lang-btn sel" onclick="setLang('English',this)"><div class="lang-flag">🇬🇧</div><div class="lang-name">English</div></div>
-      <div class="lang-btn" onclick="setLang('Dagbani',this)"><div class="lang-flag">🇬🇭</div><div class="lang-name">Dagbani</div></div>
-      <div class="lang-btn" onclick="setLang('Twi',this)"><div class="lang-flag">🇬🇭</div><div class="lang-name">Twi</div></div>
-      <div class="lang-btn" onclick="setLang('Hausa',this)"><div class="lang-flag">🇬🇭</div><div class="lang-name">Hausa</div></div>
-    </div>
-    <div class="section-label" style="margin-top:16px">Account</div>
-    <div class="menu-item" onclick="editProfile()">
-      <div class="menu-left">
-        <div class="menu-ico" style="background:var(--teal-l)"><i class="fa-solid fa-pen" style="color:var(--teal)"></i></div>
-        <div><div class="menu-title">Edit Profile</div><div class="menu-sub">Update your name and location</div></div>
-      </div>
-      <i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>
-    </div>
-    <div class="menu-item" onclick="goTo('game-screen');setNav(4)">
-      <div class="menu-left">
-        <div class="menu-ico" style="background:var(--purple-l)"><i class="fa-solid fa-gamepad" style="color:var(--purple)"></i></div>
-        <div><div class="menu-title">My Game History</div><div class="menu-sub" id="profile-xp">620 XP · Level 4</div></div>
-      </div>
-      <i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>
-    </div>
-    <div class="menu-item" onclick="toast('Order history coming soon','fa-clock')">
-      <div class="menu-left">
-        <div class="menu-ico" style="background:var(--earth-l)"><i class="fa-solid fa-receipt" style="color:var(--earth)"></i></div>
-        <div><div class="menu-title">Order History</div><div class="menu-sub" id="profile-orders">3 orders placed</div></div>
-      </div>
-      <i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>
-    </div>
-  </div>
-</div>
-
-
-<!-- ── GARBAGE COLLECTOR ── -->
+<!-- GARBAGE -->
 <div class="screen" id="garbage-screen">
-</div>
-  <div class="gc-hero" style="padding-top:52px">
-    <div class="gc-title"><i class="fa-solid fa-recycle"></i> Garbage Collection</div>
-    <div class="gc-sub">Book a collector and track them live to your door</div>
-    <div class="gc-stats">
-      <div class="gc-stat"><div class="gc-stat-val">4</div><div class="gc-stat-lbl">Collectors Active</div></div>
-      <div class="gc-stat"><div class="gc-stat-val">12 min</div><div class="gc-stat-lbl">Avg Wait</div></div>
-      <div class="gc-stat"><div class="gc-stat-val">$2</div><div class="gc-stat-lbl">From</div></div>
+  <div class="gchero">
+    <div class="gcti"><i class="fa-solid fa-recycle"></i> Garbage Collection</div>
+    <div class="gcsu">Book a collector and track them live to your door</div>
+    <div class="gcst">
+      <div class="gcsi"><div class="gcsiv">4</div><div class="gcsil">Active Now</div></div>
+      <div class="gcsi"><div class="gcsiv">12 min</div><div class="gcsil">Avg Wait</div></div>
+      <div class="gcsi"><div class="gcsiv">$2</div><div class="gcsil">From</div></div>
     </div>
   </div>
-  <div class="gc-body">
-    <div class="section-label">Select Waste Type</div>
-    <div class="waste-type sel" id="wt-0" onclick="selectWaste(0)">
-      <div class="waste-ico" style="background:#e8f7ee"><i class="fa-solid fa-trash" style="color:var(--green)"></i></div>
-      <div><div class="waste-name">General Household Waste</div><div class="waste-price">From $2.00 per pickup</div></div>
-      <i class="fa-solid fa-circle-check waste-check"></i>
-    </div>
-    <div class="waste-type" id="wt-1" onclick="selectWaste(1)">
-      <div class="waste-ico" style="background:#e8f3fc"><i class="fa-solid fa-bottle-water" style="color:var(--sky)"></i></div>
-      <div><div class="waste-name">Recyclables (Plastic, Glass, Cans)</div><div class="waste-price">From $1.50 per pickup</div></div>
-      <i class="fa-solid fa-circle-check waste-check"></i>
-    </div>
-    <div class="waste-type" id="wt-2" onclick="selectWaste(2)">
-      <div class="waste-ico" style="background:#fdf3e7"><i class="fa-solid fa-leaf" style="color:var(--earth)"></i></div>
-      <div><div class="waste-name">Organic / Food Waste</div><div class="waste-price">From $1.00 per pickup</div></div>
-      <i class="fa-solid fa-circle-check waste-check"></i>
-    </div>
-    <div class="waste-type" id="wt-3" onclick="selectWaste(3)">
-      <div class="waste-ico" style="background:var(--red-l)"><i class="fa-solid fa-biohazard" style="color:var(--red)"></i></div>
-      <div><div class="waste-name">Hazardous / Medical Waste</div><div class="waste-price">From $5.00 per pickup</div></div>
-      <i class="fa-solid fa-circle-check waste-check"></i>
-    </div>
+  <div class="gcbody">
+    <div class="slbl">Waste Type</div>
+    <div class="wt on" id="wt0" onclick="selWaste(0)"><div class="wtic" style="background:var(--green-l)"><i class="fa-solid fa-trash" style="color:var(--green)"></i></div><div><div class="wtn">General Household Waste</div><div class="wtp">From $2.00 per pickup</div></div><i class="fa-solid fa-circle-check wtck"></i></div>
+    <div class="wt" id="wt1" onclick="selWaste(1)"><div class="wtic" style="background:var(--sky-l)"><i class="fa-solid fa-bottle-water" style="color:var(--sky)"></i></div><div><div class="wtn">Recyclables (Plastic, Glass, Cans)</div><div class="wtp">From $1.50 per pickup</div></div><i class="fa-solid fa-circle-check wtck"></i></div>
+    <div class="wt" id="wt2" onclick="selWaste(2)"><div class="wtic" style="background:var(--earth-l)"><i class="fa-solid fa-leaf" style="color:var(--earth)"></i></div><div><div class="wtn">Organic / Food Waste</div><div class="wtp">From $1.00 per pickup</div></div><i class="fa-solid fa-circle-check wtck"></i></div>
+    <div class="wt" id="wt3" onclick="selWaste(3)"><div class="wtic" style="background:var(--red-l)"><i class="fa-solid fa-biohazard" style="color:var(--red)"></i></div><div><div class="wtn">Hazardous / Medical Waste</div><div class="wtp">From $5.00 per pickup</div></div><i class="fa-solid fa-circle-check wtck"></i></div>
     <div class="card" style="margin-top:4px">
-      <div class="section-label">Your Details</div>
-      <div class="form-group">
-        <label class="form-label">Full Name</label>
-        <input class="form-input" id="gc-name" placeholder="e.g. Amina Issahaku"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Phone Number</label>
-        <input class="form-input" id="gc-phone" placeholder="0244 000 000" type="tel"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Pickup Location</label>
-        <input class="form-input" id="gc-loc" placeholder="e.g. House 12, Lang-Oullo"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Schedule</label>
-        <select class="form-select" id="gc-schedule">
+      <div class="slbl">Your Details</div>
+      <div class="fg"><label class="fl">Full Name</label><input class="fi" id="gcname" placeholder="e.g. Amina Issahaku"/></div>
+      <div class="fg"><label class="fl">Phone Number</label><input class="fi" id="gcphone" placeholder="0244 000 000" type="tel"/></div>
+      <div class="fg"><label class="fl">Pickup Location</label><input class="fi" id="gcloc" placeholder="e.g. House 12, Lang-Oullo"/></div>
+      <div class="fg"><label class="fl">Schedule</label>
+        <select class="fsel" id="gcsched">
           <option>Today — As soon as possible</option>
           <option>Today — Morning (8AM–12PM)</option>
           <option>Today — Afternoon (12PM–5PM)</option>
@@ -746,663 +528,446 @@ body{display:flex;flex-direction:column}
           <option>Weekly recurring pickup</option>
         </select>
       </div>
-      <div class="form-group">
-        <label class="form-label">Special Notes</label>
-        <input class="form-input" id="gc-notes" placeholder="e.g. large amount, elderly household, gate code..."/>
-      </div>
-      <button class="btn btn-primary" onclick="bookGarbage()" style="background:#2d7a27"><i class="fa-solid fa-recycle"></i> Book Collector</button>
+      <div class="fg"><label class="fl">Special Notes</label><input class="fi" id="gcnotes" placeholder="e.g. large amount, elderly household..."/></div>
+      <button class="btn btn-p" style="background:#2d7a27" onclick="bookGarbage()"><i class="fa-solid fa-recycle"></i> Book Collector</button>
     </div>
   </div>
 </div>
 
-<!-- ── TRACKER ── -->
+<!-- TRACKER -->
 <div class="screen" id="tracker-screen">
-</div>
-  <div class="track-hero" style="padding-top:52px">
-    <div class="track-title"><i class="fa-solid fa-location-dot"></i> Live Collector Tracking</div>
-    <div class="track-sub">Your collector is on the way — track them in real time</div>
-    <div class="track-status">
-      <div class="track-dot"></div>
-      <div class="track-status-text"><strong id="collector-name">Kwame A.</strong> is heading to your location</div>
-      <div class="track-eta">ETA <span id="eta-display">12 min</span></div>
+  <div class="tkhero">
+    <div class="tkti"><i class="fa-solid fa-location-dot"></i> Live Collector Tracking</div>
+    <div class="tksu">Your collector is on the way — track them in real time</div>
+    <div class="tkst">
+      <div class="tkd"></div>
+      <div class="tkst-t"><strong id="col-name">Kwame A.</strong> is heading to your location</div>
+      <div class="tketa">ETA <span id="eta1">12 min</span></div>
     </div>
   </div>
-  <div style="padding:16px;padding-top:12px">
+  <div class="tkbody">
     <div id="map"></div>
-    <div class="track-info-grid">
-      <div class="track-info-card">
-        <div class="track-info-val" id="track-dist">2.4 km</div>
-        <div class="track-info-lbl">Distance Away</div>
-      </div>
-      <div class="track-info-card">
-        <div class="track-info-val" id="track-eta2">12 min</div>
-        <div class="track-info-lbl">Estimated Arrival</div>
-      </div>
-      <div class="track-info-card">
-        <div class="track-info-val" id="track-speed">28 km/h</div>
-        <div class="track-info-lbl">Collector Speed</div>
-      </div>
-      <div class="track-info-card">
-        <div class="track-info-val" style="color:var(--green)" id="track-status-val">En Route</div>
-        <div class="track-info-lbl">Status</div>
-      </div>
+    <div class="tkig">
+      <div class="tkic"><div class="tkiv" id="tk-dist">2.4 km</div><div class="tkil">Distance Away</div></div>
+      <div class="tkic"><div class="tkiv" id="tk-eta">12 min</div><div class="tkil">ETA</div></div>
+      <div class="tkic"><div class="tkiv" id="tk-spd">28 km/h</div><div class="tkil">Speed</div></div>
+      <div class="tkic"><div class="tkiv" id="tk-st" style="color:var(--green)">En Route</div><div class="tkil">Status</div></div>
     </div>
-    <div class="track-steps">
-      <div class="section-label">Collection Progress</div>
-      <div class="track-step">
-        <div class="step-circle done"><i class="fa-solid fa-check"></i></div>
-        <div><div class="step-title">Booking Confirmed</div><div class="step-time" id="step-time-1">Just now</div></div>
-      </div>
-      <div class="track-step">
-        <div class="step-circle active"><i class="fa-solid fa-truck"></i></div>
-        <div><div class="step-title">Collector En Route</div><div class="step-time">Kwame A. is heading to you</div></div>
-      </div>
-      <div class="track-step">
-        <div class="step-circle pending"><i class="fa-solid fa-house"></i></div>
-        <div><div class="step-title">Arrived at Location</div><div class="step-time" id="step-time-3">ETA <span id="step-eta">12 min</span></div></div>
-      </div>
-      <div class="track-step">
-        <div class="step-circle pending"><i class="fa-solid fa-recycle"></i></div>
-        <div><div class="step-title">Waste Collected</div><div class="step-time">Pending</div></div>
-      </div>
-      <div class="track-step">
-        <div class="step-circle pending"><i class="fa-solid fa-circle-check"></i></div>
-        <div><div class="step-title">Job Complete</div><div class="step-time">Pending</div></div>
-      </div>
+    <div class="steps">
+      <div class="slbl">Collection Progress</div>
+      <div class="step"><div class="stc done"><i class="fa-solid fa-check"></i></div><div><div class="stt">Booking Confirmed</div><div class="sts">Just now</div></div></div>
+      <div class="step"><div class="stc act" id="step2"><i class="fa-solid fa-truck"></i></div><div><div class="stt">Collector En Route</div><div class="sts">Kwame A. is heading to you</div></div></div>
+      <div class="step"><div class="stc pend" id="step3"><i class="fa-solid fa-house"></i></div><div><div class="stt">Arrived at Location</div><div class="sts">ETA <span id="eta2">12 min</span></div></div></div>
+      <div class="step"><div class="stc pend" id="step4"><i class="fa-solid fa-recycle"></i></div><div><div class="stt">Waste Collected</div><div class="sts">Pending</div></div></div>
+      <div class="step"><div class="stc pend" id="step5"><i class="fa-solid fa-circle-check"></i></div><div><div class="stt">Job Complete</div><div class="sts">Pending</div></div></div>
     </div>
-    <button class="btn btn-outline" style="margin-top:12px" onclick="cancelTracking()"><i class="fa-solid fa-phone"></i> Call Collector</button>
+    <button class="btn btn-o" style="margin-top:12px" onclick="toast('Calling Kwame A. — +233 24 000 0000','fa-phone')"><i class="fa-solid fa-phone"></i> Call Collector</button>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div class="screen" id="profile-screen">
+  <div class="prohero">
+    <div class="pav"><i class="fa-solid fa-user"></i></div>
+    <div class="pname" id="pname">Amina Issahaku</div>
+    <div class="ploc"><i class="fa-solid fa-location-dot"></i> Lang-Oullo, Jirapa District</div>
+    <div class="pstats">
+      <div class="pst"><div class="pstv" id="ps-ord">3</div><div class="pstl">Orders</div></div>
+      <div class="pst"><div class="pstv" id="ps-xp">620</div><div class="pstl">Game XP</div></div>
+      <div class="pst"><div class="pstv">2</div><div class="pstl">Badges</div></div>
+    </div>
+  </div>
+  <div class="probody">
+    <div class="slbl">Accessibility</div>
+    <div class="ar"><div class="arl"><div class="ari" style="background:var(--teal-l)"><i class="fa-solid fa-volume-high" style="color:var(--teal)"></i></div><div><div class="art">Voice Assistance</div><div class="ars">Read content aloud</div></div></div><div class="tgl on" onclick="this.classList.toggle('on');toast('Voice '+(this.classList.contains('on')?'enabled':'disabled'),'fa-volume-high')"></div></div>
+    <div class="ar"><div class="arl"><div class="ari" style="background:var(--sky-l)"><i class="fa-solid fa-text-height" style="color:var(--sky)"></i></div><div><div class="art">Large Text</div><div class="ars">Increase font size</div></div></div><div class="tgl" onclick="this.classList.toggle('on');document.body.style.fontSize=this.classList.contains('on')?'15px':'';toast('Large text '+(this.classList.contains('on')?'on':'off'),'fa-text-height')"></div></div>
+    <div class="ar"><div class="arl"><div class="ari" style="background:var(--purple-l)"><i class="fa-solid fa-palette" style="color:var(--purple)"></i></div><div><div class="art">High Contrast</div><div class="ars">Stronger color contrast</div></div></div><div class="tgl" onclick="this.classList.toggle('on');toast('High contrast '+(this.classList.contains('on')?'on':'off'),'fa-palette')"></div></div>
+    <div class="ar"><div class="arl"><div class="ari" style="background:var(--earth-l)"><i class="fa-solid fa-mobile-screen-button" style="color:var(--earth)"></i></div><div><div class="art">Haptic Feedback</div><div class="ars">Vibration on actions</div></div></div><div class="tgl on" onclick="this.classList.toggle('on');toast('Haptic '+(this.classList.contains('on')?'on':'off'),'fa-mobile-screen-button')"></div></div>
+    <div class="slbl" style="margin-top:4px">Language</div>
+    <div class="lgrid">
+      <div class="lb2 on" onclick="selLang(this,'English')"><div class="lf">🇬🇧</div><div class="ln">English</div></div>
+      <div class="lb2" onclick="selLang(this,'Dagbani')"><div class="lf">🇬🇭</div><div class="ln">Dagbani</div></div>
+      <div class="lb2" onclick="selLang(this,'Twi')"><div class="lf">🇬🇭</div><div class="ln">Twi</div></div>
+      <div class="lb2" onclick="selLang(this,'Hausa')"><div class="lf">🇬🇭</div><div class="ln">Hausa</div></div>
+    </div>
+    <div class="slbl" style="margin-top:16px">Account</div>
+    <div class="mi" onclick="openEdit()"><div class="mil"><div class="mii" style="background:var(--teal-l)"><i class="fa-solid fa-pen" style="color:var(--teal)"></i></div><div><div class="mit">Edit Profile</div><div class="mis">Update your name</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div>
+    <div class="mi" onclick="goTo('game-screen');setNav(5)"><div class="mil"><div class="mii" style="background:var(--purple-l)"><i class="fa-solid fa-gamepad" style="color:var(--purple)"></i></div><div><div class="mit">EduGame</div><div class="mis" id="p-xp">620 XP · Level 4</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div>
+    <div class="mi" onclick="toast('Order history coming soon','fa-clock')"><div class="mil"><div class="mii" style="background:var(--earth-l)"><i class="fa-solid fa-receipt" style="color:var(--earth)"></i></div><div><div class="mit">Order History</div><div class="mis" id="p-ord">3 orders placed</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div>
   </div>
 </div>
 
 <!-- BOTTOM NAV -->
-<div class="bottom-nav" id="bottom-nav" style="display:none">
-  <div class="nav-item active" onclick="goTo('home');setNav(0)"><div class="nav-ico"><i class="fa-solid fa-house"></i></div><div class="nav-lbl">Home</div></div>
-  <div class="nav-item" onclick="goTo('market');setNav(1)"><div class="nav-ico"><i class="fa-solid fa-cart-shopping"></i></div><div class="nav-lbl">Market</div><div class="nav-badge" id="cart-badge" style="display:none">0</div></div>
-  <div class="nav-item" onclick="goTo('book');setNav(2)"><div class="nav-ico"><i class="fa-solid fa-truck"></i></div><div class="nav-lbl">Book</div></div>
-  <div class="nav-item" onclick="goTo('garbage-screen');setNav(6)"><div class="nav-ico"><i class="fa-solid fa-recycle"></i></div><div class="nav-lbl">Collect</div></div>
-  <div class="nav-item" onclick="goTo('alerts-screen');setNav(3)"><div class="nav-ico"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="nav-lbl">Alerts</div><div class="nav-badge">1</div></div>
-  <div class="nav-item" onclick="goTo('game-screen');setNav(4)"><div class="nav-ico"><i class="fa-solid fa-gamepad"></i></div><div class="nav-lbl">Game</div></div>
-  <div class="nav-item" onclick="goTo('profile-screen');setNav(5)"><div class="nav-ico"><i class="fa-solid fa-user"></i></div><div class="nav-lbl">Profile</div></div>
+<div class="bnav" id="bnav">
+  <div class="ni on" onclick="goTo('home');setNav(0)"><div class="ni-i"><i class="fa-solid fa-house"></i></div><div class="ni-l">Home</div></div>
+  <div class="ni" onclick="goTo('market');setNav(1)"><div class="ni-i"><i class="fa-solid fa-cart-shopping"></i></div><div class="ni-l">Market</div><div class="nbadge" id="cart-badge" style="display:none">0</div></div>
+  <div class="ni" onclick="goTo('book');setNav(2)"><div class="ni-i"><i class="fa-solid fa-truck"></i></div><div class="ni-l">Book</div></div>
+  <div class="ni" onclick="goTo('alerts-screen');setNav(3)"><div class="ni-i"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="ni-l">Alerts</div><div class="nbadge">1</div></div>
+  <div class="ni" onclick="goTo('garbage-screen');setNav(4)"><div class="ni-i"><i class="fa-solid fa-recycle"></i></div><div class="ni-l">Collect</div></div>
+  <div class="ni" onclick="goTo('profile-screen');setNav(5)"><div class="ni-i"><i class="fa-solid fa-user"></i></div><div class="ni-l">Profile</div></div>
 </div>
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <!-- ORDER MODAL -->
-<div class="modal-overlay" id="order-modal" onclick="closeModal('order-modal')">
-  <div class="modal-sheet" onclick="event.stopPropagation()">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="om-title">Order Product</div>
-    <div class="modal-sub">Choose quantity and confirm your order.</div>
-    <div class="form-group">
-      <label class="form-label">Quantity</label>
-      <input class="form-input" id="om-qty" type="number" min="1" placeholder="e.g. 100"/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Delivery Address</label>
-      <input class="form-input" id="om-addr" placeholder="Your location in Jirapa District"/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Phone Number</label>
-      <input class="form-input" id="om-phone" placeholder="0244 000 000" type="tel"/>
-    </div>
-    <div class="modal-row"><span class="modal-key">Product</span><span class="modal-val" id="om-product">—</span></div>
-    <div class="modal-row"><span class="modal-key">Unit Price</span><span class="modal-val" id="om-price">—</span></div>
-    <div class="modal-row"><span class="modal-key">Estimated Total</span><span class="modal-val" id="om-total" style="color:var(--teal)">—</span></div>
-    <button class="btn btn-primary" style="margin-bottom:10px" onclick="confirmOrder()"><i class="fa-solid fa-check"></i> Place Order</button>
-    <button class="btn btn-outline" onclick="closeModal('order-modal')">Cancel</button>
-  </div>
-</div>
-
-<!-- BOOKING CONFIRM MODAL -->
-<div class="modal-overlay" id="book-modal" onclick="closeModal('book-modal')">
-  <div class="modal-sheet" onclick="event.stopPropagation()">
-    <div class="modal-handle"></div>
-    <div style="text-align:center;margin-bottom:16px">
-      <div style="width:64px;height:64px;background:var(--green-l);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
-        <i class="fa-solid fa-calendar-check" style="font-size:28px;color:var(--green)"></i>
-      </div>
-      <div class="modal-title" style="text-align:center">Booking Confirmed!</div>
-      <div class="modal-sub" style="text-align:center">You'll receive an SMS confirmation shortly.</div>
-    </div>
-    <div class="modal-row"><span class="modal-key">Service</span><span class="modal-val" id="bm-svc">—</span></div>
-    <div class="modal-row"><span class="modal-key">Name</span><span class="modal-val" id="bm-name">—</span></div>
-    <div class="modal-row"><span class="modal-key">Date</span><span class="modal-val" id="bm-date">—</span></div>
-    <div class="modal-row"><span class="modal-key">Time</span><span class="modal-val" id="bm-time">—</span></div>
-    <div class="modal-row"><span class="modal-key">Location</span><span class="modal-val" id="bm-loc">—</span></div>
-    <div class="modal-row"><span class="modal-key">Cost</span><span class="modal-val" id="bm-cost" style="color:var(--teal)">—</span></div>
-    <button class="btn btn-primary" onclick="closeModal('book-modal')"><i class="fa-solid fa-check"></i> Done</button>
+<div class="mo" id="om" onclick="cm('om')">
+  <div class="ms" onclick="event.stopPropagation()">
+    <div class="mh"></div>
+    <div class="mt" id="om-t">Order Product</div>
+    <div class="msub">Enter quantity and delivery details.</div>
+    <div class="fg"><label class="fl">Quantity</label><input class="fi" id="om-qty" type="number" min="1"/></div>
+    <div class="fg"><label class="fl">Delivery Address</label><input class="fi" id="om-addr" placeholder="Your location"/></div>
+    <div class="fg"><label class="fl">Phone Number</label><input class="fi" id="om-ph" placeholder="0244 000 000" type="tel"/></div>
+    <div class="mr"><span class="mk">Product</span><span class="mv" id="om-pn">—</span></div>
+    <div class="mr"><span class="mk">Unit Price</span><span class="mv" id="om-pp">—</span></div>
+    <div class="mr"><span class="mk">Estimated Total</span><span class="mv" id="om-tot" style="color:var(--teal)">—</span></div>
+    <button class="btn btn-p" style="margin-bottom:10px" onclick="confirmOrder()"><i class="fa-solid fa-check"></i> Place Order</button>
+    <button class="btn btn-o" onclick="cm('om')">Cancel</button>
   </div>
 </div>
 
 <!-- CHECKOUT MODAL -->
-<div class="modal-overlay" id="checkout-modal" onclick="closeModal('checkout-modal')">
-  <div class="modal-sheet" onclick="event.stopPropagation()">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Order Summary</div>
-    <div id="checkout-items"></div>
-    <div class="modal-row" style="border-top:2px solid var(--border)"><span class="modal-key" style="font-weight:700">Total</span><span class="modal-val" style="color:var(--teal);font-size:16px" id="checkout-total">—</span></div>
-    <div class="form-group" style="margin-top:10px">
-      <label class="form-label">Delivery Address</label>
-      <input class="form-input" id="co-addr" placeholder="Your location"/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Phone Number</label>
-      <input class="form-input" id="co-phone" placeholder="0244 000 000" type="tel"/>
-    </div>
-    <button class="btn btn-primary" style="margin-bottom:10px" onclick="placeOrder()"><i class="fa-solid fa-paper-plane"></i> Place Order</button>
-    <button class="btn btn-outline" onclick="closeModal('checkout-modal')">Continue Shopping</button>
+<div class="mo" id="chm" onclick="cm('chm')">
+  <div class="ms" onclick="event.stopPropagation()">
+    <div class="mh"></div>
+    <div class="mt">Order Summary</div>
+    <div id="ch-items"></div>
+    <div class="mr" style="border-top:2px solid var(--border)"><span class="mk" style="font-weight:700">Total</span><span class="mv" style="color:var(--teal);font-size:16px" id="ch-tot">—</span></div>
+    <div class="fg" style="margin-top:10px"><label class="fl">Delivery Address</label><input class="fi" id="ch-addr" placeholder="Your location"/></div>
+    <div class="fg"><label class="fl">Phone Number</label><input class="fi" id="ch-ph" placeholder="0244 000 000" type="tel"/></div>
+    <button class="btn btn-p" style="margin-bottom:10px" onclick="placeOrder()"><i class="fa-solid fa-paper-plane"></i> Place Order</button>
+    <button class="btn btn-o" onclick="cm('chm')">Continue Shopping</button>
   </div>
 </div>
 
-<!-- EDIT PROFILE MODAL -->
-<div class="modal-overlay" id="edit-modal" onclick="closeModal('edit-modal')">
-  <div class="modal-sheet" onclick="event.stopPropagation()">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Edit Profile</div>
-    <div class="form-group">
-      <label class="form-label">Full Name</label>
-      <input class="form-input" id="edit-name" placeholder="Your name"/>
+<!-- BOOKING MODAL -->
+<div class="mo" id="bm" onclick="cm('bm')">
+  <div class="ms" onclick="event.stopPropagation()">
+    <div class="mh"></div>
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="width:64px;height:64px;background:var(--green-l);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px"><i class="fa-solid fa-calendar-check" style="font-size:28px;color:var(--green)"></i></div>
+      <div class="mt" style="text-align:center">Booking Confirmed!</div>
+      <div class="msub" style="text-align:center">SMS confirmation will be sent shortly.</div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Location</label>
-      <input class="form-input" id="edit-loc" placeholder="Your community"/>
-    </div>
-    <button class="btn btn-primary" onclick="saveProfile()"><i class="fa-solid fa-save"></i> Save Changes</button>
+    <div class="mr"><span class="mk">Service</span><span class="mv" id="bm-svc">—</span></div>
+    <div class="mr"><span class="mk">Name</span><span class="mv" id="bm-name">—</span></div>
+    <div class="mr"><span class="mk">Date</span><span class="mv" id="bm-date">—</span></div>
+    <div class="mr"><span class="mk">Time</span><span class="mv" id="bm-time">—</span></div>
+    <div class="mr"><span class="mk">Cost</span><span class="mv" id="bm-cost" style="color:var(--teal)">—</span></div>
+    <button class="btn btn-p" onclick="cm('bm')"><i class="fa-solid fa-check"></i> Done</button>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="mo" id="em" onclick="cm('em')">
+  <div class="ms" onclick="event.stopPropagation()">
+    <div class="mh"></div>
+    <div class="mt">Edit Profile</div>
+    <div class="fg"><label class="fl">Full Name</label><input class="fi" id="en" placeholder="Your name"/></div>
+    <button class="btn btn-p" onclick="saveProfile()"><i class="fa-solid fa-save"></i> Save Changes</button>
   </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-// ── STATE ──────────────────────────────────────────────────────────────────
-const state = {
-  xp: 620, level: 4, orders: 3,
-  cart: [],
-  selectedSvc: 0, selectedDate: null, selectedTime: null,
-  name: 'Amina', lang: 'English',
-  voice: true, largeText: false, contrast: false, haptic: true,
-  quizIndex: 0, quizAnswered: false,
-  deferredPrompt: null,
+// STATE
+const S = {
+  xp:620, level:4, orders:3, cart:[], selSvc:0, selDate:null, selTime:null,
+  selWaste:0, name:'Amina', haptic:true, deferredPrompt:null
 };
 
-// ── PWA ────────────────────────────────────────────────────────────────────
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
-
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  state.deferredPrompt = e;
-  showInstallBanner();
-});
-
-function showInstallBanner() {
-  const c = document.getElementById('install-container');
-  c.innerHTML = `
-    <div class="install-banner" onclick="installApp()">
+// PWA
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault(); S.deferredPrompt=e;
+  document.getElementById('install-box').innerHTML=`
+    <div onclick="installApp()" style="background:linear-gradient(135deg,var(--teal-d),var(--teal));border-radius:var(--r);padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer">
       <i class="fa-solid fa-mobile-screen" style="color:#fff;font-size:22px"></i>
-      <div class="install-banner-text">
-        <div class="install-banner-title">Install AquaHub Connect</div>
-        <div class="install-banner-sub">Add to your home screen for offline access</div>
-      </div>
-      <button class="install-banner-btn">Install</button>
+      <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:2px">Install AquaHub Connect</div><div style="font-size:11px;color:rgba(255,255,255,0.8)">Add to home screen — works offline</div></div>
+      <button style="background:#fff;color:var(--teal);border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer">Install</button>
     </div>`;
+});
+function installApp(){
+  if(S.deferredPrompt){S.deferredPrompt.prompt();S.deferredPrompt.userChoice.then(()=>{S.deferredPrompt=null;document.getElementById('install-box').innerHTML='';toast('Installed!','fa-mobile-screen');});}
+  else toast('Open in Chrome → "Add to Home Screen"','fa-circle-info');
 }
 
-function installApp() {
-  if (state.deferredPrompt) {
-    state.deferredPrompt.prompt();
-    state.deferredPrompt.userChoice.then(() => {
-      state.deferredPrompt = null;
-      document.getElementById('install-container').innerHTML = '';
-      toast('AquaHub Connect installed!', 'fa-mobile-screen');
-    });
-  } else {
-    toast('Open in Chrome/Safari and use "Add to Home Screen"', 'fa-circle-info');
-  }
+// NAV
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById(id);
+  if(el){el.classList.add('active');el.scrollTop=0;}
+  document.getElementById('bnav').className='bnav'+(id==='splash'?'':' show');
 }
-
-// ── CLOCK ──────────────────────────────────────────────────────────────────
-function updateClocks() {
-  const t = new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit', hour12:false});
-  document.querySelectorAll('[id^="st"]').forEach(el => el.textContent = t);
-}
-setInterval(updateClocks, 10000); updateClocks();
-
-// ── NAV ────────────────────────────────────────────────────────────────────
-function goTo(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  const s = document.getElementById(id);
-  if (s) { s.classList.add('active'); s.scrollTop = 0; }
-  document.getElementById('bottom-nav').style.display = id === 'splash' ? 'none' : 'flex';
-}
-
-function setNav(i) {
-  document.querySelectorAll('.nav-item').forEach((n,idx) => n.classList.toggle('active', idx === i));
-}
-
-// ── TOAST ──────────────────────────────────────────────────────────────────
-function toast(msg, icon='fa-circle-check') {
-  const t = document.getElementById('toast');
-  t.innerHTML = `<i class="fa-solid ${icon}"></i> ${msg}`;
+function setNav(i){document.querySelectorAll('.ni').forEach((n,idx)=>n.classList.toggle('on',idx===i));}
+function toast(msg,icon='fa-circle-check'){
+  const t=document.getElementById('toast');
+  t.innerHTML=`<i class="fa-solid ${icon}"></i> ${msg}`;
   t.classList.add('show');
-  if (state.haptic && navigator.vibrate) navigator.vibrate(30);
-  setTimeout(() => t.classList.remove('show'), 3000);
+  if(S.haptic&&navigator.vibrate)navigator.vibrate(30);
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+function cm(id){document.getElementById(id).classList.remove('show');}
+function openM(id){document.getElementById(id).classList.add('show');}
+
+// ACCESSIBILITY
+function enableVoice(){toast('Voice mode enabled','fa-volume-high');goTo('home');}
+function enableLargeText(){document.body.style.fontSize='15px';toast('Large text enabled','fa-text-height');goTo('home');}
+function selLang(el,lang){document.querySelectorAll('.lb2').forEach(b=>b.classList.remove('on'));el.classList.add('on');toast(`Language: ${lang}`,'fa-globe');}
+
+// PROFILE
+function openEdit(){document.getElementById('en').value=S.name;openM('em');}
+function saveProfile(){
+  const n=document.getElementById('en').value.trim();
+  if(!n){toast('Enter your name','fa-triangle-exclamation');return;}
+  S.name=n;
+  document.getElementById('hero-name').innerHTML=`${n} <i class="fa-solid fa-hand-wave"></i>`;
+  document.getElementById('pname').textContent=n;
+  cm('em');toast('Profile updated!','fa-circle-check');
 }
 
-// ── MODAL ──────────────────────────────────────────────────────────────────
-function closeModal(id) { document.getElementById(id).classList.remove('show'); }
-
-// ── PRODUCTS ───────────────────────────────────────────────────────────────
-const PRODUCTS = [
-  { id:'water', cat:'water', name:'Clean Irrigation Water', desc:'WHO-safe treated water for farming, cleaning and hygiene. Same-day delivery available.', icon:'fa-droplet', iconBg:'#e8f3fc', iconColor:'#1a7bc4', price:0.002, unit:'litre', minOrder:100, avail:3240, capacity:4500, color:'var(--sky)' },
-  { id:'biogas', cat:'biogas', name:'Biogas Fuel', desc:'Clean cooking energy from sludge treatment. Replaces charcoal and firewood. Delivered in canisters.', icon:'fa-fire', iconBg:'#fdf3e7', iconColor:'#c47c2b', price:0.08, unit:'m³', minOrder:2, avail:18.4, capacity:25, color:'var(--earth)' },
-  { id:'fertilizer', cat:'fertilizer', name:'Organic Fertilizer', desc:'Nutrient-rich dried digestate. Boosts crop yields for smallholder farmers. Bagged and ready.', icon:'fa-seedling', iconBg:'#e8f7ee', iconColor:'#1a9e4a', price:0.15, unit:'kg', minOrder:5, avail:42, capacity:60, color:'var(--green)' },
+// PRODUCTS
+const PRODS=[
+  {id:'water',cat:'water',name:'Clean Irrigation Water',desc:'WHO-safe treated water for farming, cleaning and hygiene.',ico:'fa-droplet',ibg:'#e8f3fc',ic:'#1a7bc4',price:0.002,unit:'litre',min:100,avail:3240,cap:4500,col:'var(--sky)'},
+  {id:'biogas',cat:'biogas',name:'Biogas Fuel',desc:'Clean cooking energy replacing charcoal and firewood. Delivered in canisters.',ico:'fa-fire',ibg:'#fdf3e7',ic:'#c47c2b',price:0.08,unit:'m³',min:2,avail:18.4,cap:25,col:'var(--earth)'},
+  {id:'fertilizer',cat:'fertilizer',name:'Organic Fertilizer',desc:'Nutrient-rich digestate boosts crop yields. Bagged and ready.',ico:'fa-seedling',ibg:'#e8f7ee',ic:'#1a9e4a',price:0.15,unit:'kg',min:5,avail:42,cap:60,col:'var(--green)'},
 ];
+let curFilter='all', curProd=null;
 
-let currentFilter = 'all';
-
-function renderProducts() {
-  const body = document.getElementById('market-body');
-  const filtered = currentFilter === 'all' ? PRODUCTS : PRODUCTS.filter(p => p.cat === currentFilter);
-  body.innerHTML = filtered.map(p => {
-    const pct = Math.round(p.avail / p.capacity * 100);
-    const inCart = state.cart.find(c => c.id === p.id);
-    return `
-    <div class="product-card fade-in" onclick="openOrder('${p.id}')">
-      <div class="product-hdr">
-        <div class="product-ico" style="background:${p.iconBg}"><i class="fa-solid ${p.icon}" style="color:${p.iconColor};font-size:24px"></i></div>
-        <div><div class="product-name">${p.name}</div><div class="product-desc">${p.desc}</div></div>
-      </div>
-      <div class="avail-bar"><div class="avail-fill" style="width:${pct}%;background:${p.color}"></div></div>
-      <div class="avail-label">${p.avail.toLocaleString()} ${p.unit} available of ${p.capacity} ${p.unit} daily capacity</div>
-      <div class="product-footer">
-        <div><div class="product-price" style="color:${p.color}">$${p.price}<span style="font-size:13px;font-weight:400">/${p.unit}</span></div><div class="product-unit">Min. order: ${p.minOrder} ${p.unit}</div></div>
-        <button class="add-btn ${inCart?'':''}'" style="background:${p.color};color:#fff" onclick="event.stopPropagation();openOrder('${p.id}')">
-          <i class="fa-solid ${inCart?'fa-cart-shopping':'fa-plus'}"></i> ${inCart?'In Cart':'Order'}
-        </button>
-      </div>
+function renderProds(){
+  const filtered=curFilter==='all'?PRODS:PRODS.filter(p=>p.cat===curFilter);
+  document.getElementById('market-body').innerHTML=filtered.map(p=>{
+    const pct=Math.round(p.avail/p.cap*100);
+    return `<div class="pc fi2" onclick="openOrder('${p.id}')">
+      <div class="ph"><div class="pi" style="background:${p.ibg}"><i class="fa-solid ${p.ico}" style="color:${p.ic};font-size:24px"></i></div>
+      <div><div class="pn">${p.name}</div><div class="pd">${p.desc}</div></div></div>
+      <div class="ab"><div class="af" style="width:${pct}%;background:${p.col}"></div></div>
+      <div class="al">${p.avail.toLocaleString()} ${p.unit} available of ${p.cap} ${p.unit} daily</div>
+      <div class="pf"><div><div class="pp" style="color:${p.col}">$${p.price}<span style="font-size:13px;font-weight:400">/${p.unit}</span></div><div class="pu">Min. ${p.min} ${p.unit}</div></div>
+      <button class="abtn" style="background:${p.col}" onclick="event.stopPropagation();openOrder('${p.id}')"><i class="fa-solid fa-plus"></i> Order</button></div>
     </div>`;
   }).join('');
 }
 
-function filterProducts(cat, el) {
-  currentFilter = cat;
-  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('sel'));
-  el.classList.add('sel');
-  renderProducts();
+function filterP(cat,el){curFilter=cat;document.querySelectorAll('.fc').forEach(c=>c.classList.remove('on'));el.classList.add('on');renderProds();}
+
+function openOrder(id){
+  curProd=PRODS.find(p=>p.id===id);
+  document.getElementById('om-t').textContent='Order '+curProd.name;
+  document.getElementById('om-pn').textContent=curProd.name;
+  document.getElementById('om-pp').textContent=`$${curProd.price} per ${curProd.unit}`;
+  document.getElementById('om-qty').value=curProd.min;
+  document.getElementById('om-qty').min=curProd.min;
+  document.getElementById('om-tot').textContent=`$${(curProd.price*curProd.min).toFixed(2)}`;
+  document.getElementById('om-qty').oninput=function(){document.getElementById('om-tot').textContent=`$${(curProd.price*(+this.value||0)).toFixed(2)}`;};
+  openM('om');
 }
 
-let currentProduct = null;
-function openOrder(id) {
-  currentProduct = PRODUCTS.find(p => p.id === id);
-  document.getElementById('om-title').textContent = `Order ${currentProduct.name}`;
-  document.getElementById('om-product').textContent = currentProduct.name;
-  document.getElementById('om-price').textContent = `$${currentProduct.price} per ${currentProduct.unit}`;
-  document.getElementById('om-qty').value = currentProduct.minOrder;
-  document.getElementById('om-qty').min = currentProduct.minOrder;
-  document.getElementById('om-qty').placeholder = `Min: ${currentProduct.minOrder} ${currentProduct.unit}`;
-  document.getElementById('om-total').textContent = `$${(currentProduct.price * currentProduct.minOrder).toFixed(2)}`;
-  document.getElementById('om-qty').oninput = function() {
-    const total = (currentProduct.price * (+this.value || 0)).toFixed(2);
-    document.getElementById('om-total').textContent = `$${total}`;
-  };
-  document.getElementById('order-modal').classList.add('show');
+function confirmOrder(){
+  const qty=+document.getElementById('om-qty').value;
+  const addr=document.getElementById('om-addr').value;
+  const ph=document.getElementById('om-ph').value;
+  if(!qty||qty<curProd.min){toast(`Min order: ${curProd.min} ${curProd.unit}`,'fa-triangle-exclamation');return;}
+  if(!addr){toast('Enter delivery address','fa-triangle-exclamation');return;}
+  if(!ph){toast('Enter phone number','fa-triangle-exclamation');return;}
+  const ex=S.cart.find(c=>c.id===curProd.id);
+  if(ex){ex.qty+=qty;ex.total+=curProd.price*qty;}
+  else S.cart.push({id:curProd.id,name:curProd.name,qty,unit:curProd.unit,price:curProd.price,total:curProd.price*qty,col:curProd.col});
+  cm('om');updateCart();renderProds();
+  toast(`${curProd.name} added to cart!`,'fa-cart-shopping');
 }
 
-function confirmOrder() {
-  const qty = +document.getElementById('om-qty').value;
-  const addr = document.getElementById('om-addr').value;
-  const phone = document.getElementById('om-phone').value;
-  if (!qty || qty < currentProduct.minOrder) { toast(`Minimum order is ${currentProduct.minOrder} ${currentProduct.unit}`, 'fa-triangle-exclamation'); return; }
-  if (!addr) { toast('Please enter your delivery address', 'fa-triangle-exclamation'); return; }
-  if (!phone) { toast('Please enter your phone number', 'fa-triangle-exclamation'); return; }
-  const existing = state.cart.find(c => c.id === currentProduct.id);
-  if (existing) { existing.qty += qty; existing.total += currentProduct.price * qty; }
-  else { state.cart.push({ id: currentProduct.id, name: currentProduct.name, qty, unit: currentProduct.unit, price: currentProduct.price, total: currentProduct.price * qty, color: currentProduct.color }); }
-  closeModal('order-modal');
-  updateCart();
-  renderProducts();
-  toast(`${currentProduct.name} added to cart!`, 'fa-cart-shopping');
+function updateCart(){
+  const total=S.cart.reduce((s,i)=>s+i.total,0);
+  const count=S.cart.length;
+  const bar=document.getElementById('cart-bar');
+  const badge=document.getElementById('cart-badge');
+  document.getElementById('cart-info').textContent=`${count} item${count!==1?'s':''}`;
+  document.getElementById('cart-total').textContent=`$${total.toFixed(2)}`;
+  if(count>0){bar.classList.add('show');badge.style.display='block';badge.textContent=count;}
+  else{bar.classList.remove('show');badge.style.display='none';}
 }
 
-function updateCart() {
-  const total = state.cart.reduce((s, i) => s + i.total, 0);
-  const count = state.cart.length;
-  const bar = document.getElementById('cart-bar');
-  const badge = document.getElementById('cart-badge');
-  document.getElementById('cart-info').textContent = `${count} item${count!==1?'s':''}`;
-  document.getElementById('cart-total').textContent = `$${total.toFixed(2)}`;
-  if (count > 0) { bar.classList.add('show'); badge.style.display='block'; badge.textContent=count; }
-  else { bar.classList.remove('show'); badge.style.display='none'; }
+function checkout(){
+  document.getElementById('ch-items').innerHTML=S.cart.map(i=>`<div class="mr"><span class="mk">${i.name} (${i.qty} ${i.unit})</span><span class="mv">$${i.total.toFixed(2)}</span></div>`).join('');
+  document.getElementById('ch-tot').textContent=`$${S.cart.reduce((s,i)=>s+i.total,0).toFixed(2)}`;
+  openM('chm');
 }
 
-function checkout() {
-  const items = state.cart.map(i => `<div class="modal-row"><span class="modal-key">${i.name} (${i.qty} ${i.unit})</span><span class="modal-val">$${i.total.toFixed(2)}</span></div>`).join('');
-  document.getElementById('checkout-items').innerHTML = items;
-  document.getElementById('checkout-total').textContent = `$${state.cart.reduce((s,i)=>s+i.total,0).toFixed(2)}`;
-  closeModal('order-modal');
-  document.getElementById('checkout-modal').classList.add('show');
+function placeOrder(){
+  const addr=document.getElementById('ch-addr').value;
+  const ph=document.getElementById('ch-ph').value;
+  if(!addr){toast('Enter delivery address','fa-triangle-exclamation');return;}
+  if(!ph){toast('Enter phone number','fa-triangle-exclamation');return;}
+  S.orders+=S.cart.length;S.cart=[];updateCart();renderProds();cm('chm');
+  document.getElementById('ps-ord').textContent=S.orders;
+  document.getElementById('p-ord').textContent=`${S.orders} orders placed`;
+  toast('Order placed! Hub team will contact you.','fa-circle-check');
 }
 
-function placeOrder() {
-  const addr = document.getElementById('co-addr').value;
-  const phone = document.getElementById('co-phone').value;
-  if (!addr) { toast('Please enter your delivery address', 'fa-triangle-exclamation'); return; }
-  if (!phone) { toast('Please enter your phone number', 'fa-triangle-exclamation'); return; }
-  state.orders += state.cart.length;
-  state.cart = [];
-  updateCart();
-  renderProducts();
-  closeModal('checkout-modal');
-  document.getElementById('ps-orders').textContent = state.orders;
-  document.getElementById('profile-orders').textContent = `${state.orders} orders placed`;
-  toast('Order placed! Hub team will contact you shortly.', 'fa-circle-check');
+// BOOKING
+const SVCS=[{name:'Toilet / Pit Draining',cost:'$8.00'},{name:'Sanitation Assessment',cost:'Free'}];
+function selSvc(i){S.selSvc=i;document.querySelectorAll('.so').forEach((s,idx)=>s.classList.toggle('on',idx===i));}
+
+function renderDates(){
+  const days=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const now=new Date();
+  document.getElementById('dgrid').innerHTML=[1,2,3,4].map(i=>{
+    const d=new Date(now);d.setDate(d.getDate()+i);
+    return `<div class="db" onclick="selDate(this,'${d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'})}')"><div class="dd">${days[d.getDay()]}</div><div class="dn">${d.getDate()}</div></div>`;
+  }).join('');
 }
-
-// ── BOOKING ────────────────────────────────────────────────────────────────
-const SERVICES = [
-  { name:'Toilet / Pit Draining', price:'$8.00', cost:'$8.00' },
-  { name:'Sanitation Assessment', price:'Free', cost:'Free' },
-];
-
-function selectSvc(i) {
-  state.selectedSvc = i;
-  document.querySelectorAll('.service-opt').forEach((s,idx) => s.classList.toggle('sel', idx===i));
-  updateBookSummary();
+function selDate(el,label){document.querySelectorAll('.db').forEach(b=>b.classList.remove('on'));el.classList.add('on');S.selDate=label;updateBSum();}
+function renderTimes(){
+  document.getElementById('tgrid').innerHTML=['8:00 AM','10:00 AM','12:00 PM','2:00 PM','4:00 PM','6:00 PM'].map(t=>`<div class="tb" onclick="selTime(this,'${t}')">${t}</div>`).join('');
 }
-
-// Generate dates
-function renderDates() {
-  const grid = document.getElementById('date-grid');
-  const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
-  const now = new Date();
-  let html = '';
-  for (let i=1; i<=4; i++) {
-    const d = new Date(now); d.setDate(d.getDate()+i);
-    html += `<div class="date-btn" onclick="selectDate(this,'${d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'})}')">
-      <div class="date-day">${days[d.getDay()]}</div>
-      <div class="date-num">${d.getDate()}</div>
-    </div>`;
-  }
-  grid.innerHTML = html;
-}
-
-function selectDate(el, label) {
-  document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('sel'));
-  el.classList.add('sel');
-  state.selectedDate = label;
-  updateBookSummary();
-}
-
-function renderTimes() {
-  const times = ['8:00 AM','10:00 AM','12:00 PM','2:00 PM','4:00 PM','6:00 PM'];
-  document.getElementById('time-grid').innerHTML = times.map(t =>
-    `<div class="time-btn" onclick="selectTime(this,'${t}')">${t}</div>`
-  ).join('');
-}
-
-function selectTime(el, t) {
-  document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('sel'));
-  el.classList.add('sel');
-  state.selectedTime = t;
-  updateBookSummary();
-}
-
-function updateBookSummary() {
-  const s = document.getElementById('book-summary');
-  if (state.selectedDate && state.selectedTime) {
-    s.style.display = 'block';
-    document.getElementById('bs-svc').textContent = SERVICES[state.selectedSvc].name;
-    document.getElementById('bs-date').textContent = state.selectedDate;
-    document.getElementById('bs-time').textContent = state.selectedTime;
-    document.getElementById('bs-cost').textContent = SERVICES[state.selectedSvc].cost;
+function selTime(el,t){document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));el.classList.add('on');S.selTime=t;updateBSum();}
+function updateBSum(){
+  if(S.selDate&&S.selTime){
+    document.getElementById('bsum').style.display='block';
+    document.getElementById('bs-svc').textContent=SVCS[S.selSvc].name;
+    document.getElementById('bs-date').textContent=S.selDate;
+    document.getElementById('bs-time').textContent=S.selTime;
+    document.getElementById('bs-cost').textContent=SVCS[S.selSvc].cost;
   }
 }
-
-function submitBooking() {
-  const name = document.getElementById('book-name').value;
-  const phone = document.getElementById('book-phone').value;
-  const loc = document.getElementById('book-loc').value;
-  if (!name) { toast('Please enter your name', 'fa-triangle-exclamation'); return; }
-  if (!phone) { toast('Please enter your phone number', 'fa-triangle-exclamation'); return; }
-  if (!loc) { toast('Ple  if (!loc) { toast('Please enter your location', 'fa-triangle-exclamation'); return; }
-  if (!state.selectedDate) { toast('Please select a date', 'fa-triangle-exclamation'); return; }
-  if (!state.selectedTime) { toast('Please select a time', 'fa-triangle-exclamation'); return; }
-  document.getElementById('bm-svc').textContent = SERVICES[state.selectedSvc].name;
-  document.getElementById('bm-name').textContent = name;
-  document.getElementById('bm-date').textContent = state.selectedDate;
-  document.getElementById('bm-time').textContent = state.selectedTime;
-  document.getElementById('bm-loc').textContent = loc;
-  document.getElementById('bm-cost').textContent = SERVICES[state.selectedSvc].cost;
-  document.getElementById('book-modal').classList.add('show');
+function submitBooking(){
+  const name=document.getElementById('bname').value;
+  const phone=document.getElementById('bphone').value;
+  const loc=document.getElementById('bloc').value;
+  if(!name){toast('Enter your name','fa-triangle-exclamation');return;}
+  if(!phone){toast('Enter your phone number','fa-triangle-exclamation');return;}
+  if(!loc){toast('Enter your location','fa-triangle-exclamation');return;}
+  if(!S.selDate){toast('Select a date','fa-triangle-exclamation');return;}
+  if(!S.selTime){toast('Select a time','fa-triangle-exclamation');return;}
+  document.getElementById('bm-svc').textContent=SVCS[S.selSvc].name;
+  document.getElementById('bm-name').textContent=name;
+  document.getElementById('bm-date').textContent=S.selDate;
+  document.getElementById('bm-time').textContent=S.selTime;
+  document.getElementById('bm-cost').textContent=SVCS[S.selSvc].cost;
+  openM('bm');
 }
 
-const QUESTIONS = [
-  { q:'What is the main cause of waterborne disease during floods in Northern Ghana?', opts:['Drinking too much water','Fecal sludge overflowing into water sources','Too much sunshine','Lack of electricity'], correct:1, feedback:'When pit latrines overflow during floods, fecal matter contaminates rivers and groundwater — spreading cholera and typhoid. The AquaRecover Hub prevents this with sealed elevated containment. +50 XP!' },
-  { q:'What does the AquaRecover Hub convert fecal sludge into?', opts:['Plastics and rubber','Clean water, biogas and organic fertilizer','Diesel fuel','Drinking water only'], correct:1, feedback:'The Hub converts waste into clean water for irrigation, biogas for cooking energy, and organic fertilizer for farming. +50 XP!' },
-  { q:'Why is the AquaRecover Hub built on an elevated platform?', opts:['To look impressive','For trucks to park under','To stay above flood water','For better solar angle'], correct:2, feedback:'The platform is elevated 1.5m above the highest flood line so the system keeps working during floods — protecting communities when they need it most. +50 XP!' },
-  { q:'How should communities prepare for flooding?', opts:['Do nothing','Move valuables high, store water, know your evacuation route','Build bigger houses','Only pray'], correct:1, feedback:'Preparation saves lives! Move valuables to higher ground, store clean water, keep your phone charged, and know your route. AquaHub sends early warnings to help. +50 XP!' },
-  { q:'What is biogas used for in the AquaRecover Hub?', opts:['Fuel for cars','Cooking and electricity — replacing charcoal','A cleaning chemical','Collecting rainwater'], correct:1, feedback:'Biogas is produced when bacteria break down organic waste. The Hub captures it for cooking and facility power — replacing harmful charcoal and firewood. +50 XP!' },
+// QUIZ
+const QS=[
+  {q:'What is the main cause of waterborne disease during floods in Northern Ghana?',opts:['Drinking too much water','Fecal sludge overflowing into water sources','Too much sunshine','Lack of electricity'],ans:1,fb:'When pit latrines overflow during floods, fecal matter contaminates water — spreading cholera and typhoid. The AquaRecover Hub prevents this with sealed elevated containment. +50 XP!'},
+  {q:'What does the AquaRecover Hub convert fecal sludge into?',opts:['Plastics and rubber','Clean water, biogas and organic fertilizer','Diesel fuel','Drinking water only'],ans:1,fb:'The Hub converts waste into clean water for irrigation, biogas for cooking, and organic fertilizer for farming. +50 XP!'},
+  {q:'Why is the AquaRecover Hub built on an elevated platform?',opts:['To look impressive','For trucks to park under','To stay above flood water','For better solar angle'],ans:2,fb:'The platform is elevated 1.5m above the highest flood line so the system keeps working during floods. +50 XP!'},
+  {q:'How should communities best prepare for flooding?',opts:['Do nothing','Move valuables high, store water, know your route','Build bigger houses','Only pray'],ans:1,fb:'Preparation saves lives! Move valuables, store clean water, charge your phone, and know your evacuation route. AquaHub sends early warnings. +50 XP!'},
+  {q:'What is biogas used for in the AquaRecover Hub?',opts:['Fuel for cars','Cooking and electricity — replacing charcoal','A cleaning chemical','Collecting rainwater'],ans:1,fb:'Biogas is produced when bacteria break down organic waste. The Hub captures it for cooking and power — replacing harmful charcoal. +50 XP!'},
 ];
+let qIdx=0,qDone=false;
 
-function renderQuiz() {
-  const q = QUESTIONS[state.quizIndex];
-  document.getElementById('quiz-container').innerHTML = `
-    <div class="quiz-card fade-in">
-      <div class="quiz-num">Question ${state.quizIndex+1} of ${QUESTIONS.length}</div>
-      <div class="quiz-q">${q.q}</div>
-      <div class="quiz-opts">
-        ${q.opts.map((o,i)=>`<button class="quiz-opt" onclick="answer(this,${i===q.correct},${i})">${String.fromCharCode(65+i)}. ${o}</button>`).join('')}
-      </div>
-      <div class="quiz-feedback" id="quiz-fb"></div>
-      <div class="quiz-actions" id="quiz-actions" style="display:none">
-        ${state.quizIndex < QUESTIONS.length-1
-          ? `<button class="btn btn-primary btn-sm" onclick="nextQuestion()"><i class="fa-solid fa-arrow-right"></i> Next</button>`
-          : `<button class="btn btn-primary btn-sm" onclick="finishQuiz()"><i class="fa-solid fa-trophy"></i> Finish</button>`}
+function renderQuiz(){
+  const q=QS[qIdx];
+  document.getElementById('quiz-box').innerHTML=`
+    <div class="qcard fi2">
+      <div class="qnum">Question ${qIdx+1} of ${QS.length}</div>
+      <div class="qq">${q.q}</div>
+      <div class="qopts">${q.opts.map((o,i)=>`<button class="qo" onclick="answerQ(this,${i===q.ans},${i})">${String.fromCharCode(65+i)}. ${o}</button>`).join('')}</div>
+      <div class="qfb" id="qfb"></div>
+      <div id="qact" style="display:none;margin-top:10px">
+        ${qIdx<QS.length-1?`<button class="btn btn-p" style="padding:10px 16px;font-size:13px;width:auto" onclick="nextQ()"><i class="fa-solid fa-arrow-right"></i> Next</button>`:`<button class="btn btn-p" style="padding:10px 16px;font-size:13px;width:auto" onclick="finishQ()"><i class="fa-solid fa-trophy"></i> Finish</button>`}
       </div>
     </div>`;
-  state.quizAnswered = false;
+  qDone=false;
 }
 
-function answer(el, correct, idx) {
-  if (state.quizAnswered) return;
-  state.quizAnswered = true;
-  const q = QUESTIONS[state.quizIndex];
-  document.querySelectorAll('.quiz-opt').forEach((o,i) => {
-    o.classList.add('disabled');
-    if (i===q.correct) o.classList.add('correct');
-    else if (i===idx && !correct) o.classList.add('wrong');
-  });
-  const fb = document.getElementById('quiz-fb');
-  fb.textContent = q.feedback;
-  fb.classList.add('show');
-  document.getElementById('quiz-actions').style.display='flex';
-  if (correct) { state.xp+=50; updateXP(); toast('Correct! +50 XP earned','fa-trophy'); }
+function answerQ(el,correct,idx){
+  if(qDone)return;qDone=true;
+  const q=QS[qIdx];
+  document.querySelectorAll('.qo').forEach((o,i)=>{o.classList.add('dis');if(i===q.ans)o.classList.add('ok');else if(i===idx&&!correct)o.classList.add('no');});
+  document.getElementById('qfb').textContent=q.fb;
+  document.getElementById('qfb').classList.add('show');
+  document.getElementById('qact').style.display='block';
+  if(correct){S.xp+=50;updateXP();toast('Correct! +50 XP','fa-trophy');}
   else toast('Not quite — see correct answer above','fa-circle-info');
 }
 
-function nextQuestion() { state.quizIndex=(state.quizIndex+1)%QUESTIONS.length; renderQuiz(); }
-function finishQuiz() { state.xp+=100; updateXP(); toast('Quiz complete! +100 XP bonus!','fa-trophy'); state.quizIndex=0; renderQuiz(); }
+function nextQ(){qIdx=(qIdx+1)%QS.length;renderQuiz();}
+function finishQ(){S.xp+=100;updateXP();toast('Quiz done! +100 XP bonus!','fa-trophy');qIdx=0;renderQuiz();}
 
-function updateXP() {
-  state.level = Math.floor(state.xp/250)+1;
-  const pct = (state.xp%1000)/10;
+function updateXP(){
+  S.level=Math.floor(S.xp/250)+1;
+  const pct=(S.xp%1000)/10;
   document.getElementById('xp-bar').style.width=pct+'%';
-  document.getElementById('xp-lbl').textContent=`${state.xp} XP · Level ${state.level}`;
-  document.getElementById('xp-display').textContent=`${state.xp} XP · Level ${state.level}`;
-  document.getElementById('my-pts').textContent=`${state.xp} XP`;
-  document.getElementById('ps-xp').textContent=state.xp;
-  document.getElementById('profile-xp').textContent=`${state.xp} XP · Level ${state.level}`;
+  document.getElementById('xp-lbl').textContent=`${S.xp} XP · Level ${S.level}`;
+  document.getElementById('my-xp').textContent=`${S.xp} XP`;
+  document.getElementById('ps-xp').textContent=S.xp;
+  document.getElementById('p-xp').textContent=`${S.xp} XP · Level ${S.level}`;
 }
 
-function toggleAccessibility(type,el) {
-  el.classList.toggle('on');
-  const on=el.classList.contains('on');
-  state[type]=on;
-  if(type==='text') document.body.style.fontSize=on?'15px':'';
-  toast(`${type.charAt(0).toUpperCase()+type.slice(1)} ${on?'enabled':'disabled'}`, 'fa-circle-check');
-}
-function enableVoice(){state.voice=true;document.getElementById('tgl-voice').classList.add('on');toast('Voice mode enabled','fa-volume-high');goTo('home');}
-function enableLargeText(){state.largeText=true;document.getElementById('tgl-text').classList.add('on');document.body.style.fontSize='15px';toast('Large text enabled','fa-text-height');goTo('home');}
-function setLang(lang,el){state.lang=lang;document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');toast(`Language set to ${lang}`,'fa-globe');}
-
-function editProfile(){
-  document.getElementById('edit-name').value=state.name;
-  document.getElementById('edit-modal').classList.add('show');
-}
-function saveProfile(){
-  const name=document.getElementById('edit-name').value.trim();
-  if(!name){toast('Please enter your name','fa-triangle-exclamation');return;}
-  state.name=name;
-  document.getElementById('hero-name').innerHTML=`${name} <i class="fa-solid fa-hand-wave"></i>`;
-  document.getElementById('profile-name').textContent=name;
-  closeModal('edit-modal');
-  toast('Profile updated!','fa-circle-check');
+// GARBAGE
+function selWaste(i){
+  S.selWaste=i;
+  document.querySelectorAll('.wt').forEach((w,idx)=>w.classList.toggle('on',idx===i));
 }
 
-
-
-
-
-// PWA
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();state.deferredPrompt=e;showInstallBanner();});
-
-// Clock
-
-setInterval(updateClocks,10000);updateClocks();
-
-// Nav
-// (removed duplicate)
-// (removed duplicate)
-// (removed duplicate)
-// (removed duplicate)
-
-
-// ── GARBAGE COLLECTOR ──────────────────────────────────────────────────────
-let selectedWaste = 0;
-const WASTE_TYPES = [
-  {name:'General Household Waste', price:'$2.00'},
-  {name:'Recyclables', price:'$1.50'},
-  {name:'Organic / Food Waste', price:'$1.00'},
-  {name:'Hazardous / Medical Waste', price:'$5.00'},
-];
-
-function selectWaste(i) {
-  selectedWaste = i;
-  document.querySelectorAll('.waste-type').forEach((w,idx) => w.classList.toggle('sel', idx===i));
+function bookGarbage(){
+  const name=document.getElementById('gcname').value;
+  const phone=document.getElementById('gcphone').value;
+  const loc=document.getElementById('gcloc').value;
+  if(!name){toast('Enter your name','fa-triangle-exclamation');return;}
+  if(!phone){toast('Enter your phone number','fa-triangle-exclamation');return;}
+  if(!loc){toast('Enter pickup location','fa-triangle-exclamation');return;}
+  toast('Collector booked! Opening tracker...','fa-recycle');
+  setTimeout(()=>{goTo('tracker-screen');setNav(4);initMap();startTracking();},1000);
 }
 
-function bookGarbage() {
-  const name = document.getElementById('gc-name').value;
-  const phone = document.getElementById('gc-phone').value;
-  const loc = document.getElementById('gc-loc').value;
-  if (!name) { toast('Please enter your name','fa-triangle-exclamation'); return; }
-  if (!phone) { toast('Please enter your phone number','fa-triangle-exclamation'); return; }
-  if (!loc) { toast('Please enter your pickup location','fa-triangle-exclamation'); return; }
-  toast('Collector booked! Tracking your collector now...','fa-recycle');
-  setTimeout(() => {
-    goTo('tracker-screen');
-    setNav(6);
-    initMap();
-    startTracking();
-  }, 1200);
-}
+// MAP TRACKER
+let map=null,colMarker=null,userMarker=null,routeLine=null,trackInt=null;
+const UPOS=[9.4008,-0.8393];
+const CSTART=[9.3850,-0.8200];
 
-// ── LIVE MAP TRACKER ───────────────────────────────────────────────────────
-let map = null, collectorMarker = null, userMarker = null, routeLine = null;
-let trackInterval = null, etaSeconds = 720;
-
-// Northern Ghana coordinates (Tamale area)
-const USER_POS = [9.4008, -0.8393];
-const COLLECTOR_START = [9.3850, -0.8200];
-
-function initMap() {
-  if (map) { map.remove(); map = null; }
-  map = L.map('map', { zoomControl: false, attributionControl: false }).setView(USER_POS, 14);
+function initMap(){
+  if(map){map.remove();map=null;}
+  map=L.map('map',{zoomControl:false,attributionControl:false}).setView(UPOS,14);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-  // User marker
-  const userIcon = L.divIcon({
-    className: '',
-    html: '<div style="width:36px;height:36px;background:var(--teal);border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-size:16px;color:#fff"><i class=\"fa-solid fa-house\"></i></div>',
-    iconSize: [36,36], iconAnchor: [18,18]
-  });
-  userMarker = L.marker(USER_POS, {icon: userIcon}).addTo(map).bindPopup('Your Location');
-
-  // Collector marker
-  const truckIcon = L.divIcon({
-    className: '',
-    html: '<div style="width:40px;height:40px;background:#2d7a27;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.4);font-size:18px;color:#fff;animation:pulse2 1.5s infinite"><i class=\"fa-solid fa-truck\"></i></div>',
-    iconSize: [40,40], iconAnchor: [20,20]
-  });
-  collectorMarker = L.marker(COLLECTOR_START, {icon: truckIcon}).addTo(map).bindPopup('Kwame A. — Your Collector');
-
-  // Route line
-  routeLine = L.polyline([COLLECTOR_START, USER_POS], {
-    color: '#2d7a27', weight: 3, dashArray: '8 6', opacity: 0.7
-  }).addTo(map);
-
-  map.fitBounds([COLLECTOR_START, USER_POS], {padding: [40,40]});
+  const uIco=L.divIcon({className:'',html:`<div style="width:34px;height:34px;background:var(--teal);border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);color:#fff;font-size:14px"><i class="fa-solid fa-house"></i></div>`,iconSize:[34,34],iconAnchor:[17,17]});
+  const cIco=L.divIcon({className:'',html:`<div style="width:38px;height:38px;background:#2d7a27;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.4);color:#fff;font-size:16px"><i class="fa-solid fa-truck"></i></div>`,iconSize:[38,38],iconAnchor:[19,19]});
+  userMarker=L.marker(UPOS,{icon:uIco}).addTo(map).bindPopup('Your Location');
+  colMarker=L.marker(CSTART,{icon:cIco}).addTo(map).bindPopup('Kwame A. — Your Collector');
+  routeLine=L.polyline([CSTART,UPOS],{color:'#2d7a27',weight:3,dashArray:'8 6',opacity:.7}).addTo(map);
+  map.fitBounds([CSTART,UPOS],{padding:[40,40]});
 }
 
-function startTracking() {
-  if (trackInterval) clearInterval(trackInterval);
-  etaSeconds = 720;
-  let step = 0;
-  const totalSteps = 60;
-  const latDiff = USER_POS[0] - COLLECTOR_START[0];
-  const lngDiff = USER_POS[1] - COLLECTOR_START[1];
-
-  trackInterval = setInterval(() => {
+function startTracking(){
+  if(trackInt)clearInterval(trackInt);
+  let step=0;const total=60;
+  const dLat=UPOS[0]-CSTART[0],dLng=UPOS[1]-CSTART[1];
+  trackInt=setInterval(()=>{
     step++;
-    etaSeconds = Math.max(0, 720 - step * 12);
-    const progress = step / totalSteps;
-    const newLat = COLLECTOR_START[0] + latDiff * progress + (Math.random()-0.5)*0.001;
-    const newLng = COLLECTOR_START[1] + lngDiff * progress + (Math.random()-0.5)*0.001;
-    const newPos = [newLat, newLng];
-
-    if (collectorMarker) collectorMarker.setLatLng(newPos);
-    if (routeLine) routeLine.setLatLngs([newPos, USER_POS]);
-
-    const dist = Math.max(0, 2.4 - (progress * 2.4)).toFixed(1);
-    const mins = Math.ceil(etaSeconds / 60);
-    const speed = Math.round(20 + Math.random()*20);
-
-    document.getElementById('eta-display').textContent = mins + ' min';
-    document.getElementById('track-eta2').textContent = mins + ' min';
-    document.getElementById('track-dist').textContent = dist + ' km';
-    document.getElementById('track-speed').textContent = speed + ' km/h';
-    document.getElementById('step-eta').textContent = mins + ' min';
-
-    if (step >= totalSteps) {
-      clearInterval(trackInterval);
-      document.getElementById('track-status-val').textContent = 'Arrived!';
-      document.getElementById('track-status-val').style.color = 'var(--green)';
-      document.getElementById('track-eta2').textContent = 'Now';
-      document.getElementById('eta-display').textContent = 'Now';
-      document.getElementById('track-dist').textContent = '0.0 km';
-      // Update steps
-      document.querySelectorAll('.step-circle.pending')[0].className = 'step-circle done';
-      document.querySelectorAll('.step-circle.done')[0].innerHTML = '<i class="fa-solid fa-check"></i>';
-      document.querySelectorAll('.step-circle.active')[0].className = 'step-circle done';
-      toast('Your collector has arrived!', 'fa-recycle');
+    const p=step/total;
+    const newPos=[CSTART[0]+dLat*p+(Math.random()-.5)*.001,CSTART[1]+dLng*p+(Math.random()-.5)*.001];
+    if(colMarker)colMarker.setLatLng(newPos);
+    if(routeLine)routeLine.setLatLngs([newPos,UPOS]);
+    const dist=Math.max(0,2.4-p*2.4).toFixed(1);
+    const mins=Math.max(0,Math.ceil((total-step)*0.2));
+    const spd=Math.round(20+Math.random()*20);
+    document.getElementById('tk-dist').textContent=dist+' km';
+    document.getElementById('tk-eta').textContent=mins>0?mins+' min':'Now';
+    document.getElementById('eta1').textContent=mins>0?mins+' min':'Now';
+    document.getElementById('eta2').textContent=mins>0?mins+' min':'Arrived';
+    document.getElementById('tk-spd').textContent=spd+' km/h';
+    if(step>=total){
+      clearInterval(trackInt);
+      document.getElementById('tk-st').textContent='Arrived!';
+      document.getElementById('tk-st').style.color='var(--green)';
+      document.getElementById('step2').className='stc done';
+      document.getElementById('step2').innerHTML='<i class="fa-solid fa-check"></i>';
+      document.getElementById('step3').className='stc act';
+      toast('Your collector has arrived!','fa-recycle');
     }
-  }, 1500);
+  },1500);
 }
 
-function cancelTracking() {
-  toast('Calling Kwame A. — +233 24 000 0000','fa-phone');
-}
-
-// Init
+// INIT
 goTo('splash');
-renderProducts();
+renderProds();
 renderDates();
 renderTimes();
 renderQuiz();
-updateXP();
 </script>
 </body>
 </html>
