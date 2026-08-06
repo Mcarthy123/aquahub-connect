@@ -402,6 +402,23 @@ html,body{height:100%;background:var(--bg);font-family:var(--sans);overflow:hidd
         <div class="qt">Garbage Collect</div><div class="qs">Book & track live</div>
       </div>
     </div>
+    <!-- GAME BANNER - prominent on home -->
+    <div onclick="goTo('game-screen');setNav(5)" style="background:linear-gradient(135deg,#3a1a6a,#7c3aed);border-radius:var(--r);padding:16px 20px;margin-bottom:14px;display:flex;align-items:center;gap:16px;cursor:pointer;position:relative;overflow:hidden">
+      <div style="position:absolute;right:-10px;top:-10px;font-size:80px;opacity:0.12"><i class="fa-solid fa-gamepad"></i></div>
+      <div style="width:52px;height:52px;background:rgba(255,255,255,0.15);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="fa-solid fa-gamepad" style="font-size:26px;color:#fff"></i>
+      </div>
+      <div style="flex:1">
+        <div style="font-family:var(--display);font-size:16px;font-weight:700;color:#fff;margin-bottom:2px">🎮 Climate Quest</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-bottom:8px">Learn. Play. Earn badges. Protect your community.</div>
+        <div style="display:flex;gap:8px">
+          <div style="background:rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px;font-size:10px;color:#ffd166;font-weight:600">⚡ 620 XP</div>
+          <div style="background:rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px;font-size:10px;color:#fff;font-weight:600">Level 4</div>
+          <div style="background:rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px;font-size:10px;color:#fff;font-weight:600">2 Badges</div>
+        </div>
+      </div>
+      <i class="fa-solid fa-chevron-right" style="color:rgba(255,255,255,0.5)"></i>
+    </div>
     <div class="wc">
       <div class="wt" style="font-size:38px;font-family:var(--display);font-weight:700;color:#fff">32°C</div>
       <div class="wd">Mostly clear · Tamale, N. Ghana</div>
@@ -498,23 +515,85 @@ html,body{height:100%;background:var(--bg);font-family:var(--sans);overflow:hidd
 
 <!-- GAME -->
 <div class="screen" id="game-screen">
-  <div class="shdr"><h2>Climate Quest</h2><p>Learn. Play. Protect your community.</p></div>
-  <div class="gbody">
-    <div class="ghero">
-      <div class="gt"><i class="fa-solid fa-gamepad"></i> Climate Quest</div>
-      <div class="gsub">Answer questions. Earn XP. Unlock badges.</div>
-      <div class="xpw"><div class="xpf" id="xp-bar" style="width:62%"></div></div>
-      <div class="xpl" id="xp-lbl">620 / 1000 XP · Level 4 — Water Defender</div>
+  <div style="background:linear-gradient(135deg,#2d1060,#7c3aed);padding:20px 20px 24px;flex-shrink:0">
+    <div style="font-family:var(--display);font-size:22px;font-weight:700;color:#fff;margin-bottom:4px"><i class="fa-solid fa-gamepad"></i> Climate Quest</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.75);margin-bottom:16px">Learn. Play. Protect your community.</div>
+    <!-- XP Bar -->
+    <div style="background:rgba(255,255,255,0.15);border-radius:10px;height:12px;margin-bottom:6px;overflow:hidden;position:relative">
+      <div id="xp-bar" style="width:62%;height:100%;background:linear-gradient(90deg,#ffd166,#ffaa00);border-radius:10px;transition:width .5s"></div>
     </div>
-    <div class="slbl">Your Badges</div>
-    <div class="bgrid">
-      <div class="bi" onclick="toast('Flood Hero — Earned for flood module!','fa-medal')"><div class="bic"><i class="fa-solid fa-medal" style="color:#ffd700"></i></div><div class="bn">Flood Hero</div></div>
-      <div class="bi" onclick="toast('Water Guardian — 5 correct answers!','fa-droplet')"><div class="bic"><i class="fa-solid fa-droplet" style="color:var(--sky)"></i></div><div class="bn">Water Guard</div></div>
-      <div class="bi lk"><div class="bic"><i class="fa-solid fa-seedling" style="color:var(--green)"></i></div><div class="bn">Green Star</div></div>
-      <div class="bi lk"><div class="bic"><i class="fa-solid fa-trophy" style="color:#ffd700"></i></div><div class="bn">Champion</div></div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div id="xp-lbl" style="font-size:11px;color:rgba(255,255,255,0.75)">620 / 1000 XP · Level 4 — Water Defender</div>
+      <div style="background:rgba(255,255,255,0.15);border-radius:20px;padding:3px 10px;font-size:11px;color:#ffd166;font-weight:700" id="xp-badge">⚡ 620 XP</div>
     </div>
-    <div class="slbl">Daily Challenge</div>
+  </div>
+  <div style="padding:16px;overflow-y:auto">
+    <!-- Category selector -->
+    <div class="slbl">Choose Category</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px" id="cat-grid">
+      <div class="cat-btn on" onclick="selectCat('flood',this)" style="background:linear-gradient(135deg,#1a3a6a,#1e5aaa);border-radius:var(--r);padding:14px;cursor:pointer;border:2px solid transparent;transition:all .2s">
+        <div style="font-size:28px;margin-bottom:6px"><i class="fa-solid fa-water" style="color:#60a5fa"></i></div>
+        <div style="font-size:13px;font-weight:700;color:#fff">Floods & Water</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.65);margin-top:2px">5 questions</div>
+        <div style="background:rgba(255,255,255,0.15);border-radius:10px;height:4px;margin-top:8px;overflow:hidden"><div style="width:40%;height:100%;background:#60a5fa"></div></div>
+      </div>
+      <div class="cat-btn" onclick="selectCat('sanitation',this)" style="background:linear-gradient(135deg,#0d4a2a,#1a7a44);border-radius:var(--r);padding:14px;cursor:pointer;border:2px solid transparent;transition:all .2s">
+        <div style="font-size:28px;margin-bottom:6px"><i class="fa-solid fa-droplet" style="color:#4ade80"></i></div>
+        <div style="font-size:13px;font-weight:700;color:#fff">Sanitation</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.65);margin-top:2px">5 questions</div>
+        <div style="background:rgba(255,255,255,0.15);border-radius:10px;height:4px;margin-top:8px;overflow:hidden"><div style="width:20%;height:100%;background:#4ade80"></div></div>
+      </div>
+      <div class="cat-btn" onclick="selectCat('climate',this)" style="background:linear-gradient(135deg,#7a2a00,#c44400);border-radius:var(--r);padding:14px;cursor:pointer;border:2px solid transparent;transition:all .2s">
+        <div style="font-size:28px;margin-bottom:6px"><i class="fa-solid fa-sun" style="color:#fbbf24"></i></div>
+        <div style="font-size:13px;font-weight:700;color:#fff">Climate Change</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.65);margin-top:2px">5 questions</div>
+        <div style="background:rgba(255,255,255,0.15);border-radius:10px;height:4px;margin-top:8px;overflow:hidden"><div style="width:0%;height:100%;background:#fbbf24"></div></div>
+      </div>
+      <div class="cat-btn" onclick="selectCat('energy',this)" style="background:linear-gradient(135deg,#2d5a27,#4a8f3f);border-radius:var(--r);padding:14px;cursor:pointer;border:2px solid transparent;transition:all .2s">
+        <div style="font-size:28px;margin-bottom:6px"><i class="fa-solid fa-bolt" style="color:#ffd166"></i></div>
+        <div style="font-size:13px;font-weight:700;color:#fff">Clean Energy</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.65);margin-top:2px">5 questions</div>
+        <div style="background:rgba(255,255,255,0.15);border-radius:10px;height:4px;margin-top:8px;overflow:hidden"><div style="width:0%;height:100%;background:#ffd166"></div></div>
+      </div>
+    </div>
+
+    <!-- Daily Mission -->
+    <div style="background:linear-gradient(135deg,#1a4a3a,#0d9e82);border-radius:var(--r);padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:14px">
+      <div style="width:44px;height:44px;background:rgba(255,255,255,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid fa-star" style="color:#ffd166;font-size:22px"></i></div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:2px">Daily Mission</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.75)">Answer 3 questions correctly today</div>
+        <div style="background:rgba(255,255,255,0.2);border-radius:10px;height:6px;margin-top:8px;overflow:hidden"><div id="mission-bar" style="width:33%;height:100%;background:#ffd166;transition:width .5s"></div></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:#ffd166" id="mission-count">1/3</div>
+    </div>
+
+    <!-- Quiz Card -->
+    <div class="slbl">Current Question</div>
     <div id="quiz-box"></div>
+
+    <!-- Badges -->
+    <div class="slbl" style="margin-top:4px">Your Badges</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
+      <div style="background:#fff;border-radius:var(--rsm);padding:12px 8px;text-align:center;box-shadow:var(--sh);cursor:pointer" onclick="toast('Flood Hero — Completed flood module!','fa-medal')">
+        <div style="font-size:26px;margin-bottom:4px"><i class="fa-solid fa-medal" style="color:#ffd700"></i></div>
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">Flood Hero</div>
+      </div>
+      <div style="background:#fff;border-radius:var(--rsm);padding:12px 8px;text-align:center;box-shadow:var(--sh);cursor:pointer" onclick="toast('Water Guardian — 5 correct answers!','fa-droplet')">
+        <div style="font-size:26px;margin-bottom:4px"><i class="fa-solid fa-droplet" style="color:var(--sky)"></i></div>
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">Water Guard</div>
+      </div>
+      <div style="background:#fff;border-radius:var(--rsm);padding:12px 8px;text-align:center;box-shadow:var(--sh);opacity:.35;filter:grayscale(1)">
+        <div style="font-size:26px;margin-bottom:4px"><i class="fa-solid fa-seedling" style="color:var(--green)"></i></div>
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">Green Star</div>
+      </div>
+      <div style="background:#fff;border-radius:var(--rsm);padding:12px 8px;text-align:center;box-shadow:var(--sh);opacity:.35;filter:grayscale(1)">
+        <div style="font-size:26px;margin-bottom:4px"><i class="fa-solid fa-trophy" style="color:#ffd700"></i></div>
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">Champion</div>
+      </div>
+    </div>
+
+    <!-- Leaderboard -->
     <div class="slbl">Leaderboard</div>
     <div class="card" style="padding:14px 16px">
       <div class="lbi"><div class="lbr g">1</div><div class="lba" style="background:var(--teal-l)"><i class="fa-solid fa-user" style="color:var(--teal)"></i></div><div class="lbn">Fatima K.</div><div class="lbp">1,240 XP</div></div>
@@ -879,43 +958,131 @@ function submitBooking(){
 }
 
 // QUIZ
-const QS=[
-  {q:'What is the main cause of waterborne disease during floods in Northern Ghana?',opts:['Drinking too much water','Fecal sludge overflowing into water sources','Too much sunshine','Lack of electricity'],ans:1,fb:'When pit latrines overflow during floods, fecal matter contaminates water — spreading cholera and typhoid. The AquaRecover Hub prevents this with sealed elevated containment. +50 XP!'},
-  {q:'What does the AquaRecover Hub convert fecal sludge into?',opts:['Plastics and rubber','Clean water, biogas and organic fertilizer','Diesel fuel','Drinking water only'],ans:1,fb:'The Hub converts waste into clean water for irrigation, biogas for cooking, and organic fertilizer for farming. +50 XP!'},
-  {q:'Why is the AquaRecover Hub built on an elevated platform?',opts:['To look impressive','For trucks to park under','To stay above flood water','For better solar angle'],ans:2,fb:'The platform is elevated 1.5m above the highest flood line so the system keeps working during floods. +50 XP!'},
-  {q:'How should communities best prepare for flooding?',opts:['Do nothing','Move valuables high, store water, know your route','Build bigger houses','Only pray'],ans:1,fb:'Preparation saves lives! Move valuables, store clean water, charge your phone, and know your evacuation route. AquaHub sends early warnings. +50 XP!'},
-  {q:'What is biogas used for in the AquaRecover Hub?',opts:['Fuel for cars','Cooking and electricity — replacing charcoal','A cleaning chemical','Collecting rainwater'],ans:1,fb:'Biogas is produced when bacteria break down organic waste. The Hub captures it for cooking and power — replacing harmful charcoal. +50 XP!'},
-];
-let qIdx=0,qDone=false;
+const ALL_QS = {
+  flood:[
+    {q:'What is the main cause of waterborne disease during floods in Northern Ghana?',opts:['Drinking too much water','Fecal sludge overflowing into water sources','Too much sunshine','Lack of electricity'],ans:1,xp:50,fb:'When pit latrines overflow during floods, fecal matter contaminates water — spreading cholera and typhoid. The AquaRecover Hub prevents this! +50 XP!'},
+    {q:'Why is the AquaRecover Hub built on an elevated platform?',opts:['To look impressive','For trucks to park under','To stay above flood water','For better solar angle'],ans:2,xp:50,fb:'The platform is 1.5m above the highest flood line — so it keeps working even during major floods. +50 XP!'},
+    {q:'What should you do FIRST when a flood warning is issued?',opts:['Wait and see what happens','Move valuables to higher ground and store clean water','Continue normal activities','Call your friends'],ans:1,xp:75,fb:'Acting early saves lives! Move valuables high, store clean water, and know your evacuation route before water rises. +75 XP!'},
+    {q:'Which river poses the greatest flood risk to communities in Northern Ghana?',opts:['Volta River','White Volta River','River Niger','Ankobra River'],ans:1,xp:50,fb:'The White Volta River is a major flood risk for communities in the Upper West and Upper East regions of Northern Ghana. +50 XP!'},
+    {q:'How does flooding affect sanitation systems?',opts:['It makes them work better','It has no effect','Pit latrines overflow spreading pathogens into water','It only affects electricity'],ans:2,xp:75,fb:'Flooding causes pit latrines to overflow, contaminating rivers and groundwater with harmful pathogens that cause cholera, typhoid and diarrhoea. +75 XP!'},
+  ],
+  sanitation:[
+    {q:'What does the AquaRecover Hub convert fecal sludge into?',opts:['Plastics','Clean water, biogas and organic fertilizer','Diesel fuel','Drinking water only'],ans:1,xp:50,fb:'The Hub converts waste into 3 valuable resources: clean water for irrigation, biogas for cooking energy, and organic fertilizer for farming. +50 XP!'},
+    {q:'What is anaerobic digestion?',opts:['Cleaning with chemicals','Bacteria breaking down waste without oxygen to produce biogas','Filtering water through sand','Burning waste'],ans:1,xp:75,fb:'Anaerobic digestion uses bacteria to break down organic waste in a sealed, oxygen-free environment — producing biogas and fertilizer as useful outputs. +75 XP!'},
+    {q:'How much does one AquaRecover Hub unit cost to build?',opts:['$1,000','$50,000','$10,000','$100,000'],ans:2,xp:50,fb:'At $10,000 per unit, the AquaRecover Hub is affordable for District Assemblies and NGO partners. Revenue from products means break-even in 18–24 months. +50 XP!'},
+    {q:'What is fecal sludge?',opts:['Clean drinking water','Solid and liquid waste from toilets and pit latrines','Agricultural soil','River sediment'],ans:1,xp:50,fb:'Fecal sludge is the solid and liquid waste accumulated in pit latrines and septic tanks. The AquaRecover Hub safely treats it and recovers valuable resources. +50 XP!'},
+    {q:'Why is open defecation dangerous during the rainy season?',opts:['It is not dangerous','Rain washes waste into water sources causing disease outbreaks','It only smells bad','Rain neutralises the waste'],ans:1,xp:75,fb:'Rainwater washes fecal matter into rivers, groundwater and wells — directly causing cholera and typhoid outbreaks in communities. Safe sanitation prevents this. +75 XP!'},
+  ],
+  climate:[
+    {q:'What is the main greenhouse gas causing climate change?',opts:['Oxygen','Carbon Dioxide (CO₂)','Nitrogen','Hydrogen'],ans:1,xp:50,fb:'Carbon dioxide (CO₂) from burning fossil fuels is the primary driver of global warming and climate change. +50 XP!'},
+    {q:'How is climate change affecting Northern Ghana specifically?',opts:['Making it cooler','More frequent and intense floods and longer dry seasons','No change','Only affecting coastal areas'],ans:1,xp:75,fb:'Northern Ghana is experiencing more intense flooding, longer dry seasons, and higher temperatures — directly threatening farming, water access and sanitation. +75 XP!'},
+    {q:'What is a heat wave?',opts:['A wave in the ocean','A prolonged period of abnormally hot weather','A type of flood','Heavy rainfall'],ans:1,xp:50,fb:'A heat wave is a period of unusually hot weather lasting several days. Elderly people and children are most at risk. Stay hydrated and avoid midday sun. +50 XP!'},
+    {q:'What does SDG 6 stand for?',opts:['Safe Driving Guidelines','Sustainable Development Goal — Clean Water and Sanitation','Solar Development Group','Standard Digital Gateway'],ans:1,xp:75,fb:'SDG 6 is the United Nations Sustainable Development Goal for Clean Water and Sanitation for All. AquaHub Connect directly supports this goal. +75 XP!'},
+    {q:'Which of these is a renewable energy source?',opts:['Coal','Natural gas','Solar power','Diesel'],ans:2,xp:50,fb:'Solar power is renewable — it comes from the sun and never runs out. The AquaRecover Hub uses solar panels to operate independently from the grid. +50 XP!'},
+  ],
+  energy:[
+    {q:'What type of energy powers the AquaRecover Hub?',opts:['Diesel generator','Grid electricity','Solar power with battery backup','Wind turbines'],ans:2,xp:50,fb:'The AquaRecover Hub is fully solar-powered with battery backup — making it energy-independent and operational even during power outages. +50 XP!'},
+    {q:'What is biogas mainly made of?',opts:['Carbon dioxide','Methane (CH₄)','Oxygen','Nitrogen'],ans:1,xp:75,fb:'Biogas is mainly methane (CH₄), produced when bacteria break down organic waste without oxygen. It burns cleanly and can replace charcoal for cooking. +75 XP!'},
+    {q:'Why is replacing charcoal with biogas important for communities?',opts:['Charcoal is more expensive','Biogas tastes better','Burning charcoal causes air pollution and deforestation','Biogas is heavier'],ans:2,xp:75,fb:'Burning charcoal causes indoor air pollution harming women and children, and drives deforestation. Biogas from the AquaRecover Hub is cleaner and protects trees. +75 XP!'},
+    {q:'What is organic fertilizer made from in the AquaRecover Hub?',opts:['Chemical compounds','Dried fecal sludge digestate','Plastic waste','River sand'],ans:1,xp:50,fb:'The solid material left after anaerobic digestion (digestate) is dried and bagged as organic fertilizer — boosting crop yields for smallholder farmers. +50 XP!'},
+    {q:'How does solar energy help communities during climate shocks?',opts:['It does not help','Solar systems stop working in rain','Solar with battery backup keeps systems running when grid power fails','Solar only works in summer'],ans:2,xp:75,fb:'Solar panels with battery backup keep the AquaRecover Hub running during floods and power outages — exactly when communities need clean water most. +75 XP!'},
+  ]
+};
+
+let curCat = 'flood';
+let qIdx = 0, qDone = false;
+let missionCorrect = 0;
+
+function selectCat(cat, el) {
+  curCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => {
+    b.style.border = '2px solid transparent';
+    b.style.transform = 'scale(1)';
+  });
+  el.style.border = '2px solid rgba(255,255,255,0.5)';
+  el.style.transform = 'scale(0.97)';
+  qIdx = 0;
+  renderQuiz();
+  toast('Category: ' + cat.charAt(0).toUpperCase() + cat.slice(1), 'fa-gamepad');
+}
+
+const QS = ALL_QS.flood; // default, overridden by selectCat
+
 
 function renderQuiz(){
-  const q=QS[qIdx];
+  const qs = ALL_QS[curCat];
+  const q = qs[qIdx];
+  const catColors = {flood:'#1e5aaa',sanitation:'#1a7a44',climate:'#c44400',energy:'#4a8f3f'};
+  const catIcons = {flood:'fa-water',sanitation:'fa-droplet',climate:'fa-sun',energy:'fa-bolt'};
   document.getElementById('quiz-box').innerHTML=`
-    <div class="qcard fi2">
-      <div class="qnum">Question ${qIdx+1} of ${QS.length}</div>
-      <div class="qq">${q.q}</div>
-      <div class="qopts">${q.opts.map((o,i)=>`<button class="qo" onclick="answerQ(this,${i===q.ans},${i})">${String.fromCharCode(65+i)}. ${o}</button>`).join('')}</div>
+    <div style="background:#fff;border-radius:var(--r);padding:18px;box-shadow:var(--sh);margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;background:${catColors[curCat]}22;border-radius:8px;display:flex;align-items:center;justify-content:center">
+            <i class="fa-solid ${catIcons[curCat]}" style="font-size:13px;color:${catColors[curCat]}"></i>
+          </div>
+          <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase">${curCat} · Q${qIdx+1}/${qs.length}</div>
+        </div>
+        <div style="background:var(--yellow-l);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;color:var(--yellow)">+${q.xp} XP</div>
+      </div>
+      <div style="font-size:15px;font-weight:700;line-height:1.5;margin-bottom:14px;color:var(--text)">${q.q}</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${q.opts.map((o,i)=>`<button class="qo" onclick="answerQ(this,${i===q.ans},${i},${q.xp})">${String.fromCharCode(65+i)}. ${o}</button>`).join('')}
+      </div>
       <div class="qfb" id="qfb"></div>
-      <div id="qact" style="display:none;margin-top:10px">
-        ${qIdx<QS.length-1?`<button class="btn btn-p" style="padding:10px 16px;font-size:13px;width:auto" onclick="nextQ()"><i class="fa-solid fa-arrow-right"></i> Next</button>`:`<button class="btn btn-p" style="padding:10px 16px;font-size:13px;width:auto" onclick="finishQ()"><i class="fa-solid fa-trophy"></i> Finish</button>`}
+      <div id="qact" style="display:none;margin-top:12px;display:none">
+        <button class="btn btn-p" style="padding:10px 16px;font-size:13px;width:auto;margin-right:8px" onclick="nextQ()">
+          <i class="fa-solid fa-arrow-right"></i> ${qIdx<qs.length-1?'Next Question':'Try Another Category'}
+        </button>
       </div>
     </div>`;
   qDone=false;
 }
 
-function answerQ(el,correct,idx){
+function answerQ(el,correct,idx,xpAmt){
   if(qDone)return;qDone=true;
-  const q=QS[qIdx];
-  document.querySelectorAll('.qo').forEach((o,i)=>{o.classList.add('dis');if(i===q.ans)o.classList.add('ok');else if(i===idx&&!correct)o.classList.add('no');});
+  const qs=ALL_QS[curCat];
+  const q=qs[qIdx];
+  document.querySelectorAll('.qo').forEach((o,i)=>{
+    o.classList.add('dis');
+    if(i===q.ans)o.classList.add('ok');
+    else if(i===idx&&!correct)o.classList.add('no');
+  });
   document.getElementById('qfb').textContent=q.fb;
   document.getElementById('qfb').classList.add('show');
-  document.getElementById('qact').style.display='block';
-  if(correct){S.xp+=50;updateXP();toast('Correct! +50 XP','fa-trophy');}
-  else toast('Not quite — see correct answer above','fa-circle-info');
+  document.getElementById('qact').style.display='flex';
+  if(correct){
+    S.xp+=xpAmt||50;
+    missionCorrect=Math.min(3,missionCorrect+1);
+    updateXP();
+    updateMission();
+    // Celebrate
+    toast('🎉 Correct! +'+( xpAmt||50)+' XP earned!','fa-trophy');
+  } else {
+    toast('Not quite — check the correct answer above','fa-circle-info');
+  }
 }
 
-function nextQ(){qIdx=(qIdx+1)%QS.length;renderQuiz();}
-function finishQ(){S.xp+=100;updateXP();toast('Quiz done! +100 XP bonus!','fa-trophy');qIdx=0;renderQuiz();}
+function updateMission(){
+  const pct=(missionCorrect/3)*100;
+  const bar=document.getElementById('mission-bar');
+  const count=document.getElementById('mission-count');
+  if(bar)bar.style.width=pct+'%';
+  if(count)count.textContent=missionCorrect+'/3';
+  if(missionCorrect>=3){
+    S.xp+=200;updateXP();
+    toast('🏆 Daily Mission Complete! +200 XP Bonus!','fa-star');
+    missionCorrect=0;
+    setTimeout(()=>{if(bar)bar.style.width='0%';if(count)count.textContent='0/3';},2000);
+  }
+}
+
+function nextQ(){
+  const qs=ALL_QS[curCat];
+  qIdx=(qIdx+1)%qs.length;
+  renderQuiz();
+}
+function finishQ(){S.xp+=100;updateXP();toast('Category complete! +100 XP bonus!','fa-trophy');qIdx=0;renderQuiz();}
 
 function updateXP(){
   S.level=Math.floor(S.xp/250)+1;
