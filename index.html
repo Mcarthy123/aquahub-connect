@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="AquaHub"/>
 <title>AquaHub Connect</title>
 <link rel="manifest" href="manifest.json"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
@@ -342,7 +343,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
     </div>
   </div>
   <div class="sp-bot">
-    <button class="sp-btn" onclick="goTo('home')">Get Started <i class="fa-solid fa-arrow-right"></i></button>
+    <button class="sp-btn" onclick="getStarted()">Get Started <i class="fa-solid fa-arrow-right"></i></button>
     <div class="sp-acc">
       <div class="sp-ao" onclick="enableVoice()"><i class="fa-solid fa-volume-high"></i><span>Voice</span></div>
       <div class="sp-ao" onclick="enableLargeText()"><i class="fa-solid fa-text-height"></i><span>Large Text</span></div>
@@ -351,6 +352,22 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
   </div>
 </div>
 
+  <!-- AUTH -->
+<div class="screen" id="auth-screen" style="padding:32px 24px;justify-content:center;background:#fff">
+  <div style="text-align:center;margin-bottom:24px">
+    <div style="font-family:var(--sans);font-size:28px;font-weight:900;color:var(--teal)">AquaHub Connect</div>
+    <div id="auth-title" style="font-size:15px;color:var(--text2);margin-top:6px;font-weight:600">Welcome back</div>
+  </div>
+  <div id="auth-extra" style="display:none">
+    <div class="fg"><label class="fl">Full Name</label><input class="fi" id="au-name" placeholder="e.g. Amina Issahaku"/></div>
+    <div class="fg"><label class="fl">Phone Number</label><input class="fi" id="au-phone" type="tel" placeholder="024 000 0000"/></div>
+  </div>
+  <div class="fg"><label class="fl">Email</label><input class="fi" id="au-email" type="email" placeholder="you@example.com"/></div>
+  <div class="fg"><label class="fl">Password</label><input class="fi" id="au-pass" type="password" placeholder="At least 6 characters"/></div>
+  <button class="btn btn-p" id="auth-btn" onclick="submitAuth()">Log In</button>
+  <div id="auth-msg" style="color:var(--red);font-size:13px;margin-top:12px;text-align:center"></div>
+  <div id="auth-switch" onclick="switchAuth()" style="text-align:center;margin-top:16px;color:var(--teal);font-weight:700;font-size:14px;cursor:pointer">No account? Sign up</div>
+</div>
 <!-- HOME -->
 <div class="screen" id="home">
   <div class="home-hero">
@@ -773,6 +790,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
     <div class="mi" onclick="openEdit()"><div class="mil"><div class="mii" style="background:var(--teal-l)"><i class="fa-solid fa-pen" style="color:var(--teal)"></i></div><div><div class="mit">Edit Profile</div><div class="mis">Update your name</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div>
     <div class="mi" onclick="goTo('game-screen');setNav(4)"><div class="mil"><div class="mii" style="background:var(--purple-l)"><i class="fa-solid fa-gamepad" style="color:var(--purple)"></i></div><div><div class="mit">EduGame</div><div class="mis" id="p-xp">620 XP · Level 4</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div>
     <div class="mi" onclick="toast('Order history coming soon','fa-clock')"><div class="mil"><div class="mii" style="background:var(--orange-l)"><i class="fa-solid fa-receipt" style="color:var(--orange)"></i></div><div><div class="mit">Order History</div><div class="mis" id="p-ord">3 orders placed</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div>
+   <div class="mi" onclick="logout()"><div class="mil"><div class="mii" style="background:var(--red-l)"><i class="fa-solid fa-right-from-bracket" style="color:var(--red)"></i></div><div><div class="mit">Log Out</div><div class="mis">Sign out of your account</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div> 
   </div>
 </div>
 
@@ -861,7 +879,7 @@ window.addEventListener('beforeinstallprompt',e=>{
 function installApp(){if(S.deferredPrompt){S.deferredPrompt.prompt();S.deferredPrompt.userChoice.then(()=>{S.deferredPrompt=null;document.getElementById('install-box').innerHTML='';toast('Installed!','fa-mobile-screen');});}else toast('Open in Chrome → "Add to Home Screen"','fa-circle-info');}
 
 // NAV
-function goTo(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const el=document.getElementById(id);if(el){el.classList.add('active');el.scrollTop=0;}document.getElementById('bnav').className='bnav'+(id==='splash'?'':' show');}
+function goTo(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const el=document.getElementById(id);if(el){el.classList.add('active');el.scrollTop=0;}document.getElementById('bnav').className='bnav'+(id==='splash'||id==='auth-screen'?'':' show');}
 function setNav(i){document.querySelectorAll('.ni').forEach((n,idx)=>n.classList.toggle('on',idx===i));}
 function toast(msg,icon='fa-circle-check'){const t=document.getElementById('toast');t.innerHTML=`<i class="fa-solid ${icon}"></i> ${msg}`;t.classList.add('show');if(S.haptic&&navigator.vibrate)navigator.vibrate(30);setTimeout(()=>t.classList.remove('show'),3000);}
 function cm(id){document.getElementById(id).classList.remove('show');}
@@ -1251,6 +1269,62 @@ renderProds();
 renderDates();
 renderTimes();
 renderQuiz();
+  // ===== AUTH (Supabase) =====
+const SUPABASE_URL='https://iuqbixmticnjamkbcbrx.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1cWJpeG10aWNuamFta2JjYnJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0OTkyNDAsImV4cCI6MjEwODA3NTI0MH0.WDm-Xu4gDr2UEVw9CkYlXnXsEiHcr87vUjVtPEkJEYU';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let authMode='login';
+
+function getStarted(){
+  sb.auth.getSession().then(({data})=>goTo(data.session?'home':'auth-screen'));
+}
+function switchAuth(){
+  authMode=authMode==='login'?'signup':'login';
+  const s=authMode==='signup';
+  document.getElementById('auth-title').textContent=s?'Create your account':'Welcome back';
+  document.getElementById('auth-extra').style.display=s?'block':'none';
+  document.getElementById('auth-btn').textContent=s?'Sign Up':'Log In';
+  document.getElementById('auth-switch').textContent=s?'Already registered? Log in':'No account? Sign up';
+  document.getElementById('auth-msg').textContent='';
+}
+async function submitAuth(){
+  const email=document.getElementById('au-email').value.trim();
+  const password=document.getElementById('au-pass').value;
+  const msg=document.getElementById('auth-msg');
+  const btn=document.getElementById('auth-btn');
+  msg.style.color='var(--red)';msg.textContent='';
+  if(!email||password.length<6){msg.textContent='Enter your email and a password of at least 6 characters';return;}
+  btn.disabled=true;
+  if(authMode==='signup'){
+    const name=document.getElementById('au-name').value.trim();
+    const phone=document.getElementById('au-phone').value.trim();
+    if(!name||!phone){msg.textContent='Enter your name and phone number';btn.disabled=false;return;}
+    const {data,error}=await sb.auth.signUp({email,password,options:{data:{full_name:name,phone}}});
+    if(error)msg.textContent=error.message;
+    else if(!data.session){msg.style.color='var(--green)';msg.textContent='Account created. Check your email to confirm, then log in.';}
+  }else{
+    const {error}=await sb.auth.signInWithPassword({email,password});
+    if(error)msg.textContent=error.message;
+  }
+  btn.disabled=false;
+}
+async function loadUser(session){
+  const {data}=await sb.from('profiles').select('full_name,role').eq('id',session.user.id).single();
+  const name=(data&&data.full_name)||'Friend';
+  S.name=name;
+  document.getElementById('hero-name').textContent=name+' 👋';
+  document.getElementById('pname').textContent=name;
+}
+async function logout(){await sb.auth.signOut();}
+
+sb.auth.onAuthStateChange((event,session)=>{
+  if(session&&(event==='SIGNED_IN'||event==='INITIAL_SESSION')){
+    setTimeout(()=>loadUser(session),0);
+    const cur=document.querySelector('.screen.active').id;
+    if(cur==='auth-screen'||cur==='splash'){goTo('home');setNav(0);}
+  }
+  if(event==='SIGNED_OUT'){goTo('auth-screen');}
+});
 </script>
 </body>
 </html>
