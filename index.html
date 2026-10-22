@@ -9,6 +9,7 @@
 <title>AquaHub Connect</title>
 <link rel="manifest" href="manifest.json"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="https://js.paystack.co/v1/inline.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
@@ -1356,7 +1357,7 @@ async function openDriver(){
   if(data){
     form.style.display='none';st.style.display='block';
     st.innerHTML=`<div style="font-family:var(--sans);font-size:16px;font-weight:800;margin-bottom:8px">Application received</div>
-    <div style="font-size:13px;color:var(--text2);line-height:1.7">${esc(data.service_type)} · ${esc(data.vehicle_type)} · ${esc(data.vehicle_plate)}<br>Area: ${esc(data.area)}<br>Status: <b>${esc(data.status)}</b><br>Registration fee: <b>${data.fee_paid?'Paid':'Not paid yet'}</b></div>`;
+    <div style="font-size:13px;color:var(--text2);line-height:1.7">${esc(data.service_type)} · ${esc(data.vehicle_type)} · ${esc(data.vehicle_plate)}<br>Area: ${esc(data.area)}<br>Status: <b>${esc(data.status)}</b><br>Registration fee: <b>${data.fee_paid?'Paid':'Not paid yet'}</b></div>${data.fee_paid?'':'<button class="btn btn-p" style="margin-top:14px" onclick="payFee()">Pay GH₵100 Registration Fee</button>'}`;
   }else{form.style.display='block';st.style.display='none';}
 }
 
@@ -1371,6 +1372,37 @@ async function submitDriver(){
   if(error){toast(error.message,'fa-triangle-exclamation');return;}
   toast('Application submitted!','fa-circle-check');
   openDriver();
+}
+  // ===== PAYSTACK =====
+const PAYSTACK_PUBLIC_KEY='pk_test_693bf3194bc8e8cf5024fac5cd8f23ac566e1199';
+
+async function payFee(){
+  const {data:{user}}=await sb.auth.getUser();
+  const ref='aqh_'+Date.now()+'_'+Math.floor(Math.random()*1e6);
+  const handler=PaystackPop.setup({
+    key:PAYSTACK_PUBLIC_KEY,
+    email:user.email,
+    amount:10000,
+    currency:'GHS',
+    ref:ref,
+    metadata:{user_id:user.id},
+    callback:function(resp){confirmPayment(resp.reference);},
+    onClose:function(){toast('Payment window closed','fa-circle-info');}
+  });
+  handler.openIframe();
+}
+
+async function confirmPayment(reference){
+  toast('Confirming payment...','fa-clock');
+  const {data:{session}}=await sb.auth.getSession();
+  const res=await fetch(SUPABASE_URL+'/functions/v1/verify-payment',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},
+    body:JSON.stringify({reference})
+  });
+  const out=await res.json();
+  if(out.ok){toast('Payment confirmed!','fa-circle-check');openDriver();}
+  else toast(out.error||'Could not confirm payment','fa-triangle-exclamation');
 }
 </script>
 </body>
