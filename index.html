@@ -1776,6 +1776,29 @@ async function loadDrivers(){
     <button class="btn btn-p" data-id="${d.user_id}" data-svc="${esc(d.service_type)}" data-name="${esc(d.full_name)}" onclick="openRequest(this)">Request this driver</button>
   </div>`).join('');
 }
+  // ===== USE PROFILE DETAILS INSTEAD OF RETYPING =====
+['gcname','gcphone','bname','bphone'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.closest('.fg').style.display='none';
+});
+['gcloc','bloc'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el&&!document.getElementById('as-'+id)){
+    const d=document.createElement('div');
+    d.id='as-'+id;
+    d.style.cssText='font-size:12px;color:var(--text2);margin-bottom:12px;font-weight:600';
+    el.closest('.fg').before(d);
+  }
+});
+async function showBookingAs(session){
+  const {data}=await sb.from('profiles').select('full_name,phone').eq('id',session.user.id).single();
+  const t=data?'Booking as '+(data.full_name||'you')+(data.phone?' · '+data.phone:''):'';
+  ['gcloc','bloc'].forEach(id=>{const d=document.getElementById('as-'+id);if(d)d.textContent=t;});
+}
+sb.auth.onAuthStateChange((event,session)=>{
+  if(session&&(event==='SIGNED_IN'||event==='INITIAL_SESSION'))setTimeout(()=>showBookingAs(session),0);
+  if(event==='SIGNED_OUT')['gcloc','bloc'].forEach(id=>{const d=document.getElementById('as-'+id);if(d)d.textContent='';});
+});
 </script>
 </body>
 </html>
