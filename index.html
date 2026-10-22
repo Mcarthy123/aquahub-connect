@@ -1856,6 +1856,71 @@ async function loadOrders(){
 sb.auth.onAuthStateChange((event,session)=>{
   if(session&&(event==='SIGNED_IN'||event==='INITIAL_SESSION'))setTimeout(syncProducts,0);
 });
+  // ===== MARKET PAYMENT =====
+// Replaces the earlier placeOrder: saves the order, then opens Paystack
+async function placeOrder(){
+  const addr=document.getElementById('ch-addr').value.trim();
+  const ph=document.getElementById('ch-ph').value.trim();
+  if(!addr){toast('Enter delivery address','fa-triangle-exclamation');return;}
+  if(!ph){toast('Enter phone number','fa-triangle-exclamation');return;}
+  if(!S.cart.length){toast('Your cart is empty','fa-triangle-exclamation');return;}
+  const items=S.cart.map(i=>({id:i.id,qty:i.qty}));
+  const {data:orderId,error}=await sb.rpc('place_order',{p_items:items,p_address:addr,p_phone:ph});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  S.cart=[];updateCart();renderProds();cm('chm');
+  payOrder(orderId);
+}
+
+async function payOrder(orderId){
+  const {data:o,error}=await sb.from('orders').select('id,total,status').eq('id',orderId).single();
+  if(error||!o){toast('Could not load the order','fa-triangle-exclamation');return;}
+  if(o.status!=='pending_payment'){toast('This order is already paid','fa-circle-info');return;}
+  const {data:{user}}=await sb.auth.getUser();
+  const ref='aqo_'+Date.now()+'_'+Math.floor(Math.random()*1e6);
+  const handler=PaystackPop.setup({
+    key:PAYSTACK_PUBLIC_KEY,
+    email:user.email,
+    amount:Math.round(Number(o.total)*100),
+    currency:'GHS',
+    ref:ref,
+    metadata:{user_id:user.id,order_id:o.id},
+    callback:function(resp){confirmOrderPayment(o.id,resp.reference);},
+    onClose:function(){toast('Not paid yet. Pay from Profile > Order History.','fa-circle-info');}
+  });
+  handler.openIframe();
+}
+
+async function confirmOrderPayment(orderId,reference){
+  toast('Confirming payment...','fa-clock');
+  const {data:{session}}=await sb.auth.getSession();
+  const res=await fetch(SUPABASE_URL+'/functions/v1/verify-order-payment',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},
+    body:JSON.stringify({order_id:orderId,reference})
+  });
+  const out=await res.json();
+  if(out.ok){toast('Payment confirmed! We will contact you about delivery.','fa-circle-check');openOrders();}
+  else toast(out.error||'Could not confirm payment','fa-triangle-exclamation');
+}
+
+// Replaces the earlier loadOrders: adds a Pay Now button
+async function loadOrders(){
+  const box=document.getElementById('orders-list');
+  box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.from('orders').select('*, order_items(*)').order('created_at',{ascending:false});
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No orders yet.</div>';return;}
+  const label={pending_payment:'Awaiting payment',paid:'Paid',delivered:'Delivered',cancelled:'Cancelled'};
+  box.innerHTML=data.map(o=>`<div class="card">
+    <div style="font-size:12px;color:var(--text3)">${new Date(o.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div>
+    <div style="font-size:13px;color:var(--text2);margin:8px 0;line-height:1.7">
+      ${o.order_items.map(i=>esc(i.name)+' · '+esc(i.qty)+' '+esc(i.unit)).join('<br>')}</div>
+    <div style="font-size:12px;color:var(--text2)">Deliver to: ${esc(o.address)}</div>
+    <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:14px">
+      <b style="color:var(--teal)">GH₵${Number(o.total).toFixed(2)}</b><b>${label[o.status]||esc(o.status)}</b></div>
+    ${o.status==='pending_payment'?`<button class="btn btn-p" style="margin-top:12px" onclick="payOrder('${o.id}')">Pay Now</button>`:''}
+  </div>`).join('');
+}
 </script>
 </body>
 </html>
