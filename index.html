@@ -1799,6 +1799,63 @@ sb.auth.onAuthStateChange((event,session)=>{
   if(session&&(event==='SIGNED_IN'||event==='INITIAL_SESSION'))setTimeout(()=>showBookingAs(session),0);
   if(event==='SIGNED_OUT')['gcloc','bloc'].forEach(id=>{const d=document.getElementById('as-'+id);if(d)d.textContent='';});
 });
+  // ===== MARKET ORDERS =====
+async function syncProducts(){
+  const {data}=await sb.from('products').select('*').eq('active',true);
+  if(!data)return;
+  data.forEach(p=>{
+    const m=PRODS.find(x=>x.id===p.id);
+    if(m){m.price=Number(p.price);m.min=Number(p.min_qty);}
+  });
+  renderProds();
+}
+
+// Replaces the earlier placeOrder: saves the order in the database
+async function placeOrder(){
+  const addr=document.getElementById('ch-addr').value.trim();
+  const ph=document.getElementById('ch-ph').value.trim();
+  if(!addr){toast('Enter delivery address','fa-triangle-exclamation');return;}
+  if(!ph){toast('Enter phone number','fa-triangle-exclamation');return;}
+  if(!S.cart.length){toast('Your cart is empty','fa-triangle-exclamation');return;}
+  const items=S.cart.map(i=>({id:i.id,qty:i.qty}));
+  const {error}=await sb.rpc('place_order',{p_items:items,p_address:addr,p_phone:ph});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  S.cart=[];updateCart();renderProds();cm('chm');
+  toast('Order saved! Payment is the next step.','fa-circle-check');
+}
+
+// "My Orders" screen, opened from Profile > Order History
+if(!document.getElementById('orders-screen')){
+  const s=document.createElement('div');
+  s.className='screen';s.id='orders-screen';
+  s.innerHTML='<div class="shdr"><h2>My Orders</h2><p>Your marketplace orders</p></div><div class="bbody"><div id="orders-list"></div></div>';
+  document.body.insertBefore(s,document.getElementById('bnav'));
+}
+const histBtn=document.querySelector('.mi[onclick*="Order history coming soon"]');
+if(histBtn)histBtn.setAttribute('onclick','openOrders()');
+
+function openOrders(){goTo('orders-screen');loadOrders();}
+
+async function loadOrders(){
+  const box=document.getElementById('orders-list');
+  box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.from('orders').select('*, order_items(*)').order('created_at',{ascending:false});
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No orders yet.</div>';return;}
+  const label={pending_payment:'Awaiting payment',paid:'Paid',delivered:'Delivered',cancelled:'Cancelled'};
+  box.innerHTML=data.map(o=>`<div class="card">
+    <div style="font-size:12px;color:var(--text3)">${new Date(o.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div>
+    <div style="font-size:13px;color:var(--text2);margin:8px 0;line-height:1.7">
+      ${o.order_items.map(i=>esc(i.name)+' · '+esc(i.qty)+' '+esc(i.unit)).join('<br>')}</div>
+    <div style="font-size:12px;color:var(--text2)">Deliver to: ${esc(o.address)}</div>
+    <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:14px">
+      <b style="color:var(--teal)">GH₵${Number(o.total).toFixed(2)}</b><b>${label[o.status]||esc(o.status)}</b></div>
+  </div>`).join('');
+}
+
+sb.auth.onAuthStateChange((event,session)=>{
+  if(session&&(event==='SIGNED_IN'||event==='INITIAL_SESSION'))setTimeout(syncProducts,0);
+});
 </script>
 </body>
 </html>
