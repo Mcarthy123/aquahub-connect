@@ -1585,6 +1585,60 @@ async function decide(id,status){
   toast('Driver '+status,'fa-circle-check');
   loadAdmin();
 }
+  // ===== CONNECT COLLECT / BOOK TO REAL DRIVERS =====
+let rqPrefill=null;
+
+// Replaces the earlier openDrivers: optionally pre-selects a service
+function openDrivers(service){
+  rqPrefill=null;
+  document.getElementById('fd-service').value=service||'';
+  goTo('drivers-screen');loadDrivers();loadMyBookings();
+}
+
+// Replaces the earlier openRequest: fills in details from the Collect/Book form
+function openRequest(btn){
+  rqDriver={id:btn.dataset.id,svc:btn.dataset.svc};
+  document.getElementById('rq-title').textContent='Request '+(btn.dataset.name||'driver');
+  const p=rqPrefill||{};
+  document.getElementById('rq-loc').value=p.loc||'';
+  document.getElementById('rq-notes').value=p.notes||'';
+  const sel=document.getElementById('rq-time');
+  sel.querySelectorAll('option[data-custom]').forEach(o=>o.remove());
+  if(p.when){
+    if(![...sel.options].some(o=>o.value===p.when)){
+      const o=new Option(p.when,p.when);o.dataset.custom='1';
+      sel.insertBefore(o,sel.firstChild);
+    }
+    sel.value=p.when;
+  }
+  openM('rq');
+}
+
+function startRealBooking(service,loc,when,notes){
+  openDrivers(service);
+  rqPrefill={loc,when,notes};
+  toast('Choose a driver for your request','fa-truck');
+}
+
+// Replaces the old Collect "Book Collector" button action
+function bookGarbage(){
+  const loc=document.getElementById('gcloc').value.trim();
+  const sched=document.getElementById('gcsched').value;
+  const notes=document.getElementById('gcnotes').value.trim();
+  if(!loc){toast('Enter pickup location','fa-triangle-exclamation');return;}
+  startRealBooking('Garbage Collection',loc,sched,notes);
+}
+
+// Replaces the old Book "Confirm Booking" button action
+function submitBooking(){
+  const loc=document.getElementById('bloc').value.trim();
+  const special=document.getElementById('bspecial').value.trim();
+  if(S.selSvc!==0){toast('Sanitation assessments are not available yet. Choose Toilet / Pit Draining.','fa-circle-info');return;}
+  if(!loc){toast('Enter your location','fa-triangle-exclamation');return;}
+  if(!S.selDate){toast('Select a date','fa-triangle-exclamation');return;}
+  if(!S.selTime){toast('Select a time','fa-triangle-exclamation');return;}
+  startRealBooking('Toilet / Pit Draining',loc,S.selDate+' at '+S.selTime,special);
+}
 </script>
 </body>
 </html>
