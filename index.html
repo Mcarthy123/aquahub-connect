@@ -317,6 +317,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
 @keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .fi2{animation:fi .3s ease}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+  input,select,textarea,.fi,.fsel{font-size:16px !important}
 </style>
 </head>
 <body>
@@ -1704,6 +1705,76 @@ async function cancelRequest(id){
   if(error){toast(error.message,'fa-triangle-exclamation');return;}
   toast('Request cancelled','fa-circle-check');
   loadMyBookings();
+}
+  // ===== DRIVER PRICES =====
+(function(){
+  const btn=document.querySelector('#drv-form .btn');
+  if(btn&&!document.getElementById('drv-price')){
+    const d=document.createElement('div');d.className='fg';
+    d.innerHTML='<label class="fl">Your price per visit (GH₵, optional)</label><input class="fi" id="drv-price" type="number" min="0" step="1" placeholder="e.g. 50"/>';
+    btn.parentNode.insertBefore(d,btn);
+  }
+})();
+
+// Replaces the earlier submitDriver: saves the price too
+async function submitDriver(){
+  const service_type=document.getElementById('drv-service').value;
+  const vehicle_type=document.getElementById('drv-vehicle').value.trim();
+  const vehicle_plate=document.getElementById('drv-plate').value.trim();
+  const area=document.getElementById('drv-area').value.trim();
+  const raw=document.getElementById('drv-price').value.trim();
+  const price=raw===''?null:Number(raw);
+  if(!vehicle_type||!vehicle_plate||!area){toast('Fill in all the fields','fa-triangle-exclamation');return;}
+  if(price!==null&&(!isFinite(price)||price<0||price>100000)){toast('Enter a valid price','fa-triangle-exclamation');return;}
+  const {data:{user}}=await sb.auth.getUser();
+  const {error}=await sb.from('collectors').insert({user_id:user.id,service_type,vehicle_type,vehicle_plate,area,price});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  toast('Application submitted!','fa-circle-check');
+  openDriver();
+}
+
+// Replaces the earlier openDriver: shows the price and a Change Price button
+async function openDriver(){
+  goTo('driver-screen');
+  const {data:{user}}=await sb.auth.getUser();
+  const {data}=await sb.from('collectors').select('*').eq('user_id',user.id).maybeSingle();
+  const form=document.getElementById('drv-form'),st=document.getElementById('drv-status');
+  if(data){
+    form.style.display='none';st.style.display='block';
+    const price=data.price!=null?'GH₵'+data.price+' per visit':'Not set (customers see "Ask the driver")';
+    const pay=data.fee_paid?'':'<button class="btn btn-p" style="margin-top:14px" onclick="payFee()">Pay GH₵100 Registration Fee</button>';
+    st.innerHTML=`<div style="font-family:var(--sans);font-size:16px;font-weight:800;margin-bottom:8px">Application received</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.7">${esc(data.service_type)} · ${esc(data.vehicle_type)} · ${esc(data.vehicle_plate)}<br>Area: ${esc(data.area)}<br>Price: <b>${esc(price)}</b><br>Status: <b>${esc(data.status)}</b><br>Registration fee: <b>${data.fee_paid?'Paid':'Not paid yet'}</b></div>
+    <button class="btn btn-o" style="margin-top:14px" onclick="changePrice()">Change Price</button>${pay}`;
+  }else{form.style.display='block';st.style.display='none';}
+}
+
+async function changePrice(){
+  const v=prompt('Your price per visit in GH₵ (leave empty for "Ask the driver")');
+  if(v===null)return;
+  const clean=v.trim();
+  const price=clean===''?null:Number(clean);
+  if(price!==null&&(!isFinite(price)||price<0||price>100000)){toast('Enter a valid amount','fa-triangle-exclamation');return;}
+  const {data:{user}}=await sb.auth.getUser();
+  const {error}=await sb.from('collectors').update({price}).eq('user_id',user.id);
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  toast('Price updated','fa-circle-check');
+  openDriver();
+}
+
+// Replaces the earlier loadDrivers: shows the price on each driver card
+async function loadDrivers(){
+  const svc=document.getElementById('fd-service').value||null;
+  const box=document.getElementById('fd-list');
+  box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.rpc('list_drivers',{p_service:svc});
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card">No verified drivers yet for this service.</div>';return;}
+  box.innerHTML=data.map(d=>`<div class="card">
+    <div style="font-family:var(--sans);font-size:15px;font-weight:800">${esc(d.full_name)||'Driver'}</div>
+    <div style="font-size:12px;color:var(--text2);margin:4px 0 12px;line-height:1.6">${esc(d.service_type)} · ${esc(d.vehicle_type)}<br>Area: ${esc(d.area)}<br>${d.price!=null?'<b style="color:var(--teal)">GH₵'+esc(d.price)+'</b> per visit':'Price: ask the driver'}</div>
+    <button class="btn btn-p" data-id="${d.user_id}" data-svc="${esc(d.service_type)}" data-name="${esc(d.full_name)}" onclick="openRequest(this)">Request this driver</button>
+  </div>`).join('');
 }
 </script>
 </body>
