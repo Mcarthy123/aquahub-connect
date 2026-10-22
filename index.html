@@ -431,6 +431,11 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
   <div class="shdr"><h2>My Jobs</h2><p>Requests from customers</p></div>
   <div class="bbody"><div id="jobs-list"></div></div>
 </div>
+  <!-- ADMIN -->
+<div class="screen" id="admin-screen">
+  <div class="shdr"><h2>Driver Approvals</h2><p>Review driver applications</p></div>
+  <div class="bbody"><div id="admin-list"></div></div>
+</div>
 <!-- HOME -->
 <div class="screen" id="home">
   <div class="home-hero">
@@ -853,7 +858,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
     <div class="mi" onclick="openEdit()"><div class="mil"><div class="mii" style="background:var(--teal-l)"><i class="fa-solid fa-pen" style="color:var(--teal)"></i></div><div><div class="mit">Edit Profile</div><div class="mis">Update your name</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div>
     <div class="mi" onclick="goTo('game-screen');setNav(4)"><div class="mil"><div class="mii" style="background:var(--purple-l)"><i class="fa-solid fa-gamepad" style="color:var(--purple)"></i></div><div><div class="mit">EduGame</div><div class="mis" id="p-xp">620 XP · Level 4</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div>
     <div class="mi" onclick="toast('Order history coming soon','fa-clock')"><div class="mil"><div class="mii" style="background:var(--orange-l)"><i class="fa-solid fa-receipt" style="color:var(--orange)"></i></div><div><div class="mit">Order History</div><div class="mis" id="p-ord">3 orders placed</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div>
-  <div class="mi" onclick="openJobs()"><div class="mil"><div class="mii" style="background:var(--orange-l)"><i class="fa-solid fa-clipboard-list" style="color:var(--orange)"></i></div><div><div class="mit">My Jobs</div><div class="mis">Accept or decline requests</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div> <div class="mi" onclick="openDrivers()"><div class="mil"><div class="mii" style="background:var(--green-l)"><i class="fa-solid fa-magnifying-glass" style="color:var(--green)"></i></div><div><div class="mit">Find a Driver</div><div class="mis">Request a verified driver</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div><div class="mi" onclick="openDriver()"><div class="mil"><div class="mii" style="background:var(--sky-l)"><i class="fa-solid fa-truck" style="color:var(--sky)"></i></div><div><div class="mit">Become a Driver</div><div class="mis">Register to offer services</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div> 
+<div class="mi" onclick="openAdmin()" style="display:none"><div class="mil"><div class="mii" style="background:var(--purple-l)"><i class="fa-solid fa-user-shield" style="color:var(--purple)"></i></div><div><div class="mit">Driver Approvals</div><div class="mis">Admin only</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div>  <div class="mi" onclick="openJobs()"><div class="mil"><div class="mii" style="background:var(--orange-l)"><i class="fa-solid fa-clipboard-list" style="color:var(--orange)"></i></div><div><div class="mit">My Jobs</div><div class="mis">Accept or decline requests</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div> <div class="mi" onclick="openDrivers()"><div class="mil"><div class="mii" style="background:var(--green-l)"><i class="fa-solid fa-magnifying-glass" style="color:var(--green)"></i></div><div><div class="mit">Find a Driver</div><div class="mis">Request a verified driver</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div><div class="mi" onclick="openDriver()"><div class="mil"><div class="mii" style="background:var(--sky-l)"><i class="fa-solid fa-truck" style="color:var(--sky)"></i></div><div><div class="mit">Become a Driver</div><div class="mis">Register to offer services</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div> 
    <div class="mi" onclick="logout()"><div class="mil"><div class="mii" style="background:var(--red-l)"><i class="fa-solid fa-right-from-bracket" style="color:var(--red)"></i></div><div><div class="mit">Log Out</div><div class="mis">Sign out of your account</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div> 
   </div>
 </div>
@@ -1374,7 +1379,8 @@ async function submitAuth(){
 }
 async function loadUser(session){
   const {data}=await sb.from('profiles').select('full_name,role').eq('id',session.user.id).single();
-  const name=(data&&data.full_name)||'Friend';
+ const name=(data&&data.full_name)||'Friend';
+applyRole((data&&data.role)||'user');
   S.name=name;
   document.getElementById('hero-name').textContent=name+' 👋';
   document.getElementById('pname').textContent=name;
@@ -1533,6 +1539,51 @@ async function setJob(id,status){
   if(error){toast(error.message,'fa-triangle-exclamation');return;}
   toast('Job '+status,'fa-circle-check');
   loadJobs();
+}
+  // ===== ROLES + ADMIN =====
+function applyRole(role){
+  const show=(fn,on)=>{
+    const el=document.querySelector('.mi[onclick="'+fn+'"]');
+    if(el)el.style.display=on?'':'none';
+  };
+  show('openJobs()',role==='collector'||role==='admin');
+  show('openAdmin()',role==='admin');
+  show('openDriver()',role==='user');
+}
+
+function openAdmin(){goTo('admin-screen');loadAdmin();}
+
+async function loadAdmin(){
+  const box=document.getElementById('admin-list');
+  box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.rpc('admin_list_drivers');
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No applications yet.</div>';return;}
+  box.innerHTML=data.map(d=>{
+    let actions='';
+    if(d.status==='verified'){
+      actions=`<button class="btn btn-o" style="margin-top:12px" onclick="decide('${d.user_id}','rejected')">Revoke</button>`;
+    }else if(!d.fee_paid){
+      actions=`<div style="margin-top:12px;font-size:12px;color:var(--orange);font-weight:700">Waiting for the registration fee</div>`;
+    }else{
+      actions=`<div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-p" onclick="decide('${d.user_id}','verified')">Approve</button>
+        <button class="btn btn-o" onclick="decide('${d.user_id}','rejected')">Reject</button></div>`;
+    }
+    return `<div class="card">
+      <div style="font-size:14px;font-weight:800">${esc(d.full_name)||'—'}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.7">
+        Phone: ${esc(d.phone)}<br>${esc(d.service_type)} · ${esc(d.vehicle_type)} · ${esc(d.vehicle_plate)}<br>
+        Area: ${esc(d.area)}<br>Fee paid: <b>${d.fee_paid?'Yes':'No'}</b><br>Status: <b>${esc(d.status)}</b></div>
+      ${actions}</div>`;
+  }).join('');
+}
+
+async function decide(id,status){
+  const {error}=await sb.rpc('admin_set_driver',{p_user:id,p_status:status});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  toast('Driver '+status,'fa-circle-check');
+  loadAdmin();
 }
 </script>
 </body>
