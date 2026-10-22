@@ -1639,6 +1639,72 @@ function submitBooking(){
   if(!S.selTime){toast('Select a time','fa-triangle-exclamation');return;}
   startRealBooking('Toilet / Pit Draining',loc,S.selDate+' at '+S.selTime,special);
 }
+  // ===== IN-APP ALERTS + CANCEL =====
+let alertTimer=null,lastPending=null;
+
+function setBadge(n){
+  const nav=document.querySelectorAll('.bnav .ni')[5];
+  if(nav){
+    let b=document.getElementById('jobs-badge');
+    if(!b){b=document.createElement('div');b.id='jobs-badge';b.className='nbadge';nav.appendChild(b);}
+    b.style.display=n>0?'block':'none';
+    b.textContent=n;
+  }
+  const mit=document.querySelector('.mi[onclick="openJobs()"] .mit');
+  if(mit)mit.textContent=n>0?'My Jobs ('+n+' new)':'My Jobs';
+}
+
+async function checkJobs(){
+  const {data,error}=await sb.rpc('my_jobs');
+  if(error||!data)return;
+  const n=data.filter(j=>j.status==='requested').length;
+  if(lastPending!==null&&n>lastPending)toast('New job request!','fa-bell');
+  lastPending=n;
+  setBadge(n);
+}
+
+sb.auth.onAuthStateChange((event,session)=>{
+  clearInterval(alertTimer);
+  lastPending=null;
+  if(session){
+    checkJobs();
+    alertTimer=setInterval(()=>{if(!document.hidden)checkJobs();},30000);
+  }else setBadge(0);
+});
+
+// Replaces the earlier setJob: also refreshes the badge
+async function setJob(id,status){
+  const {error}=await sb.from('bookings').update({status}).eq('id',id);
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  toast('Job '+status,'fa-circle-check');
+  loadJobs();checkJobs();
+}
+
+// Replaces the earlier loadMyBookings: adds the Cancel button
+async function loadMyBookings(){
+  const box=document.getElementById('my-bookings');
+  const {data:{user}}=await sb.auth.getUser();
+  const {data,error}=await sb.from('bookings').select('*')
+    .eq('customer_id',user.id).order('created_at',{ascending:false});
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No requests yet.</div>';return;}
+  box.innerHTML=data.map(b=>{
+    const cancel=(b.status==='requested'||b.status==='accepted')
+      ?`<button class="btn btn-o" style="margin-top:12px" onclick="cancelRequest('${b.id}')">Cancel Request</button>`:'';
+    return `<div class="card">
+      <div style="font-size:13px;font-weight:800">${esc(b.service_type)}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.6">${esc(b.location)}<br>${esc(b.preferred_time)}<br>Status: <b>${esc(b.status)}</b></div>
+      ${cancel}</div>`;
+  }).join('');
+}
+
+async function cancelRequest(id){
+  if(!confirm('Cancel this request?'))return;
+  const {error}=await sb.from('bookings').update({status:'cancelled'}).eq('id',id);
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  toast('Request cancelled','fa-circle-check');
+  loadMyBookings();
+}
 </script>
 </body>
 </html>
