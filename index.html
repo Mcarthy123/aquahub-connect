@@ -372,6 +372,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
   <!-- DRIVER -->
 <div class="screen" id="driver-screen">
   <div class="shdr"><h2>Become a Driver</h2><p>Register to offer services on AquaHub</p></div>
+  
   <div class="bbody">
     <div class="card" id="drv-form">
       <div class="fg"><label class="fl">Service you offer</label>
@@ -386,6 +387,35 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
       <button class="btn btn-p" onclick="submitDriver()"><i class="fa-solid fa-paper-plane"></i> Submit Application</button>
     </div>
     <div class="card" id="drv-status" style="display:none"></div>
+  </div>
+</div>
+  <!-- DRIVERS -->
+<div class="screen" id="drivers-screen">
+  <div class="shdr"><h2>Find a Driver</h2><p>Verified drivers you can request</p></div>
+  <div class="bbody">
+    <div class="fg"><label class="fl">Service</label>
+      <select class="fsel" id="fd-service" onchange="loadDrivers()">
+        <option value="">All services</option>
+        <option>Toilet / Pit Draining</option>
+        <option>Garbage Collection</option>
+        <option>Water Delivery</option>
+      </select></div>
+    <div id="fd-list"></div>
+    <div class="slbl" style="margin-top:8px">My Requests</div>
+    <div id="my-bookings"></div>
+  </div>
+</div>
+
+<!-- REQUEST MODAL -->
+<div class="mo" id="rq" onclick="cm('rq')">
+  <div class="ms" onclick="event.stopPropagation()">
+    <div class="mh"></div>
+    <div class="mt" id="rq-title">Request a driver</div>
+    <div class="fg"><label class="fl">Service location</label><input class="fi" id="rq-loc" placeholder="e.g. House 12, Lang-Oullo"/></div>
+    <div class="fg"><label class="fl">Preferred date and time</label><input class="fi" id="rq-time" placeholder="e.g. Tomorrow morning"/></div>
+    <div class="fg"><label class="fl">Notes (optional)</label><input class="fi" id="rq-notes" placeholder="Anything the driver should know"/></div>
+    <button class="btn btn-p" style="margin-bottom:10px" onclick="sendRequest()">Send Request</button>
+    <button class="btn btn-o" onclick="cm('rq')">Cancel</button>
   </div>
 </div>
 <!-- HOME -->
@@ -810,7 +840,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
     <div class="mi" onclick="openEdit()"><div class="mil"><div class="mii" style="background:var(--teal-l)"><i class="fa-solid fa-pen" style="color:var(--teal)"></i></div><div><div class="mit">Edit Profile</div><div class="mis">Update your name</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div>
     <div class="mi" onclick="goTo('game-screen');setNav(4)"><div class="mil"><div class="mii" style="background:var(--purple-l)"><i class="fa-solid fa-gamepad" style="color:var(--purple)"></i></div><div><div class="mit">EduGame</div><div class="mis" id="p-xp">620 XP · Level 4</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div>
     <div class="mi" onclick="toast('Order history coming soon','fa-clock')"><div class="mil"><div class="mii" style="background:var(--orange-l)"><i class="fa-solid fa-receipt" style="color:var(--orange)"></i></div><div><div class="mit">Order History</div><div class="mis" id="p-ord">3 orders placed</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div>
-   <div class="mi" onclick="openDriver()"><div class="mil"><div class="mii" style="background:var(--sky-l)"><i class="fa-solid fa-truck" style="color:var(--sky)"></i></div><div><div class="mit">Become a Driver</div><div class="mis">Register to offer services</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div> 
+   <div class="mi" onclick="openDrivers()"><div class="mil"><div class="mii" style="background:var(--green-l)"><i class="fa-solid fa-magnifying-glass" style="color:var(--green)"></i></div><div><div class="mit">Find a Driver</div><div class="mis">Request a verified driver</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div><div class="mi" onclick="openDriver()"><div class="mil"><div class="mii" style="background:var(--sky-l)"><i class="fa-solid fa-truck" style="color:var(--sky)"></i></div><div><div class="mit">Become a Driver</div><div class="mis">Register to offer services</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div> 
    <div class="mi" onclick="logout()"><div class="mil"><div class="mii" style="background:var(--red-l)"><i class="fa-solid fa-right-from-bracket" style="color:var(--red)"></i></div><div><div class="mit">Log Out</div><div class="mis">Sign out of your account</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div> 
   </div>
 </div>
@@ -1403,6 +1433,58 @@ async function confirmPayment(reference){
   const out=await res.json();
   if(out.ok){toast('Payment confirmed!','fa-circle-check');openDriver();}
   else toast(out.error||'Could not confirm payment','fa-triangle-exclamation');
+}
+  // ===== FIND A DRIVER / REQUESTS =====
+let rqDriver=null;
+
+function openDrivers(){goTo('drivers-screen');loadDrivers();loadMyBookings();}
+
+async function loadDrivers(){
+  const svc=document.getElementById('fd-service').value||null;
+  const box=document.getElementById('fd-list');
+  box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.rpc('list_drivers',{p_service:svc});
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card">No verified drivers yet for this service.</div>';return;}
+  box.innerHTML=data.map(d=>`<div class="card">
+    <div style="font-family:var(--sans);font-size:15px;font-weight:800">${esc(d.full_name)||'Driver'}</div>
+    <div style="font-size:12px;color:var(--text2);margin:4px 0 12px;line-height:1.6">${esc(d.service_type)} · ${esc(d.vehicle_type)}<br>Area: ${esc(d.area)}</div>
+    <button class="btn btn-p" data-id="${d.user_id}" data-svc="${esc(d.service_type)}" data-name="${esc(d.full_name)}" onclick="openRequest(this)">Request this driver</button>
+  </div>`).join('');
+}
+
+function openRequest(btn){
+  rqDriver={id:btn.dataset.id,svc:btn.dataset.svc};
+  document.getElementById('rq-title').textContent='Request '+(btn.dataset.name||'driver');
+  openM('rq');
+}
+
+async function sendRequest(){
+  const loc=document.getElementById('rq-loc').value.trim();
+  const time=document.getElementById('rq-time').value.trim();
+  const notes=document.getElementById('rq-notes').value.trim();
+  if(!loc){toast('Enter the service location','fa-triangle-exclamation');return;}
+  const {data:{user}}=await sb.auth.getUser();
+  const {error}=await sb.from('bookings').insert({
+    customer_id:user.id,driver_id:rqDriver.id,service_type:rqDriver.svc,
+    location:loc,preferred_time:time,notes:notes});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  cm('rq');
+  toast('Request sent! The driver will respond.','fa-circle-check');
+  loadMyBookings();
+}
+
+async function loadMyBookings(){
+  const box=document.getElementById('my-bookings');
+  const {data:{user}}=await sb.auth.getUser();
+  const {data,error}=await sb.from('bookings').select('*')
+    .eq('customer_id',user.id).order('created_at',{ascending:false});
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No requests yet.</div>';return;}
+  box.innerHTML=data.map(b=>`<div class="card">
+    <div style="font-size:13px;font-weight:800">${esc(b.service_type)}</div>
+    <div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.6">${esc(b.location)}<br>${esc(b.preferred_time)}<br>Status: <b>${esc(b.status)}</b></div>
+  </div>`).join('');
 }
 </script>
 </body>
