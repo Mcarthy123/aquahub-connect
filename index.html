@@ -412,7 +412,15 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
     <div class="mh"></div>
     <div class="mt" id="rq-title">Request a driver</div>
     <div class="fg"><label class="fl">Service location</label><input class="fi" id="rq-loc" placeholder="e.g. House 12, Lang-Oullo"/></div>
-    <div class="fg"><label class="fl">Preferred date and time</label><input class="fi" id="rq-time" placeholder="e.g. Tomorrow morning"/></div>
+    <div class="fg"><label class="fl">Preferred date and time</label>
+  <select class="fsel" id="rq-time">
+    <option>Today — As soon as possible</option>
+    <option>Today — Morning (8AM–12PM)</option>
+    <option>Today — Afternoon (12PM–5PM)</option>
+    <option>Tomorrow — Morning</option>
+    <option>Tomorrow — Afternoon</option>
+    <option>Weekly recurring pickup</option>
+  </select></div>
     <div class="fg"><label class="fl">Notes (optional)</label><input class="fi" id="rq-notes" placeholder="Anything the driver should know"/></div>
     <button class="btn btn-p" style="margin-bottom:10px" onclick="sendRequest()">Send Request</button>
     <button class="btn btn-o" onclick="cm('rq')">Cancel</button>
