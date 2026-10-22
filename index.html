@@ -426,6 +426,11 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
     <button class="btn btn-o" onclick="cm('rq')">Cancel</button>
   </div>
 </div>
+  <!-- MY JOBS -->
+<div class="screen" id="jobs-screen">
+  <div class="shdr"><h2>My Jobs</h2><p>Requests from customers</p></div>
+  <div class="bbody"><div id="jobs-list"></div></div>
+</div>
 <!-- HOME -->
 <div class="screen" id="home">
   <div class="home-hero">
@@ -848,7 +853,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
     <div class="mi" onclick="openEdit()"><div class="mil"><div class="mii" style="background:var(--teal-l)"><i class="fa-solid fa-pen" style="color:var(--teal)"></i></div><div><div class="mit">Edit Profile</div><div class="mis">Update your name</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div>
     <div class="mi" onclick="goTo('game-screen');setNav(4)"><div class="mil"><div class="mii" style="background:var(--purple-l)"><i class="fa-solid fa-gamepad" style="color:var(--purple)"></i></div><div><div class="mit">EduGame</div><div class="mis" id="p-xp">620 XP · Level 4</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div>
     <div class="mi" onclick="toast('Order history coming soon','fa-clock')"><div class="mil"><div class="mii" style="background:var(--orange-l)"><i class="fa-solid fa-receipt" style="color:var(--orange)"></i></div><div><div class="mit">Order History</div><div class="mis" id="p-ord">3 orders placed</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div>
-   <div class="mi" onclick="openDrivers()"><div class="mil"><div class="mii" style="background:var(--green-l)"><i class="fa-solid fa-magnifying-glass" style="color:var(--green)"></i></div><div><div class="mit">Find a Driver</div><div class="mis">Request a verified driver</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div><div class="mi" onclick="openDriver()"><div class="mil"><div class="mii" style="background:var(--sky-l)"><i class="fa-solid fa-truck" style="color:var(--sky)"></i></div><div><div class="mit">Become a Driver</div><div class="mis">Register to offer services</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div> 
+  <div class="mi" onclick="openJobs()"><div class="mil"><div class="mii" style="background:var(--orange-l)"><i class="fa-solid fa-clipboard-list" style="color:var(--orange)"></i></div><div><div class="mit">My Jobs</div><div class="mis">Accept or decline requests</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div> <div class="mi" onclick="openDrivers()"><div class="mil"><div class="mii" style="background:var(--green-l)"><i class="fa-solid fa-magnifying-glass" style="color:var(--green)"></i></div><div><div class="mit">Find a Driver</div><div class="mis">Request a verified driver</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div><div class="mi" onclick="openDriver()"><div class="mil"><div class="mii" style="background:var(--sky-l)"><i class="fa-solid fa-truck" style="color:var(--sky)"></i></div><div><div class="mit">Become a Driver</div><div class="mis">Register to offer services</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div> 
    <div class="mi" onclick="logout()"><div class="mil"><div class="mii" style="background:var(--red-l)"><i class="fa-solid fa-right-from-bracket" style="color:var(--red)"></i></div><div><div class="mit">Log Out</div><div class="mis">Sign out of your account</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i></div> 
   </div>
 </div>
@@ -1493,6 +1498,41 @@ async function loadMyBookings(){
     <div style="font-size:13px;font-weight:800">${esc(b.service_type)}</div>
     <div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.6">${esc(b.location)}<br>${esc(b.preferred_time)}<br>Status: <b>${esc(b.status)}</b></div>
   </div>`).join('');
+}
+  // ===== MY JOBS (drivers) =====
+function openJobs(){goTo('jobs-screen');loadJobs();}
+
+async function loadJobs(){
+  const box=document.getElementById('jobs-list');
+  box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.rpc('my_jobs');
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No requests yet.</div>';return;}
+  box.innerHTML=data.map(j=>{
+    let actions='';
+    if(j.status==='requested'){
+      actions=`<div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-p" onclick="setJob('${j.id}','accepted')">Accept</button>
+        <button class="btn btn-o" onclick="setJob('${j.id}','declined')">Decline</button></div>`;
+    }else if(j.status==='accepted'){
+      actions=`<button class="btn btn-p" style="margin-top:12px" onclick="setJob('${j.id}','completed')">Mark Completed</button>`;
+    }
+    const phone=j.customer_phone?`<br>Phone: <b>${esc(j.customer_phone)}</b>`:'';
+    return `<div class="card">
+      <div style="font-size:14px;font-weight:800">${esc(j.service_type)}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.7">
+        Customer: <b>${esc(j.customer_name)||'—'}</b>${phone}<br>
+        Location: ${esc(j.location)}<br>When: ${esc(j.preferred_time)}
+        ${j.notes?'<br>Notes: '+esc(j.notes):''}<br>Status: <b>${esc(j.status)}</b></div>
+      ${actions}</div>`;
+  }).join('');
+}
+
+async function setJob(id,status){
+  const {error}=await sb.from('bookings').update({status}).eq('id',id);
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  toast('Job '+status,'fa-circle-check');
+  loadJobs();
 }
 </script>
 </body>
