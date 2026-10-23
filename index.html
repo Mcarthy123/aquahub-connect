@@ -1921,6 +1921,62 @@ async function loadOrders(){
     ${o.status==='pending_payment'?`<button class="btn btn-p" style="margin-top:12px" onclick="payOrder('${o.id}')">Pay Now</button>`:''}
   </div>`).join('');
 }
+  // ===== ADMIN: MARKET ORDERS =====
+if(!document.getElementById('admin-orders-screen')){
+  const s=document.createElement('div');
+  s.className='screen';s.id='admin-orders-screen';
+  s.innerHTML='<div class="shdr"><h2>Market Orders</h2><p>Paid orders waiting for delivery</p></div><div class="bbody"><div id="admin-orders-list"></div></div>';
+  document.body.insertBefore(s,document.getElementById('bnav'));
+}
+(function(){
+  const ref=document.querySelector('.mi[onclick="openJobs()"]');
+  if(ref&&!document.querySelector('.mi[onclick="openAdminOrders()"]')){
+    const d=document.createElement('div');
+    d.className='mi';d.setAttribute('onclick','openAdminOrders()');d.style.display='none';
+    d.innerHTML='<div class="mil"><div class="mii" style="background:var(--teal-l)"><i class="fa-solid fa-box" style="color:var(--teal)"></i></div><div><div class="mit">Market Orders</div><div class="mis">Admin only</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>';
+    ref.before(d);
+  }
+})();
+
+// Replaces the earlier applyRole: also controls the Market Orders button
+function applyRole(role){
+  const show=(fn,on)=>{
+    const el=document.querySelector('.mi[onclick="'+fn+'"]');
+    if(el)el.style.display=on?'':'none';
+  };
+  show('openJobs()',role==='collector'||role==='admin');
+  show('openAdmin()',role==='admin');
+  show('openAdminOrders()',role==='admin');
+  show('openDriver()',role==='user');
+}
+
+function openAdminOrders(){goTo('admin-orders-screen');loadAdminOrders();}
+
+async function loadAdminOrders(){
+  const box=document.getElementById('admin-orders-list');
+  box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.rpc('admin_list_orders');
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No orders yet.</div>';return;}
+  const label={pending_payment:'Awaiting payment',paid:'Paid. Ready to deliver',delivered:'Delivered',cancelled:'Cancelled'};
+  box.innerHTML=data.map(o=>`<div class="card">
+    <div style="font-size:12px;color:var(--text3)">${new Date(o.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+    <div style="font-size:14px;font-weight:800;margin-top:4px">${esc(o.customer_name)||'Customer'}</div>
+    <div style="font-size:13px;color:var(--text2);margin:6px 0;line-height:1.7">${esc(o.items).replace(/\n/g,'<br>')}</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.7">Address: ${esc(o.address)}<br>Phone: <b>${esc(o.phone)}</b></div>
+    <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:14px">
+      <b style="color:var(--teal)">GH₵${Number(o.total).toFixed(2)}</b><b>${label[o.status]||esc(o.status)}</b></div>
+    ${o.status==='paid'?`<button class="btn btn-p" style="margin-top:12px" onclick="deliverOrder('${o.id}')">Mark Delivered</button>`:''}
+  </div>`).join('');
+}
+
+async function deliverOrder(id){
+  if(!confirm('Mark this order as delivered?'))return;
+  const {error}=await sb.rpc('admin_set_order',{p_order:id,p_status:'delivered'});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  toast('Order marked delivered','fa-circle-check');
+  loadAdminOrders();
+}
 </script>
 </body>
 </html>
