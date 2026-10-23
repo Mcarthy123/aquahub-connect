@@ -2309,6 +2309,147 @@ loadMyBookings=async function(){
     cb.before(b);
   });
 };
+  // ===== HOME TRACK BANNER + FIXES =====
+(function(){
+  const h=new Date().getHours();
+  const el=document.querySelector('.hero-greet');
+  if(el)el.textContent=h<12?'Good morning,':h<17?'Good afternoon,':'Good evening,';
+})();
+
+(function(){
+  const box=document.getElementById('install-box');
+  if(box&&!document.getElementById('track-banner')){
+    const b=document.createElement('div');
+    b.id='track-banner';
+    b.style.cssText='display:none;background:linear-gradient(135deg,#0f5a44,#1a7a5e);border-radius:var(--r);padding:14px 16px;margin-bottom:14px;align-items:center;gap:12px;cursor:pointer';
+    b.onclick=()=>openLive(b.dataset.id);
+    b.innerHTML='<i class="fa-solid fa-truck" style="color:#fff;font-size:22px"></i><div style="flex:1"><div style="font-size:13px;font-weight:800;color:#fff">Track your driver</div><div id="track-sub" style="font-size:11px;color:rgba(255,255,255,0.85)"></div></div><i class="fa-solid fa-chevron-right" style="color:#fff"></i>';
+    box.after(b);
+  }
+})();
+
+async function checkTrack(){
+  const b=document.getElementById('track-banner');if(!b)return;
+  const {data:{user}}=await sb.auth.getUser();
+  if(!user){b.style.display='none';return;}
+  const {data}=await sb.from('bookings').select('id,service_type')
+    .eq('customer_id',user.id).eq('status','accepted').order('created_at',{ascending:false});
+  if(!data||!data.length){b.style.display='none';return;}
+  b.dataset.id=data[0].id;
+  document.getElementById('track-sub').textContent=
+    data[0].service_type+' accepted. Tap to see your driver on the map'+(data.length>1?' (+'+(data.length-1)+' more)':'');
+  b.style.display='flex';
+}
+
+const _goTo=goTo;
+goTo=function(id){_goTo(id);if(id==='home')checkTrack();};
+
+async function profileExtras(session){
+  const loc=document.querySelector('.ploc');
+  if(loc)loc.innerHTML='<i class="fa-solid fa-envelope"></i> '+esc(session.user.email);
+  const {count}=await sb.from('orders').select('id',{count:'exact',head:true});
+  const n=count||0;
+  const a=document.getElementById('ps-ord');if(a)a.textContent=n;
+  const p=document.getElementById('p-ord');if(p)p.textContent=n+' order'+(n===1?'':'s')+' placed';
+}
+
+let trackTimer=null;
+sb.auth.onAuthStateChange((event,session)=>{
+  clearInterval(trackTimer);
+  if(session){
+    setTimeout(()=>{checkTrack();profileExtras(session);},0);
+    trackTimer=setInterval(()=>{if(!document.hidden)checkTrack();},30000);
+  }else{
+    const b=document.getElementById('track-banner');if(b)b.style.display='none';
+  }
+});
+
+// --- Settings toggles ---
+function toggleFor(label){
+  for(const r of document.querySelectorAll('#profile-screen .ar')){
+    const t=r.querySelector('.art');
+    if(t&&t.textContent.trim()===label)return r.querySelector('.tgl');
+  }
+  return null;
+}
+const hcStyle=document.createElement('style');
+hcStyle.textContent='body.hc{--text:#000;--text2:#1f2937;--text3:#374151;--border:#6b7280;--border2:#9ca3af}body.hc .fi,body.hc .fsel{border-color:#374151 !important}';
+document.head.appendChild(hcStyle);
+(function(){
+  const hc=toggleFor('High Contrast');
+  if(hc){
+    try{if(localStorage.getItem('aqh_hc')==='1'){document.body.classList.add('hc');hc.classList.add('on');}}catch(e){}
+    hc.onclick=function(){
+      this.classList.toggle('on');
+      const on=this.classList.contains('on');
+      document.body.classList.toggle('hc',on);
+      try{localStorage.setItem('aqh_hc',on?'1':'0');}catch(e){}
+      toast('High contrast '+(on?'on':'off'),'fa-palette');
+    };
+  }
+  const hp=toggleFor('Haptic Feedback');
+  if(hp)hp.onclick=function(){
+    this.classList.toggle('on');
+    S.haptic=this.classList.contains('on');
+    toast('Haptic feedback '+(S.haptic?'on':'off'),'fa-mobile-screen-button');
+  };
+  const vo=toggleFor('Voice Assistance');
+  if(vo){vo.classList.remove('on');vo.onclick=()=>toast('Voice assistance is coming soon','fa-volume-high');}
+  const tiles=document.querySelectorAll('#splash .sp-ao');
+  if(tiles[2])tiles[2].onclick=()=>toast('More languages are coming soon','fa-globe');
+})();
+
+function selLang(el,lang){
+  toast(lang==='English'?'Language: English':lang+' is coming soon','fa-globe');
+}
+function enableVoice(){toast('Voice assistance is coming soon','fa-volume-high');}
+
+// --- Market: hide search and heart buttons that did nothing ---
+(function(){
+  const s=document.querySelector('#market .fa-magnifying-glass');
+  if(s&&s.parentElement)s.parentElement.style.display='none';
+})();
+const _renderProds=renderProds;
+renderProds=function(){
+  _renderProds();
+  document.querySelectorAll('#market-body .fa-heart').forEach(h=>{
+    if(h.parentElement)h.parentElement.style.display='none';
+  });
+};
+renderProds();
+
+// --- Edit profile: save name and phone to the account ---
+(function(){
+  const m=document.getElementById('em');
+  const b=m&&m.querySelector('.btn-p');
+  if(b&&!document.getElementById('ep')){
+    const d=document.createElement('div');d.className='fg';
+    d.innerHTML='<label class="fl">Phone Number</label><input class="fi" id="ep" type="tel" placeholder="024 000 0000"/>';
+    b.before(d);
+  }
+})();
+async function openEdit(){
+  const {data:{user}}=await sb.auth.getUser();
+  const {data}=await sb.from('profiles').select('full_name,phone').eq('id',user.id).single();
+  document.getElementById('en').value=(data&&data.full_name)||'';
+  document.getElementById('ep').value=(data&&data.phone)||'';
+  openM('em');
+}
+async function saveProfile(){
+  const n=document.getElementById('en').value.trim();
+  const p=document.getElementById('ep').value.trim();
+  const digits=p.replace(/\D/g,'');
+  if(!n){toast('Enter your name','fa-triangle-exclamation');return;}
+  if(digits.length<9||digits.length>13){toast('Enter a valid phone number','fa-triangle-exclamation');return;}
+  const {data:{user}}=await sb.auth.getUser();
+  const {error}=await sb.from('profiles').update({full_name:n,phone:p}).eq('id',user.id);
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  S.name=n;
+  document.getElementById('hero-name').textContent=n+' 👋';
+  document.getElementById('pname').textContent=n;
+  cm('em');
+  toast('Profile updated!','fa-circle-check');
+}
 </script>
 </body>
 </html>
