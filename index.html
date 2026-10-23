@@ -1977,6 +1977,168 @@ async function deliverOrder(id){
   toast('Order marked delivered','fa-circle-check');
   loadAdminOrders();
 }
+  // ===== GPS LOCATION =====
+let rqCoords=null;
+
+(function(){
+  const send=document.querySelector('#rq .btn-p');
+  if(send&&!document.getElementById('rq-gps')){
+    const d=document.createElement('div');d.className='fg';d.id='rq-gps';
+    d.innerHTML='<button type="button" class="btn btn-o" onclick="captureGps()"><i class="fa-solid fa-location-crosshairs"></i> Use my current location</button><div id="rq-gps-msg" style="font-size:12px;color:var(--text2);margin-top:8px;font-weight:600"></div>';
+    send.before(d);
+  }
+})();
+
+function captureGps(){
+  const msg=document.getElementById('rq-gps-msg');
+  if(!navigator.geolocation){msg.textContent='Your phone does not support location.';return;}
+  msg.style.color='var(--text2)';
+  msg.textContent='Getting your location...';
+  navigator.geolocation.getCurrentPosition(pos=>{
+    rqCoords={lat:pos.coords.latitude,lng:pos.coords.longitude};
+    msg.style.color='var(--green)';
+    msg.textContent='Location saved (accurate to about '+Math.round(pos.coords.accuracy)+' m)';
+  },err=>{
+    rqCoords=null;
+    msg.style.color='var(--red)';
+    msg.textContent=err.code===1?'Location permission denied. Allow it in your phone settings.':'Could not get your location. Try again outdoors.';
+  },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+}
+
+// Reset the saved location each time the request window opens
+const _openRequest=openRequest;
+openRequest=function(btn){
+  rqCoords=null;
+  const m=document.getElementById('rq-gps-msg');
+  if(m){m.textContent='';m.style.color='var(--text2)';}
+  _openRequest(btn);
+};
+
+// Replaces the earlier sendRequest: saves the GPS pin too
+async function sendRequest(){
+  const loc=document.getElementById('rq-loc').value.trim()||(rqCoords?'Shared GPS location':'');
+  const time=document.getElementById('rq-time').value.trim();
+  const notes=document.getElementById('rq-notes').value.trim();
+  if(!loc){toast('Enter the location or use your current location','fa-triangle-exclamation');return;}
+  const {data:{user}}=await sb.auth.getUser();
+  const row={customer_id:user.id,driver_id:rqDriver.id,service_type:rqDriver.svc,
+    location:loc,preferred_time:time,notes:notes};
+  if(rqCoords){row.lat=rqCoords.lat;row.lng=rqCoords.lng;}
+  const {error}=await sb.from('bookings').insert(row);
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  cm('rq');
+  toast('Request sent! The driver will respond.','fa-circle-check');
+  loadMyBookings();
+}
+
+// Replaces the earlier loadJobs: adds a Navigate button once the job is accepted
+async function loadJobs(){
+  const box=document.getElementById('jobs-list');
+  box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.rpc('my_jobs');
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No requests yet.</div>';return;}
+  box.innerHTML=data.map(j=>{
+    let actions='';
+    if(j.status==='requested'){
+      actions=`<div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-p" onclick="setJob('${j.id}','accepted')">Accept</button>
+        <button class="btn btn-o" onclick="setJob('${j.id}','declined')">Decline</button></div>`;
+    }else if(j.status==='accepted'){
+      const nav=(j.lat!=null&&j.lng!=null)
+        ?`<a class="btn btn-o" style="margin-top:12px;text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${Number(j.lat)},${Number(j.lng)}"><i class="fa-solid fa-diamond-turn-right"></i> Navigate to customer</a>`:'';
+      actions=nav+`<button class="btn btn-p" style="margin-top:12px" onclick="setJob('${j.id}','completed')">Mark Completed</button>`;
+    }
+    const phone=j.customer_phone?`<br>Phone: <b>${esc(j.customer_phone)}</b>`:'';
+    return `<div class="card">
+      <div style="font-size:14px;font-weight:800">${esc(j.service_type)}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.7">
+        Customer: <b>${esc(j.customer_name)||'—'}</b>${phone}<br>
+        Location: ${esc(j.location)}<br>When: ${esc(j.preferred_time)}
+        ${j.notes?'<br>Notes: '+esc(j.notes):''}<br>Status: <b>${esc(j.status)}</b></div>
+      ${actions}</div>`;
+  }).join('');
+}
+  // ===== GHANA POST GPS ADDRESS =====
+(function(){
+  const gps=document.getElementById('rq-gps');
+  if(gps&&!document.getElementById('rq-dg')){
+    const d=document.createElement('div');d.className='fg';d.id='rq-dg';
+    d.innerHTML='<label class="fl">Ghana Post GPS address (optional)</label><input class="fi" id="rq-dgcode" placeholder="e.g. NT-123-4567" autocapitalize="characters" autocomplete="off"/>';
+    gps.before(d);
+  }
+})();
+
+function normDigital(v){
+  const s=(v||'').toUpperCase().replace(/\s+/g,'');
+  if(s==='')return '';
+  const m=s.match(/^([A-Z]{2,3})-?(\d{3,4})-?(\d{4})$/);
+  return m?m[1]+'-'+m[2]+'-'+m[3]:null;
+}
+
+const _openRequest2=openRequest;
+openRequest=function(btn){
+  const e=document.getElementById('rq-dgcode');if(e)e.value='';
+  _openRequest2(btn);
+};
+
+// Replaces the earlier sendRequest: saves the digital address too
+async function sendRequest(){
+  const dg=normDigital(document.getElementById('rq-dgcode').value);
+  if(dg===null){toast('Check the Ghana Post GPS address, for example NT-123-4567','fa-triangle-exclamation');return;}
+  const loc=document.getElementById('rq-loc').value.trim()||dg||(rqCoords?'Shared GPS location':'');
+  const time=document.getElementById('rq-time').value.trim();
+  const notes=document.getElementById('rq-notes').value.trim();
+  if(!loc){toast('Enter a location, your GPS address, or use your current location','fa-triangle-exclamation');return;}
+  const {data:{user}}=await sb.auth.getUser();
+  const row={customer_id:user.id,driver_id:rqDriver.id,service_type:rqDriver.svc,
+    location:loc,preferred_time:time,notes:notes,digital_address:dg||null};
+  if(rqCoords){row.lat=rqCoords.lat;row.lng=rqCoords.lng;}
+  const {error}=await sb.from('bookings').insert(row);
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  cm('rq');
+  toast('Request sent! The driver will respond.','fa-circle-check');
+  loadMyBookings();
+}
+
+function copyCode(c){
+  if(navigator.clipboard)navigator.clipboard.writeText(c).then(()=>toast('Copied '+c,'fa-copy'));
+  else toast(c,'fa-copy');
+}
+
+// Replaces the earlier loadJobs: shows the digital address with Copy and Maps buttons
+async function loadJobs(){
+  const box=document.getElementById('jobs-list');
+  box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.rpc('my_jobs');
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No requests yet.</div>';return;}
+  box.innerHTML=data.map(j=>{
+    let actions='';
+    if(j.status==='requested'){
+      actions=`<div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-p" onclick="setJob('${j.id}','accepted')">Accept</button>
+        <button class="btn btn-o" onclick="setJob('${j.id}','declined')">Decline</button></div>`;
+    }else if(j.status==='accepted'){
+      if(j.lat!=null&&j.lng!=null)
+        actions+=`<a class="btn btn-o" style="margin-top:12px;text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${Number(j.lat)},${Number(j.lng)}"><i class="fa-solid fa-diamond-turn-right"></i> Navigate to GPS pin</a>`;
+      if(j.digital_address)
+        actions+=`<div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-o" onclick="copyCode('${esc(j.digital_address)}')"><i class="fa-solid fa-copy"></i> Copy code</button>
+          <a class="btn btn-o" style="text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(j.digital_address)}"><i class="fa-solid fa-map"></i> Maps</a></div>`;
+      actions+=`<button class="btn btn-p" style="margin-top:12px" onclick="setJob('${j.id}','completed')">Mark Completed</button>`;
+    }
+    const phone=j.customer_phone?`<br>Phone: <b>${esc(j.customer_phone)}</b>`:'';
+    const dg=j.digital_address?`<br>Ghana Post GPS: <b>${esc(j.digital_address)}</b>`:'';
+    return `<div class="card">
+      <div style="font-size:14px;font-weight:800">${esc(j.service_type)}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.7">
+        Customer: <b>${esc(j.customer_name)||'—'}</b>${phone}${dg}<br>
+        Location: ${esc(j.location)}<br>When: ${esc(j.preferred_time)}
+        ${j.notes?'<br>Notes: '+esc(j.notes):''}<br>Status: <b>${esc(j.status)}</b></div>
+      ${actions}</div>`;
+  }).join('');
+}
 </script>
 </body>
 </html>
