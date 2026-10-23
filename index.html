@@ -2144,6 +2144,171 @@ async function loadJobs(){
   toast('Code copied. Paste it in the search box.','fa-copy');
   window.open('https://ghanapostgps.com/','_blank','noopener');
 }
+  // ===== LIVE TRACKING =====
+// --- Driver side: share my location ---
+let shareId=null,watchId=null,lastSent=0,wakeLock=null;
+
+async function startShare(id){
+  if(!navigator.geolocation){toast('Location is not available on this phone','fa-triangle-exclamation');return;}
+  if(shareId&&shareId!==id)await stopShare();
+  shareId=id;lastSent=0;
+  watchId=navigator.geolocation.watchPosition(pos=>{
+    const now=Date.now();
+    if(now-lastSent<8000)return;
+    lastSent=now;
+    sb.rpc('share_location',{p_booking:id,p_lat:pos.coords.latitude,p_lng:pos.coords.longitude})
+      .then(({error})=>{if(error)console.warn(error.message);});
+  },err=>{
+    toast(err.code===1?'Allow location so the customer can track you':'Could not read your location','fa-triangle-exclamation');
+    stopShare();
+  },{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+  try{wakeLock=await navigator.wakeLock.request('screen');}catch(e){}
+  toast('Sharing your location. Keep this screen open.','fa-location-dot');
+  refreshShareButtons();
+}
+
+async function stopShare(){
+  if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;}
+  const id=shareId;shareId=null;
+  try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}
+  if(id)await sb.rpc('stop_sharing',{p_booking:id});
+  refreshShareButtons();
+}
+
+function toggleShare(id){shareId===id?stopShare():startShare(id);}
+
+function refreshShareButtons(){
+  document.querySelectorAll('#jobs-list button[data-share]').forEach(b=>{
+    const on=b.dataset.share===shareId;
+    b.innerHTML=on?'<i class="fa-solid fa-stop"></i> Stop sharing location'
+                  :'<i class="fa-solid fa-location-arrow"></i> Start trip: share my location';
+  });
+}
+
+document.addEventListener('visibilitychange',async()=>{
+  if(shareId&&document.visibilityState==='visible'){
+    try{wakeLock=await navigator.wakeLock.request('screen');}catch(e){}
+  }
+});
+
+// Add the Start trip button to every accepted job
+const _loadJobs=loadJobs;
+loadJobs=async function(){
+  await _loadJobs();
+  document.querySelectorAll('#jobs-list button[onclick*="\'completed\'"]').forEach(btn=>{
+    const m=btn.getAttribute('onclick').match(/setJob\('([0-9a-f-]{36})'/);
+    if(!m)return;
+    const b=document.createElement('button');
+    b.className='btn btn-o';b.style.marginTop='12px';b.dataset.share=m[1];
+    b.onclick=()=>toggleShare(m[1]);
+    btn.before(b);
+  });
+  refreshShareButtons();
+};
+
+// Stop sharing automatically when the job is completed
+const _setJob=setJob;
+setJob=async function(id,status){
+  if(status==='completed'&&shareId===id)await stopShare();
+  return _setJob(id,status);
+};
+
+// --- Customer side: track the driver ---
+(function(){
+  if(document.getElementById('live-screen'))return;
+  const s=document.createElement('div');
+  s.className='screen';s.id='live-screen';
+  s.innerHTML=`<div class="shdr"><h2>Track your driver</h2><p id="live-sub">Looking for your driver...</p></div>
+    <div class="bbody">
+      <div id="live-map" style="height:340px;border-radius:20px;overflow:hidden;box-shadow:var(--shl);margin-bottom:12px"></div>
+      <div class="card" id="live-info" style="font-size:13px;color:var(--text2);line-height:1.8">Waiting for the driver to start the trip.</div>
+      <button class="btn btn-o" onclick="closeLive()">Back</button>
+    </div>`;
+  document.body.insertBefore(s,document.getElementById('bnav'));
+})();
+
+let liveTimer=null,liveMap=null,liveDrv=null,liveDest=null,liveBooking=null,liveFit=false;
+
+function distKm(a,b){
+  const R=6371,r=x=>x*Math.PI/180;
+  const dLat=r(b[0]-a[0]),dLng=r(b[1]-a[1]);
+  const h=Math.sin(dLat/2)**2+Math.cos(r(a[0]))*Math.cos(r(b[0]))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+
+async function openLive(id){
+  liveBooking=id;liveDrv=null;liveDest=null;liveFit=false;
+  goTo('live-screen');
+  const {data:b}=await sb.from('bookings').select('lat,lng').eq('id',id).single();
+  const hasDest=b&&b.lat!=null&&b.lng!=null;
+  const center=hasDest?[b.lat,b.lng]:[9.4008,-0.8393];
+  if(liveMap){liveMap.remove();liveMap=null;}
+  liveMap=L.map('live-map').setView(center,15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(liveMap);
+  if(hasDest){
+    liveDest=center;
+    L.marker(center,{icon:L.divIcon({className:'',iconSize:[36,36],iconAnchor:[18,18],
+      html:'<div style="width:36px;height:36px;background:#1a7a5e;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3)"><i class="fa-solid fa-house"></i></div>'})}).addTo(liveMap);
+  }
+  setTimeout(()=>liveMap.invalidateSize(),60);
+  pollLive();
+  clearInterval(liveTimer);
+  liveTimer=setInterval(pollLive,6000);
+}
+
+async function pollLive(){
+  if(!document.getElementById('live-screen').classList.contains('active')){clearInterval(liveTimer);return;}
+  const sub=document.getElementById('live-sub'),info=document.getElementById('live-info');
+  const {data,error}=await sb.rpc('track_driver',{p_booking:liveBooking});
+  if(error||!data||!data.length){
+    sub.textContent='Waiting for the driver to start the trip...';
+    info.textContent='The map will update as soon as the driver shares their location.';
+    return;
+  }
+  const d=data[0],pos=[d.lat,d.lng];
+  if(!liveDrv){
+    liveDrv=L.marker(pos,{icon:L.divIcon({className:'',iconSize:[40,40],iconAnchor:[20,20],
+      html:'<div style="width:40px;height:40px;background:#16a34a;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;box-shadow:0 2px 8px rgba(0,0,0,.4)"><i class="fa-solid fa-truck"></i></div>'})}).addTo(liveMap);
+  }else liveDrv.setLatLng(pos);
+  if(!liveFit){
+    liveFit=true;
+    if(liveDest)liveMap.fitBounds([pos,liveDest],{padding:[40,40],maxZoom:17});
+    else liveMap.setView(pos,16);
+  }
+  const age=Math.max(0,Math.round((Date.now()-new Date(d.updated_at).getTime())/1000));
+  sub.textContent=age>90?'Driver location is '+Math.round(age/60)+' min old':'Your driver is on the way';
+  let line='Last update: '+(age<60?age+' sec ago':Math.round(age/60)+' min ago');
+  if(liveDest){
+    const km=distKm(pos,liveDest);
+    const mins=Math.max(1,Math.round(km/25*60));
+    line='Distance: <b>'+(km<1?Math.round(km*1000)+' m':km.toFixed(1)+' km')+'</b><br>Arrives in about <b>'+mins+' min</b><br>'+line;
+  }
+  info.innerHTML=line;
+}
+
+function closeLive(){
+  clearInterval(liveTimer);
+  goTo('drivers-screen');
+  loadMyBookings();
+}
+
+// Add a Track driver button to every accepted request
+const _loadMyBookings=loadMyBookings;
+loadMyBookings=async function(){
+  await _loadMyBookings();
+  document.querySelectorAll('#my-bookings .card').forEach(card=>{
+    if(!/Status:\s*accepted/.test(card.textContent))return;
+    const cb=card.querySelector('button[onclick^="cancelRequest"]');
+    if(!cb)return;
+    const m=cb.getAttribute('onclick').match(/cancelRequest\('([0-9a-f-]{36})'/);
+    if(!m)return;
+    const b=document.createElement('button');
+    b.className='btn btn-p';b.style.marginTop='12px';
+    b.innerHTML='<i class="fa-solid fa-location-dot"></i> Track driver';
+    b.onclick=()=>openLive(m[1]);
+    cb.before(b);
+  });
+};
 </script>
 </body>
 </html>
