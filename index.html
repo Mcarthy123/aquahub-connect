@@ -2450,6 +2450,772 @@ async function saveProfile(){
   cm('em');
   toast('Profile updated!','fa-circle-check');
 }
+  // ===== DRIVER RATINGS =====
+(function(){
+  if(document.getElementById('rt'))return;
+  const m=document.createElement('div');
+  m.className='mo';m.id='rt';
+  m.onclick=()=>cm('rt');
+  m.innerHTML=`<div class="ms" onclick="event.stopPropagation()">
+    <div class="mh"></div>
+    <div class="mt">Rate your driver</div>
+    <div class="msub">How was the service?</div>
+    <div id="rt-stars" style="display:flex;justify-content:center;gap:10px;font-size:38px;margin:8px 0 16px"></div>
+    <div class="fg"><label class="fl">Comment (optional)</label><input class="fi" id="rt-comment" maxlength="300" placeholder="Tell others about your experience"/></div>
+    <button class="btn btn-p" style="margin-bottom:10px" onclick="submitRating()">Submit Rating</button>
+    <button class="btn btn-o" onclick="cm('rt')">Cancel</button></div>`;
+  document.body.appendChild(m);
+})();
+
+let rateBooking=null,rateStars=0;
+function drawStars(){
+  document.getElementById('rt-stars').innerHTML=[1,2,3,4,5].map(n=>
+    `<span onclick="setStars(${n})" style="cursor:pointer;color:${n<=rateStars?'#f59e0b':'#cbd5e1'}">★</span>`).join('');
+}
+function setStars(n){rateStars=n;drawStars();}
+function openRate(id){
+  rateBooking=id;rateStars=0;
+  document.getElementById('rt-comment').value='';
+  drawStars();openM('rt');
+}
+async function submitRating(){
+  if(!rateStars){toast('Tap a star to rate','fa-triangle-exclamation');return;}
+  const {error}=await sb.rpc('rate_booking',{
+    p_booking:rateBooking,p_stars:rateStars,
+    p_comment:document.getElementById('rt-comment').value});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  cm('rt');
+  toast('Thank you for rating!','fa-star');
+  loadMyBookings();
+}
+
+// Replaces the earlier loadMyBookings: adds the Rate button for completed jobs
+async function loadMyBookings(){
+  const box=document.getElementById('my-bookings');
+  const {data:{user}}=await sb.auth.getUser();
+  const [{data,error},{data:rated}]=await Promise.all([
+    sb.from('bookings').select('*').eq('customer_id',user.id).order('created_at',{ascending:false}),
+    sb.rpc('my_ratings')]);
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No requests yet.</div>';return;}
+  const mine=Object.fromEntries((rated||[]).map(r=>[r.booking_id,r.stars]));
+  box.innerHTML=data.map(b=>{
+    let extra='';
+    if(b.status==='requested'||b.status==='accepted'){
+      extra=`<button class="btn btn-o" style="margin-top:12px" onclick="cancelRequest('${b.id}')">Cancel Request</button>`;
+    }else if(b.status==='completed'){
+      extra=mine[b.id]
+        ?`<div style="margin-top:10px;font-size:13px;color:var(--text2)">You rated: <span style="color:#f59e0b;font-size:16px">${'★'.repeat(mine[b.id])}${'☆'.repeat(5-mine[b.id])}</span></div>`
+        :`<button class="btn btn-p" style="margin-top:12px" onclick="openRate('${b.id}')"><i class="fa-solid fa-star"></i> Rate this driver</button>`;
+    }
+    return `<div class="card">
+      <div style="font-size:13px;font-weight:800">${esc(b.service_type)}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.6">${esc(b.location)}<br>${esc(b.preferred_time)}<br>Status: <b>${esc(b.status)}</b></div>
+      ${extra}</div>`;
+  }).join('');
+}
+
+// Replaces the earlier loadDrivers: shows each driver's rating, best first
+async function loadDrivers(){
+  const svc=document.getElementById('fd-service').value||null;
+  const box=document.getElementById('fd-list');
+  box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.rpc('list_drivers',{p_service:svc});
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card">No verified drivers yet for this service.</div>';return;}
+  box.innerHTML=data.map(d=>{
+    const rating=d.avg_rating!=null
+      ?`<span style="color:#f59e0b">★</span> <b>${esc(d.avg_rating)}</b> <span style="color:var(--text3)">(${esc(d.rating_count)} rating${Number(d.rating_count)===1?'':'s'})</span>`
+      :'<span style="color:var(--text3)">New driver</span>';
+    return `<div class="card">
+      <div style="font-family:var(--sans);font-size:15px;font-weight:800">${esc(d.full_name)||'Driver'}</div>
+      <div style="font-size:12px;color:var(--text2);margin:4px 0 12px;line-height:1.7">${rating}<br>${esc(d.service_type)} · ${esc(d.vehicle_type)}<br>Area: ${esc(d.area)}<br>${d.price!=null?'<b style="color:var(--teal)">GH₵'+esc(d.price)+'</b> per visit':'Price: ask the driver'}</div>
+      <button class="btn btn-p" data-id="${d.user_id}" data-svc="${esc(d.service_type)}" data-name="${esc(d.full_name)}" onclick="openRequest(this)">Request this driver</button>
+    </div>`;
+  }).join('');
+}
+  // ===== REAL WEATHER + CLIMATE ALERTS =====
+// Alert thresholds (mm of rain per day, apparent temperature in °C). Adjust as you learn.
+const RAIN_MODERATE=25,RAIN_HIGH=50,HEAT_ADVISORY=38,HEAT_WARNING=41;
+
+const WX_NAMES={0:'Clear sky',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Fog',
+  51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',
+  80:'Rain showers',81:'Rain showers',82:'Violent showers',95:'Thunderstorm',96:'Thunderstorm with hail',99:'Thunderstorm with hail'};
+const wxName=c=>WX_NAMES[c]||'Mixed conditions';
+
+async function fetchWeather(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session)return null;
+  try{
+    const res=await fetch(SUPABASE_URL+'/functions/v1/weather',
+      {headers:{'Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY}});
+    return res.ok?await res.json():null;
+  }catch(e){return null;}
+}
+
+function dayLabel(w,i){
+  return i===0?'Today':i===1?'Tomorrow':new Date(w.daily.time[i]+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long'});
+}
+
+function buildAlerts(w){
+  const d=w.daily,out=[];
+  let wet=0,hot=0;
+  for(let i=1;i<3;i++){
+    if((d.precipitation_sum[i]||0)>(d.precipitation_sum[wet]||0))wet=i;
+    if((d.apparent_temperature_max[i]||0)>(d.apparent_temperature_max[hot]||0))hot=i;
+  }
+  const rain=d.precipitation_sum[wet]||0,heat=d.apparent_temperature_max[hot]||0;
+  if(rain>=RAIN_HIGH)out.push({kind:'flood',level:'high',title:'Heavy rain and flood risk',
+    body:'About '+Math.round(rain)+' mm of rain is forecast for '+dayLabel(w,wet).toLowerCase()+'. Drains, low areas and river banks may flood. Prepare now.'});
+  else if(rain>=RAIN_MODERATE)out.push({kind:'flood',level:'moderate',title:'Rain advisory',
+    body:'About '+Math.round(rain)+' mm of rain is forecast for '+dayLabel(w,wet).toLowerCase()+'. Watch for waterlogged roads and blocked drains.'});
+  if(heat>=HEAT_WARNING)out.push({kind:'heat',level:'high',title:'Extreme heat warning',
+    body:'It will feel like '+Math.round(heat)+'°C '+dayLabel(w,hot).toLowerCase()+'. Stay indoors at midday, drink water often, and check on the elderly and children.'});
+  else if(heat>=HEAT_ADVISORY)out.push({kind:'heat',level:'moderate',title:'Heat advisory',
+    body:'It will feel like '+Math.round(heat)+'°C '+dayLabel(w,hot).toLowerCase()+'. Drink plenty of water and avoid strenuous work at midday.'});
+  return out;
+}
+
+function applyWeather(w,alerts){
+  const c=w.current,q=s=>document.querySelector(s);
+  q('.weather-temp').textContent=Math.round(c.temperature_2m)+'°';
+  q('.weather-desc').textContent=wxName(c.weather_code);
+  q('.weather-loc').innerHTML='<i class="fa-solid fa-location-dot"></i> Tamale, N. Ghana';
+  const it=document.querySelectorAll('.weather-item');
+  it[0].innerHTML='<i class="fa-solid fa-droplet"></i> '+Math.round(c.relative_humidity_2m)+'% Humidity';
+  it[1].innerHTML='<i class="fa-solid fa-wind"></i> '+Math.round(c.wind_speed_10m)+' km/h Wind';
+  it[2].innerHTML='<i class="fa-solid fa-cloud-rain"></i> '+Math.round(w.daily.precipitation_probability_max[0]||0)+'% Rain chance';
+
+  const n=alerts.length;
+  q('.alert-title').textContent=n?alerts[0].title:'No active warnings';
+  q('.alert-sub').textContent=n?'Tamale · Tap for details':'Weather looks calm · Tap for the forecast';
+  const dot=q('.hero-bell-dot');if(dot)dot.style.display=n?'block':'none';
+  const qa=q('.qa-card[onclick*="alerts-screen"] .qa-sub');
+  if(qa)qa.textContent=n?n+' active warning'+(n>1?'s':''):'No warnings';
+  const badge=q('.bnav .ni:nth-child(4) .nbadge');
+  if(badge){badge.textContent=n;badge.style.display=n?'block':'none';}
+}
+
+function renderAlerts(w,alerts){
+  const box=document.querySelector('#alerts-screen .abody2');
+  const top=alerts[0];
+  const hero=top
+    ?`<div class="ah ${top.kind==='heat'?'heat':'flood'}">
+        <div class="ah-i"><i class="fa-solid ${top.kind==='heat'?'fa-temperature-high':'fa-water'}"></i></div>
+        <div class="ah-t">${esc(top.title)} · Tamale</div>
+        <div class="ah-s">${esc(top.body)}</div>
+        <div class="al2"><i class="fa-solid fa-triangle-exclamation"></i> ${top.level==='high'?'HIGH RISK':'MODERATE RISK'}</div></div>`
+    :`<div class="ah" style="background:linear-gradient(135deg,#14532d,#16a34a)">
+        <div class="ah-i"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="ah-t">No active warnings</div>
+        <div class="ah-s">The next 3 days look calm for Tamale. Check back for updates.</div></div>`;
+  const tips=top&&top.kind==='heat'
+    ?['Drink water often','Avoid the sun at midday','Check on the elderly and children','Keep rooms ventilated']
+    :['Move valuables to higher ground','Store clean drinking water','Keep your phone charged','Know your evacuation route'];
+  const icons=top&&top.kind==='heat'?['droplet','sun','people-roof','wind']:['house','droplet','mobile-screen','door-open'];
+  const tipHtml=tips.map((t,i)=>`<div class="ti"><i class="fa-solid fa-${icons[i]}"></i>${t}</div>`).join('');
+  const cards=alerts.map(a=>`<div class="ac ${a.kind}"><div class="ach"><div class="act">
+      <i class="fa-solid ${a.kind==='heat'?'fa-temperature-high':'fa-water'}" style="color:var(--${a.kind==='heat'?'orange':'blue'})"></i> ${esc(a.title)}</div>
+      <div class="actime">Now</div></div><div class="acb">${esc(a.body)}</div></div>`).join('');
+  const fc=w.daily.time.slice(0,3).map((t,i)=>
+    dayLabel(w,i)+': '+wxName(w.daily.weather_code[i])+' '+Math.round(w.daily.temperature_2m_max[i])+'°C, rain '+Math.round(w.daily.precipitation_sum[i]||0)+' mm').join('<br>');
+  box.innerHTML=hero+
+    '<div class="slbl">Protective Tips</div><div class="tgrid2">'+tipHtml+'</div>'+
+    '<div class="slbl">All Alerts</div>'+
+    (cards||'<div class="ac ok"><div class="ach"><div class="act"><i class="fa-solid fa-circle-check" style="color:var(--green)"></i> All clear</div><div class="actime">Now</div></div><div class="acb">No rain or heat warnings for the next 3 days.</div></div>')+
+    '<div class="ac warn"><div class="ach"><div class="act"><i class="fa-solid fa-cloud-rain" style="color:var(--yellow)"></i> 3-Day Forecast</div><div class="actime">Now</div></div><div class="acb">'+fc+'</div></div>'+
+    '<div style="font-size:11px;color:var(--text3);line-height:1.6;margin-top:6px">Forecast guidance for Tamale, not an official warning. Follow official advice from GMet and NADMO. Weather data by Open-Meteo.com (CC BY 4.0).</div>';
+}
+
+async function loadWeather(){
+  const w=await fetchWeather();
+  if(!w||!w.current||!w.daily)return;
+  const alerts=buildAlerts(w);
+  applyWeather(w,alerts);
+  renderAlerts(w,alerts);
+}
+
+let wxTimer=null;
+sb.auth.onAuthStateChange((event,session)=>{
+  clearInterval(wxTimer);
+  if(session&&(event==='SIGNED_IN'||event==='INITIAL_SESSION')){
+    setTimeout(loadWeather,0);
+    wxTimer=setInterval(()=>{if(!document.hidden)loadWeather();},30*60*1000);
+  }
+});
+  // ===== WEATHER FOR ANYWHERE IN GHANA =====
+// Regional capitals and major towns (approximate coordinates)
+const GH_TOWNS=[
+ ['Accra',5.60,-0.19],['Tema',5.67,-0.02],['Kumasi',6.69,-1.62],['Obuasi',6.20,-1.67],
+ ['Tamale',9.40,-0.84],['Yendi',9.44,-0.01],['Salaga',8.55,-0.52],['Bimbilla',8.85,0.05],
+ ['Takoradi',4.88,-1.76],['Cape Coast',5.11,-1.25],['Winneba',5.35,-0.63],
+ ['Sunyani',7.33,-2.31],['Wenchi',7.73,-2.10],['Dormaa Ahenkro',7.27,-2.88],
+ ['Techiman',7.58,-1.93],['Kintampo',8.06,-1.73],['Goaso',6.80,-2.52],
+ ['Ho',6.60,0.47],['Hohoe',7.15,0.47],['Aflao',6.12,1.18],
+ ['Koforidua',6.09,-0.26],['Nkawkaw',6.55,-0.77],
+ ['Wa',10.06,-2.51],['Jirapa',10.53,-2.72],['Lawra',10.65,-2.90],['Tumu',10.88,-1.98],
+ ['Bolgatanga',10.79,-0.85],['Navrongo',10.90,-1.09],['Bawku',11.06,-0.24],['Sandema',10.72,-1.28],
+ ['Damongo',9.08,-1.82],['Bole',9.03,-2.48],['Nalerigu',10.53,-0.37],['Walewale',10.35,-0.80],
+ ['Dambai',8.07,0.18],['Sefwi Wiawso',6.20,-2.48]
+].sort((a,b)=>a[0].localeCompare(b[0]));
+
+let wxPlace=null;
+try{wxPlace=JSON.parse(localStorage.getItem('aqh_place')||'null');}catch(e){}
+const hadPlace=!!wxPlace;
+if(!wxPlace)wxPlace={name:'Tamale',lat:9.40,lng:-0.84};
+
+(function(){
+  if(document.getElementById('pl'))return;
+  const m=document.createElement('div');
+  m.className='mo';m.id='pl';
+  m.onclick=()=>cm('pl');
+  m.innerHTML=`<div class="ms" onclick="event.stopPropagation()">
+    <div class="mh"></div>
+    <div class="mt">Where are you?</div>
+    <div class="msub">We use this to show weather and alerts for your area.</div>
+    <button class="btn btn-p" style="margin-bottom:12px" onclick="placeFromGps()"><i class="fa-solid fa-location-crosshairs"></i> Use my current location</button>
+    <div class="fg"><label class="fl">Or choose your town</label><select class="fsel" id="pl-sel">
+      ${GH_TOWNS.map((t,i)=>`<option value="${i}">${t[0]}</option>`).join('')}</select></div>
+    <button class="btn btn-o" style="margin-bottom:10px" onclick="placeFromList()">Save town</button>
+    <button class="btn btn-o" onclick="cm('pl')">Cancel</button></div>`;
+  document.body.appendChild(m);
+})();
+
+function openPlace(){
+  const i=GH_TOWNS.findIndex(t=>t[0]===wxPlace.name);
+  if(i>=0)document.getElementById('pl-sel').value=i;
+  openM('pl');
+}
+function savePlace(p){
+  wxPlace=p;
+  try{localStorage.setItem('aqh_place',JSON.stringify(p));}catch(e){}
+  cm('pl');
+  toast('Weather set for '+p.name,'fa-location-dot');
+  loadWeather();
+}
+function placeFromList(){
+  const t=GH_TOWNS[+document.getElementById('pl-sel').value];
+  savePlace({name:t[0],lat:t[1],lng:t[2]});
+}
+function placeFromGps(){
+  if(!navigator.geolocation){toast('Location is not available. Choose your town.','fa-triangle-exclamation');return;}
+  toast('Finding your location...','fa-location-crosshairs');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude,lng=pos.coords.longitude;
+    let best=GH_TOWNS[0],bd=1e9;
+    GH_TOWNS.forEach(t=>{const d=distKm([lat,lng],[t[1],t[2]]);if(d<bd){bd=d;best=t;}});
+    savePlace({name:bd>15?'Near '+best[0]:best[0],lat,lng});
+  },()=>toast('Could not get your location. Choose your town.','fa-triangle-exclamation'),
+  {enableHighAccuracy:false,timeout:15000,maximumAge:300000});
+}
+
+// Replaces the earlier fetchWeather: asks for the chosen place
+async function fetchWeather(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session)return null;
+  try{
+    const res=await fetch(SUPABASE_URL+'/functions/v1/weather',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},
+      body:JSON.stringify({lat:wxPlace.lat,lng:wxPlace.lng})});
+    return res.ok?await res.json():null;
+  }catch(e){return null;}
+}
+
+// Show the chosen place instead of "Tamale"
+const _applyWeather=applyWeather;
+applyWeather=function(w,alerts){
+  _applyWeather(w,alerts);
+  const loc=document.querySelector('.weather-loc');
+  loc.innerHTML='<i class="fa-solid fa-location-dot"></i> '+esc(wxPlace.name)+' <u>change</u>';
+  loc.style.cursor='pointer';loc.onclick=openPlace;
+  const sub=document.querySelector('.alert-sub');
+  sub.textContent=sub.textContent.replace('Tamale',wxPlace.name);
+};
+const _renderAlerts=renderAlerts;
+renderAlerts=function(w,alerts){
+  _renderAlerts(w,alerts);
+  const box=document.querySelector('#alerts-screen .abody2');
+  box.innerHTML=box.innerHTML.split(' · Tamale').join(' · '+wxPlace.name)
+    .split('for Tamale').join('for '+wxPlace.name);
+};
+
+// Ask once, the first time someone logs in
+sb.auth.onAuthStateChange((event,session)=>{
+  if(session&&(event==='SIGNED_IN'||event==='INITIAL_SESSION')&&!hadPlace&&!localStorage.getItem('aqh_place')){
+    setTimeout(openPlace,1500);
+  }
+});
+  // ===== TRACKER OPENS RIGHT AFTER BOOKING + CALL DRIVER =====
+function telHref(raw){
+  const d=(raw||'').replace(/\D/g,'');
+  if(d.startsWith('233'))return 'tel:+'+d;
+  if(d.startsWith('0'))return 'tel:+233'+d.slice(1);
+  return 'tel:'+d;
+}
+
+// Replaces the earlier openLive
+async function openLive(id){
+  liveBooking=id;liveDrv=null;liveDest=null;liveFit=false;
+  goTo('live-screen');
+  document.getElementById('live-sub').textContent='Checking your request...';
+  document.getElementById('live-info').textContent='Loading...';
+  const {data:b}=await sb.from('bookings').select('lat,lng').eq('id',id).single();
+  const hasDest=b&&b.lat!=null&&b.lng!=null;
+  const center=hasDest?[b.lat,b.lng]:[9.4008,-0.8393];
+  if(liveMap){liveMap.remove();liveMap=null;}
+  liveMap=L.map('live-map').setView(center,hasDest?16:13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(liveMap);
+  if(hasDest){
+    liveDest=center;
+    L.marker(center,{icon:L.divIcon({className:'',iconSize:[36,36],iconAnchor:[18,18],
+      html:'<div style="width:36px;height:36px;background:#1a7a5e;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3)"><i class="fa-solid fa-house"></i></div>'})}).addTo(liveMap);
+  }
+  setTimeout(()=>liveMap.invalidateSize(),60);
+  pollLive();
+  clearInterval(liveTimer);
+  liveTimer=setInterval(pollLive,6000);
+}
+
+// Replaces the earlier pollLive
+async function pollLive(){
+  if(!document.getElementById('live-screen').classList.contains('active')){clearInterval(liveTimer);return;}
+  const sub=document.getElementById('live-sub'),info=document.getElementById('live-info');
+  const {data,error}=await sb.rpc('track_booking',{p_booking:liveBooking});
+  if(error||!data||!data.length){
+    sub.textContent='Could not load your request';
+    info.textContent='Check your connection. We will try again.';
+    return;
+  }
+  const t=data[0],name=esc(t.driver_name)||'Your driver';
+  const call=t.driver_phone
+    ?`<a class="btn btn-p" style="margin-top:12px;text-decoration:none" href="${esc(telHref(t.driver_phone))}"><i class="fa-solid fa-phone"></i> Call ${name} · ${esc(t.driver_phone)}</a>`:'';
+
+  if(t.status==='requested'){
+    sub.textContent='Waiting for '+name+' to accept...';
+    info.innerHTML='Your request was sent. The driver\'s phone number and live location appear here as soon as they accept.';
+    return;
+  }
+  if(t.status!=='accepted'){
+    clearInterval(liveTimer);
+    const msg={declined:['Driver declined','This driver cannot take your request. Please go back and choose another driver.'],
+      cancelled:['Request cancelled','This request was cancelled.'],
+      completed:['Trip completed','Thank you! You can rate your driver under My Requests.']}[t.status]||['Request closed',''];
+    sub.textContent=msg[0];
+    info.innerHTML=msg[1]+(t.status==='completed'?call:'');
+    return;
+  }
+  if(t.lat==null||t.lng==null){
+    sub.textContent=name+' accepted your request';
+    info.innerHTML='The driver has not started the trip yet. You can call them now.'+call;
+    return;
+  }
+  const pos=[t.lat,t.lng];
+  if(!liveDrv){
+    liveDrv=L.marker(pos,{icon:L.divIcon({className:'',iconSize:[40,40],iconAnchor:[20,20],
+      html:'<div style="width:40px;height:40px;background:#16a34a;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;box-shadow:0 2px 8px rgba(0,0,0,.4)"><i class="fa-solid fa-truck"></i></div>'})}).addTo(liveMap);
+  }else liveDrv.setLatLng(pos);
+  if(!liveFit){
+    liveFit=true;
+    if(liveDest)liveMap.fitBounds([pos,liveDest],{padding:[40,40],maxZoom:17});
+    else liveMap.setView(pos,16);
+  }
+  const age=Math.max(0,Math.round((Date.now()-new Date(t.updated_at).getTime())/1000));
+  sub.textContent=age>90?'Driver location is '+Math.round(age/60)+' min old':name+' is on the way';
+  let line='Last update: '+(age<60?age+' sec ago':Math.round(age/60)+' min ago');
+  if(liveDest){
+    const km=distKm(pos,liveDest),mins=Math.max(1,Math.round(km/25*60));
+    line='Distance: <b>'+(km<1?Math.round(km*1000)+' m':km.toFixed(1)+' km')+'</b><br>Arrives in about <b>'+mins+' min</b><br>'+line;
+  }
+  info.innerHTML=line+call;
+}
+
+// Open the tracker straight after a request is sent
+const _sendRequest2=sendRequest;
+sendRequest=async function(){
+  const {data:{user}}=await sb.auth.getUser();
+  const latest=async()=>{
+    const {data}=await sb.from('bookings').select('id').eq('customer_id',user.id)
+      .order('created_at',{ascending:false}).limit(1);
+    return data&&data[0]?data[0].id:null;
+  };
+  const before=await latest();
+  await _sendRequest2();
+  const after=await latest();
+  if(after&&after!==before)openLive(after);
+};
+
+// Replaces the earlier checkTrack: the Home banner also covers requests still waiting
+async function checkTrack(){
+  const b=document.getElementById('track-banner');if(!b)return;
+  const {data:{user}}=await sb.auth.getUser();
+  if(!user){b.style.display='none';return;}
+  const {data}=await sb.from('bookings').select('id,service_type,status')
+    .eq('customer_id',user.id).in('status',['requested','accepted'])
+    .order('created_at',{ascending:false});
+  if(!data||!data.length){b.style.display='none';return;}
+  const a=data.find(x=>x.status==='accepted')||data[0];
+  b.dataset.id=a.id;
+  document.getElementById('track-sub').textContent=a.service_type+
+    (a.status==='accepted'?' accepted. Tap to see your driver':' sent. Waiting for the driver')+
+    (data.length>1?' (+'+(data.length-1)+' more)':'');
+  b.style.display='flex';
+}
+  // ===== SELLERS + MARKET FROM DATABASE =====
+function mkScreen(id,html){
+  if(document.getElementById(id))return;
+  const s=document.createElement('div');s.className='screen';s.id=id;s.innerHTML=html;
+  document.body.insertBefore(s,document.getElementById('bnav'));
+}
+
+mkScreen('seller-screen',`<div class="shdr"><h2>Become a Seller</h2><p>Open your shop on AquaHub</p></div>
+  <div class="bbody"><div class="card" id="sa-form">
+    <div class="fg"><label class="fl">Shop name</label><input class="fi" id="sa-name" maxlength="60" placeholder="e.g. Tamale Organic Farms"/></div>
+    <div class="fg"><label class="fl">What do you sell?</label><select class="fsel" id="sa-cat">
+      <option value="fertilizer">Organic fertilizer</option><option value="biogas">Biogas</option><option value="water">Water</option></select></div>
+    <div class="fg"><label class="fl">Town or area</label><input class="fi" id="sa-area" maxlength="80" placeholder="e.g. Tamale"/></div>
+    <button class="btn btn-p" onclick="submitSeller()"><i class="fa-solid fa-paper-plane"></i> Submit Application</button></div>
+    <div class="card" id="sa-status" style="display:none"></div></div>`);
+
+mkScreen('shop-screen',`<div class="shdr"><h2>My Shop</h2><p>Your products on the Market</p></div>
+  <div class="bbody"><div class="card">
+    <div class="slbl" id="sp-title">Add a product</div>
+    <div class="fg"><label class="fl">Product name</label><input class="fi" id="sp-name" maxlength="80" placeholder="e.g. Organic fertilizer"/></div>
+    <div class="fg"><label class="fl">Category</label><select class="fsel" id="sp-cat">
+      <option value="fertilizer">Fertilizer</option><option value="biogas">Biogas</option><option value="water">Water</option></select></div>
+    <div class="fg"><label class="fl">Pack size</label><input class="fi" id="sp-unit" maxlength="30" placeholder="e.g. bag (5 kg)"/></div>
+    <div class="fg"><label class="fl">Price (GH₵)</label><input class="fi" id="sp-price" type="number" min="0.01" step="0.01" placeholder="e.g. 35"/></div>
+    <div class="fg"><label class="fl">Stock</label><select class="fsel" id="sp-stock"><option value="1">In stock</option><option value="0">Sold out</option></select></div>
+    <button class="btn btn-p" onclick="saveProduct()">Save product</button>
+    <button class="btn btn-o" style="margin-top:8px" onclick="clearProduct()">Clear</button></div>
+    <div class="slbl">Your products</div><div id="shop-list"></div></div>`);
+
+mkScreen('admin-sellers-screen',`<div class="shdr"><h2>Seller Approvals</h2><p>Review shop applications</p></div>
+  <div class="bbody"><div id="admin-sellers-list"></div></div>`);
+
+// Menu buttons in Profile
+(function(){
+  const ref=document.querySelector('.mi[onclick="openJobs()"]');
+  const add=(fn,icon,bg,fg,title,sub,hidden)=>{
+    if(!ref||document.querySelector('.mi[onclick="'+fn+'"]'))return;
+    const d=document.createElement('div');d.className='mi';d.setAttribute('onclick',fn);
+    if(hidden)d.style.display='none';
+    d.innerHTML='<div class="mil"><div class="mii" style="background:var(--'+bg+')"><i class="fa-solid '+icon+'" style="color:var(--'+fg+')"></i></div><div><div class="mit">'+title+'</div><div class="mis">'+sub+'</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>';
+    ref.before(d);
+  };
+  add('openSellerApply()','fa-store','green-l','green','Become a Seller','Open your shop on the Market',false);
+  add('openShop()','fa-shop','teal-l','teal','My Shop','Add and manage your products',true);
+  add('openAdminSellers()','fa-store','purple-l','purple','Seller Approvals','Admin only',true);
+})();
+
+function showMenu(fn,on){
+  const el=document.querySelector('.mi[onclick="'+fn+'"]');
+  if(el)el.style.display=on?'':'none';
+}
+const _applyRole3=applyRole;
+applyRole=function(role){_applyRole3(role);showMenu('openAdminSellers()',role==='admin');};
+
+async function applySellerMenu(session){
+  const {data}=await sb.from('sellers').select('status').eq('user_id',session.user.id).maybeSingle();
+  const ok=!!data&&data.status==='verified';
+  showMenu('openShop()',ok);
+  showMenu('openSellerApply()',!ok);
+}
+
+// --- Apply to become a seller ---
+async function openSellerApply(){
+  goTo('seller-screen');
+  const {data:{user}}=await sb.auth.getUser();
+  const {data}=await sb.from('sellers').select('*').eq('user_id',user.id).maybeSingle();
+  const form=document.getElementById('sa-form'),st=document.getElementById('sa-status');
+  if(data){
+    form.style.display='none';st.style.display='block';
+    const note=data.status==='pending'?'We are reviewing your shop. You will see My Shop in your Profile once it is approved.'
+      :data.status==='rejected'?'Your application was not approved. Contact AquaHub for details.':'Your shop is approved.';
+    st.innerHTML='<div style="font-family:var(--sans);font-size:16px;font-weight:800;margin-bottom:8px">'+esc(data.shop_name)+'</div>'+
+      '<div style="font-size:13px;color:var(--text2);line-height:1.7">'+esc(data.category)+' · '+esc(data.area)+'<br>Status: <b>'+esc(data.status)+'</b><br>'+note+'</div>';
+  }else{form.style.display='block';st.style.display='none';}
+}
+async function submitSeller(){
+  const shop_name=document.getElementById('sa-name').value.trim();
+  const category=document.getElementById('sa-cat').value;
+  const area=document.getElementById('sa-area').value.trim();
+  if(shop_name.length<2||area.length<2){toast('Enter your shop name and area','fa-triangle-exclamation');return;}
+  const {data:{user}}=await sb.auth.getUser();
+  const {error}=await sb.from('sellers').insert({user_id:user.id,shop_name,category,area});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  toast('Application submitted!','fa-circle-check');
+  openSellerApply();
+}
+
+// --- My Shop: manage products ---
+let spId='';
+function openShop(){goTo('shop-screen');clearProduct();loadShop();}
+function clearProduct(){
+  spId='';
+  ['sp-name','sp-unit','sp-price'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('sp-stock').value='1';
+  document.getElementById('sp-title').textContent='Add a product';
+}
+async function loadShop(){
+  const box=document.getElementById('shop-list');
+  box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.rpc('seller_products');
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No products yet. Add your first one above.</div>';return;}
+  box.innerHTML=data.map(p=>'<div class="card"><div style="font-size:14px;font-weight:800">'+esc(p.name)+'</div>'+
+    '<div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.7">GH₵'+esc(p.price)+' per '+esc(p.unit)+'<br>'+esc(p.category)+' · <b>'+(p.in_stock?'In stock':'Sold out')+'</b></div>'+
+    '<div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-o" data-id="'+esc(p.id)+'" data-name="'+esc(p.name)+'" data-cat="'+esc(p.category)+'" data-unit="'+esc(p.unit)+'" data-price="'+esc(p.price)+'" data-stock="'+(p.in_stock?'1':'0')+'" onclick="editProduct(this)">Edit</button>'+
+    '<button class="btn btn-o" onclick="removeProduct(\''+esc(p.id)+'\')">Remove</button></div></div>').join('');
+}
+function editProduct(b){
+  spId=b.dataset.id;
+  document.getElementById('sp-name').value=b.dataset.name;
+  document.getElementById('sp-cat').value=b.dataset.cat;
+  document.getElementById('sp-unit').value=b.dataset.unit;
+  document.getElementById('sp-price').value=b.dataset.price;
+  document.getElementById('sp-stock').value=b.dataset.stock;
+  document.getElementById('sp-title').textContent='Edit product';
+  document.getElementById('shop-screen').scrollTop=0;
+}
+async function saveProduct(){
+  const {error}=await sb.rpc('seller_save_product',{
+    p_id:spId||null,
+    p_name:document.getElementById('sp-name').value,
+    p_category:document.getElementById('sp-cat').value,
+    p_unit:document.getElementById('sp-unit').value,
+    p_price:Number(document.getElementById('sp-price').value),
+    p_in_stock:document.getElementById('sp-stock').value==='1'});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  toast('Product saved','fa-circle-check');
+  clearProduct();loadShop();
+}
+async function removeProduct(id){
+  if(!confirm('Remove this product from your shop?'))return;
+  const {error}=await sb.rpc('seller_remove_product',{p_id:id});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  toast('Product removed','fa-circle-check');
+  loadShop();
+}
+
+// --- Admin: approve sellers ---
+function openAdminSellers(){goTo('admin-sellers-screen');loadAdminSellers();}
+async function loadAdminSellers(){
+  const box=document.getElementById('admin-sellers-list');
+  box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.rpc('admin_list_sellers');
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No applications yet.</div>';return;}
+  box.innerHTML=data.map(s=>{
+    const actions=s.status==='verified'
+      ?'<button class="btn btn-o" style="margin-top:12px" onclick="decideSeller(\''+s.user_id+'\',\'rejected\')">Revoke</button>'
+      :'<div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-p" onclick="decideSeller(\''+s.user_id+'\',\'verified\')">Approve</button>'+
+       '<button class="btn btn-o" onclick="decideSeller(\''+s.user_id+'\',\'rejected\')">Reject</button></div>';
+    return '<div class="card"><div style="font-size:14px;font-weight:800">'+esc(s.shop_name)+'</div>'+
+      '<div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.7">Owner: '+esc(s.owner_name)+'<br>Phone: '+esc(s.phone)+'<br>'+esc(s.category)+' · '+esc(s.area)+
+      '<br>Commission: <b>'+esc(s.commission_pct)+'%</b><br>Status: <b>'+esc(s.status)+'</b></div>'+actions+'</div>';
+  }).join('');
+}
+async function decideSeller(id,status){
+  let pct=null;
+  if(status==='verified'){
+    const v=prompt('Commission percent for this shop (0 for a founding seller, 10 normal)','10');
+    if(v===null)return;
+    pct=Number(v);
+    if(v.trim()===''||!isFinite(pct)||pct<0||pct>50){toast('Enter a number from 0 to 50','fa-triangle-exclamation');return;}
+  }
+  const {error}=await sb.rpc('admin_set_seller',{p_user:id,p_status:status,p_commission:pct});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  toast('Seller '+status,'fa-circle-check');
+  loadAdminSellers();
+}
+
+// --- Market: products come from the database ---
+const PSTYLE={
+  water:{ico:'fa-droplet',ibg:'#eff6ff',ic:'#2563eb',col:'var(--blue)'},
+  biogas:{ico:'fa-fire',ibg:'#fff7ed',ic:'#f97316',col:'var(--orange)'},
+  fertilizer:{ico:'fa-seedling',ibg:'#f0fdf4',ic:'#16a34a',col:'var(--green)'}};
+
+async function syncProducts(){
+  const {data,error}=await sb.rpc('market_products');
+  if(error||!data)return;
+  PRODS.length=0;
+  data.forEach(p=>{
+    const s=PSTYLE[p.category]||PSTYLE.fertilizer;
+    PRODS.push({id:p.id,cat:p.category,name:p.name,ico:s.ico,ibg:s.ibg,ic:s.ic,col:s.col,
+      price:Number(p.price),unit:p.unit,min:Number(p.min_qty),stock:p.in_stock,seller:p.seller_id,shop:p.shop_name});
+  });
+  renderProds();
+}
+
+renderProds=function(){
+  const box=document.getElementById('market-body');
+  if(!PRODS.length){box.innerHTML='<div class="card" style="color:var(--text3)">Loading products...</div>';return;}
+  const list=curFilter==='all'?PRODS:PRODS.filter(p=>p.cat===curFilter);
+  if(!list.length){box.innerHTML='<div class="card" style="color:var(--text3)">Nothing here yet.</div>';return;}
+  box.innerHTML=list.map(p=>'<div style="background:#fff;border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 2px 16px rgba(0,0,0,0.07)">'+
+    '<div style="display:flex;gap:14px;align-items:center;margin-bottom:12px"><div style="width:64px;height:64px;border-radius:16px;background:'+p.ibg+';display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid '+p.ico+'" style="color:'+p.ic+';font-size:26px"></i></div>'+
+    '<div><div style="font-family:var(--sans);font-size:16px;font-weight:900">'+esc(p.name)+'</div><div style="font-size:12px;color:var(--text2);margin-top:3px">Sold by <b>'+esc(p.shop)+'</b></div></div></div>'+
+    '<div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-family:var(--sans);font-size:20px;font-weight:900;color:'+p.col+'">GH₵'+p.price+'<span style="font-size:12px;font-weight:600;color:var(--text3)"> / '+esc(p.unit)+'</span></div>'+
+    '<div style="font-size:11px;color:var(--text3)">Min. '+p.min+' '+esc(p.unit)+'</div></div>'+
+    (p.stock?'<button onclick="openOrder(\''+esc(p.id)+'\')" style="background:'+p.col+';color:#fff;border:none;border-radius:14px;padding:13px 20px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--sans)"><i class="fa-solid fa-cart-shopping"></i> Order</button>'
+      :'<span style="font-weight:800;color:var(--text3)">Sold out</span>')+'</div></div>').join('');
+};
+
+// Replaces the earlier confirmOrder: one shop per cart
+function confirmOrder(){
+  const qty=+document.getElementById('om-qty').value;
+  const addr=document.getElementById('om-addr').value;
+  const ph=document.getElementById('om-ph').value;
+  if(!qty||qty<curProd.min){toast('Min order: '+curProd.min+' '+curProd.unit,'fa-triangle-exclamation');return;}
+  if(!addr){toast('Enter delivery address','fa-triangle-exclamation');return;}
+  if(!ph){toast('Enter phone number','fa-triangle-exclamation');return;}
+  if(S.cart.length&&S.cart[0].seller!==curProd.seller){toast('Please order from one shop at a time. Check out first.','fa-triangle-exclamation');return;}
+  const ex=S.cart.find(c=>c.id===curProd.id);
+  if(ex){ex.qty+=qty;ex.total+=curProd.price*qty;}
+  else S.cart.push({id:curProd.id,name:curProd.name,qty,unit:curProd.unit,price:curProd.price,total:curProd.price*qty,col:curProd.col,seller:curProd.seller});
+  cm('om');updateCart();renderProds();
+  toast(curProd.name+' added to cart!','fa-cart-shopping');
+}
+
+sb.auth.onAuthStateChange((event,session)=>{
+  if(session&&(event==='SIGNED_IN'||event==='INITIAL_SESSION')){
+    setTimeout(()=>{syncProducts();applySellerMenu(session);},0);
+  }
+});
+  // ===== PRODUCT PHOTOS =====
+let spImg='';
+
+(function(){
+  const save=document.querySelector('#shop-screen .btn-p');
+  if(save&&!document.getElementById('sp-photo')){
+    const d=document.createElement('div');d.className='fg';
+    d.innerHTML='<label class="fl">Product photo</label><input class="fi" id="sp-photo" type="file" accept="image/*"/>'+
+      '<img id="sp-prev" alt="" style="display:none;width:100%;height:150px;object-fit:cover;border-radius:14px;margin-top:10px"/>';
+    save.before(d);
+    document.getElementById('sp-photo').onchange=function(){
+      const f=this.files[0],p=document.getElementById('sp-prev');
+      if(f){p.src=URL.createObjectURL(f);p.style.display='block';}
+      else if(!spImg)p.style.display='none';
+    };
+  }
+})();
+
+function compressImage(file,max=900,q=0.8){
+  return new Promise((res,rej)=>{
+    const img=new Image(),url=URL.createObjectURL(file);
+    img.onload=()=>{
+      const r=Math.min(1,max/Math.max(img.width,img.height));
+      const c=document.createElement('canvas');
+      c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(b=>b?res(b):rej(new Error('Could not process the photo')),'image/jpeg',q);
+    };
+    img.onerror=()=>rej(new Error('Could not read the photo'));
+    img.src=url;
+  });
+}
+
+function clearProduct(){
+  spId='';spImg='';
+  ['sp-name','sp-unit','sp-price'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('sp-stock').value='1';
+  document.getElementById('sp-photo').value='';
+  const p=document.getElementById('sp-prev');p.style.display='none';p.removeAttribute('src');
+  document.getElementById('sp-title').textContent='Add a product';
+}
+
+async function loadShop(){
+  const box=document.getElementById('shop-list');
+  box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.rpc('seller_products');
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No products yet. Add your first one above.</div>';return;}
+  box.innerHTML=data.map(p=>'<div class="card">'+
+    (p.image_url?'<img src="'+esc(p.image_url)+'" alt="" loading="lazy" style="width:100%;height:140px;object-fit:cover;border-radius:14px;margin-bottom:10px"/>':'')+
+    '<div style="font-size:14px;font-weight:800">'+esc(p.name)+'</div>'+
+    '<div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.7">GH₵'+esc(p.price)+' per '+esc(p.unit)+'<br>'+esc(p.category)+' · <b>'+(p.in_stock?'In stock':'Sold out')+'</b></div>'+
+    '<div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-o" data-id="'+esc(p.id)+'" data-name="'+esc(p.name)+'" data-cat="'+esc(p.category)+'" data-unit="'+esc(p.unit)+'" data-price="'+esc(p.price)+'" data-stock="'+(p.in_stock?'1':'0')+'" data-image="'+esc(p.image_url||'')+'" onclick="editProduct(this)">Edit</button>'+
+    '<button class="btn btn-o" onclick="removeProduct(\''+esc(p.id)+'\')">Remove</button></div></div>').join('');
+}
+
+function editProduct(b){
+  spId=b.dataset.id;spImg=b.dataset.image||'';
+  document.getElementById('sp-name').value=b.dataset.name;
+  document.getElementById('sp-cat').value=b.dataset.cat;
+  document.getElementById('sp-unit').value=b.dataset.unit;
+  document.getElementById('sp-price').value=b.dataset.price;
+  document.getElementById('sp-stock').value=b.dataset.stock;
+  document.getElementById('sp-photo').value='';
+  const p=document.getElementById('sp-prev');
+  if(spImg){p.src=spImg;p.style.display='block';}else p.style.display='none';
+  document.getElementById('sp-title').textContent='Edit product';
+  document.getElementById('shop-screen').scrollTop=0;
+}
+
+async function saveProduct(){
+  const btn=document.querySelector('#shop-screen .btn-p');
+  const file=document.getElementById('sp-photo').files[0];
+  btn.disabled=true;
+  try{
+    let imageUrl=spImg||null;
+    if(file){
+      toast('Uploading photo...','fa-image');
+      const blob=await compressImage(file);
+      const {data:{user}}=await sb.auth.getUser();
+      const path=user.id+'/'+Date.now()+'.jpg';
+      const {error:ue}=await sb.storage.from('product-images').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+      if(ue)throw ue;
+      imageUrl=sb.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+    }
+    const {error}=await sb.rpc('seller_save_product',{
+      p_id:spId||null,
+      p_name:document.getElementById('sp-name').value,
+      p_category:document.getElementById('sp-cat').value,
+      p_unit:document.getElementById('sp-unit').value,
+      p_price:Number(document.getElementById('sp-price').value),
+      p_in_stock:document.getElementById('sp-stock').value==='1',
+      p_image:imageUrl});
+    if(error)throw error;
+    toast('Product saved','fa-circle-check');
+    clearProduct();loadShop();
+  }catch(e){toast(e.message||'Could not save the product','fa-triangle-exclamation');}
+  btn.disabled=false;
+}
+
+async function syncProducts(){
+  const {data,error}=await sb.rpc('market_products');
+  if(error||!data)return;
+  PRODS.length=0;
+  data.forEach(p=>{
+    const s=PSTYLE[p.category]||PSTYLE.fertilizer;
+    PRODS.push({id:p.id,cat:p.category,name:p.name,ico:s.ico,ibg:s.ibg,ic:s.ic,col:s.col,
+      price:Number(p.price),unit:p.unit,min:Number(p.min_qty),stock:p.in_stock,
+      seller:p.seller_id,shop:p.shop_name,image:p.image_url});
+  });
+  renderProds();
+}
+
+renderProds=function(){
+  const box=document.getElementById('market-body');
+  if(!PRODS.length){box.innerHTML='<div class="card" style="color:var(--text3)">Loading products...</div>';return;}
+  const list=curFilter==='all'?PRODS:PRODS.filter(p=>p.cat===curFilter);
+  if(!list.length){box.innerHTML='<div class="card" style="color:var(--text3)">Nothing here yet.</div>';return;}
+  box.innerHTML=list.map(p=>{
+    const pic=p.image
+      ?'<img src="'+esc(p.image)+'" alt="'+esc(p.name)+'" loading="lazy" style="width:100%;height:160px;object-fit:cover;border-radius:14px;margin-bottom:12px"/>'
+      :'';
+    const tile=p.image?'':'<div style="width:64px;height:64px;border-radius:16px;background:'+p.ibg+';display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid '+p.ico+'" style="color:'+p.ic+';font-size:26px"></i></div>';
+    return '<div style="background:#fff;border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 2px 16px rgba(0,0,0,0.07)">'+pic+
+      '<div style="display:flex;gap:14px;align-items:center;margin-bottom:12px">'+tile+
+      '<div><div style="font-family:var(--sans);font-size:16px;font-weight:900">'+esc(p.name)+'</div><div style="font-size:12px;color:var(--text2);margin-top:3px">Sold by <b>'+esc(p.shop)+'</b></div></div></div>'+
+      '<div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-family:var(--sans);font-size:20px;font-weight:900;color:'+p.col+'">GH₵'+p.price+'<span style="font-size:12px;font-weight:600;color:var(--text3)"> / '+esc(p.unit)+'</span></div>'+
+      '<div style="font-size:11px;color:var(--text3)">Min. '+p.min+' '+esc(p.unit)+'</div></div>'+
+      (p.stock?'<button onclick="openOrder(\''+esc(p.id)+'\')" style="background:'+p.col+';color:#fff;border:none;border-radius:14px;padding:13px 20px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--sans)"><i class="fa-solid fa-cart-shopping"></i> Order</button>'
+        :'<span style="font-weight:800;color:var(--text3)">Sold out</span>')+'</div></div>';
+  }).join('');
+};
 </script>
 </body>
 </html>
