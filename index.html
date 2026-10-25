@@ -3861,6 +3861,71 @@ ge('game-screen').innerHTML=`
   <div class="card" id="gm-board" style="padding:14px 16px"></div>
 </div>`;
 if(ge('game-screen').classList.contains('active'))loadGame();
+// ===== ALERT BADGE: SHOWS ONLY NEW ALERTS =====
+// Remove the typed-in starting values
+(function(){
+  const b=document.querySelector('.bnav .ni:nth-child(4) .nbadge');
+  if(b)b.style.display='none';
+  const d=document.querySelector('.hero-bell-dot');
+  if(d)d.style.display='none';
+})();
+
+let lastAlerts=[];
+const notifiedIds=new Set();
+function seenSet(){
+  try{return new Set(JSON.parse(localStorage.getItem('aqh_seen_alerts')||'[]'));}
+  catch(e){return new Set();}
+}
+function saveSeen(s){
+  try{localStorage.setItem('aqh_seen_alerts',JSON.stringify([...s].slice(-60)));}catch(e){}
+}
+function paintAlertBadge(){
+  const seen=seenSet();
+  const n=lastAlerts.filter(a=>!seen.has(a.id)).length;
+  const badge=document.querySelector('.bnav .ni:nth-child(4) .nbadge');
+  if(badge){badge.textContent=n;badge.style.display=n?'block':'none';}
+  const dot=document.querySelector('.hero-bell-dot');
+  if(dot)dot.style.display=n?'block':'none';
+}
+function markAlertsSeen(){
+  const s=seenSet();
+  lastAlerts.forEach(a=>s.add(a.id));
+  saveSeen(s);
+  paintAlertBadge();
+}
+
+// Each alert gets an id: place + type + level + date, so a new day or a new town counts as new
+const _applyWeather2=applyWeather;
+applyWeather=function(w,alerts){
+  _applyWeather2(w,alerts);
+  lastAlerts=alerts.map(a=>({...a,id:wxPlace.name+'|'+a.kind+'|'+a.level+'|'+w.daily.time[0]}));
+  if(ge('alerts-screen').classList.contains('active')){markAlertsSeen();return;}
+  paintAlertBadge();
+  const seen=seenSet();
+  const fresh=lastAlerts.filter(a=>!seen.has(a.id)&&!notifiedIds.has(a.id));
+  if(fresh.length){
+    fresh.forEach(a=>notifiedIds.add(a.id));
+    toast('New alert: '+fresh[0].title,'fa-bell');
+  }
+};
+
+// Opening the Alerts screen marks everything as seen
+const _goTo5=goTo;
+goTo=function(id){
+  _goTo5(id);
+  if(id==='alerts-screen')markAlertsSeen();
+};
+
+// Refresh when the app comes back to the front after 10 minutes
+let lastWx=Date.now();
+const _loadWeather=loadWeather;
+loadWeather=async function(){
+  lastWx=Date.now();
+  return _loadWeather();
+};
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&Date.now()-lastWx>10*60*1000)loadWeather();
+});
 
 </script>
 </body>
