@@ -3230,6 +3230,188 @@ loadShop=async function(){
   await _loadShop2();
   syncProducts();
 };
+// ===== MULTIPLE PHOTOS + BIGGER MARKET IMAGES =====
+let spImgs=[],spNew=[],prodsLoaded=false;
+
+const galStyle=document.createElement('style');
+galStyle.textContent='.pgal::-webkit-scrollbar{display:none}.pgal{scrollbar-width:none}';
+document.head.appendChild(galStyle);
+
+(function(){
+  const f=document.getElementById('sp-photo');
+  if(!f||document.getElementById('sp-thumbs'))return;
+  f.multiple=true;
+  const old=document.getElementById('sp-prev');if(old)old.style.display='none';
+  const t=document.createElement('div');
+  t.id='sp-thumbs';t.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-top:10px';
+  f.after(t);
+  f.onchange=function(){
+    for(const file of this.files){
+      if(spImgs.length+spNew.length>=4){toast('Up to 4 photos per product','fa-triangle-exclamation');break;}
+      spNew.push(file);
+    }
+    this.value='';
+    drawThumbs();
+  };
+})();
+
+function drawThumbs(){
+  const t=document.getElementById('sp-thumbs');
+  const cell=(src,fn)=>'<div style="position:relative;width:78px;height:78px"><img src="'+src+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:12px"/><button type="button" onclick="'+fn+'" style="position:absolute;top:-6px;right:-6px;width:24px;height:24px;border-radius:50%;border:none;background:#dc2626;color:#fff;font-weight:800;cursor:pointer">×</button></div>';
+  t.innerHTML=spImgs.map((u,i)=>cell(esc(u),'dropOld('+i+')')).join('')+
+              spNew.map((f,i)=>cell(URL.createObjectURL(f),'dropNew('+i+')')).join('');
+}
+function dropOld(i){spImgs.splice(i,1);drawThumbs();}
+function dropNew(i){spNew.splice(i,1);drawThumbs();}
+
+function compressImage(file,max=1200,q=0.82){
+  return new Promise((res,rej)=>{
+    const img=new Image(),url=URL.createObjectURL(file);
+    img.onload=()=>{
+      const r=Math.min(1,max/Math.max(img.width,img.height));
+      const c=document.createElement('canvas');
+      c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(b=>b?res(b):rej(new Error('Could not process the photo')),'image/jpeg',q);
+    };
+    img.onerror=()=>rej(new Error('Could not read the photo'));
+    img.src=url;
+  });
+}
+
+function clearProduct(){
+  spId='';spImgs=[];spNew=[];
+  ['sp-name','sp-unit','sp-price'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('sp-stock').value='1';
+  document.getElementById('sp-photo').value='';
+  document.getElementById('sp-title').textContent='Add a product';
+  drawThumbs();
+}
+
+async function loadShop(){
+  const box=document.getElementById('shop-list');
+  box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.rpc('seller_products');
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No products yet. Add your first one above.</div>';return;}
+  box.innerHTML=data.map(p=>{
+    const imgs=p.images||[];
+    return '<div class="card">'+
+    (imgs.length?'<img src="'+esc(imgs[0])+'" alt="" loading="lazy" style="width:100%;height:200px;object-fit:contain;background:#f8fafb;border-radius:14px;margin-bottom:6px"/><div style="font-size:11px;color:var(--text3);margin-bottom:8px">'+imgs.length+' photo'+(imgs.length>1?'s':'')+'</div>':'')+
+    '<div style="font-size:14px;font-weight:800">'+esc(p.name)+'</div>'+
+    '<div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.7">GH₵'+esc(p.price)+' per '+esc(p.unit)+'<br>'+esc(p.category)+' · <b>'+(p.in_stock?'In stock':'Sold out')+'</b></div>'+
+    '<div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-o" data-id="'+esc(p.id)+'" data-name="'+esc(p.name)+'" data-cat="'+esc(p.category)+'" data-unit="'+esc(p.unit)+'" data-price="'+esc(p.price)+'" data-stock="'+(p.in_stock?'1':'0')+'" data-images="'+esc(JSON.stringify(imgs))+'" onclick="editProduct(this)">Edit</button>'+
+    '<button class="btn btn-o" onclick="removeProduct(\''+esc(p.id)+'\')">Remove</button></div></div>';
+  }).join('');
+}
+
+function editProduct(b){
+  spId=b.dataset.id;spNew=[];
+  try{spImgs=JSON.parse(b.dataset.images||'[]');}catch(e){spImgs=[];}
+  document.getElementById('sp-name').value=b.dataset.name;
+  document.getElementById('sp-cat').value=b.dataset.cat;
+  document.getElementById('sp-unit').value=b.dataset.unit;
+  document.getElementById('sp-price').value=b.dataset.price;
+  document.getElementById('sp-stock').value=b.dataset.stock;
+  document.getElementById('sp-photo').value='';
+  document.getElementById('sp-title').textContent='Edit product';
+  drawThumbs();
+  document.getElementById('shop-screen').scrollTop=0;
+}
+
+async function saveProduct(){
+  const btn=document.querySelector('#shop-screen .btn-p');
+  btn.disabled=true;
+  try{
+    const urls=spImgs.slice();
+    if(spNew.length){
+      toast('Uploading photos...','fa-image');
+      const {data:{user}}=await sb.auth.getUser();
+      for(const file of spNew){
+        const blob=await compressImage(file);
+        const path=user.id+'/'+Date.now()+'_'+Math.floor(Math.random()*1e6)+'.jpg';
+        const {error:ue}=await sb.storage.from('product-images').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+        if(ue)throw ue;
+        urls.push(sb.storage.from('product-images').getPublicUrl(path).data.publicUrl);
+      }
+    }
+    const {error}=await sb.rpc('seller_save_product',{
+      p_id:spId||null,
+      p_name:document.getElementById('sp-name').value,
+      p_category:document.getElementById('sp-cat').value,
+      p_unit:document.getElementById('sp-unit').value,
+      p_price:Number(document.getElementById('sp-price').value),
+      p_in_stock:document.getElementById('sp-stock').value==='1',
+      p_images:urls});
+    if(error)throw error;
+    toast('Product saved','fa-circle-check');
+    clearProduct();loadShop();
+  }catch(e){toast(e.message||'Could not save the product','fa-triangle-exclamation');}
+  btn.disabled=false;
+}
+
+async function syncProducts(){
+  const {data,error}=await sb.rpc('market_products');
+  if(error||!data)return;
+  PRODS.length=0;
+  data.forEach(p=>{
+    const s=PSTYLE[p.category]||PSTYLE.fertilizer;
+    PRODS.push({id:p.id,cat:p.category,name:p.name,ico:s.ico,ibg:s.ibg,ic:s.ic,col:s.col,
+      price:Number(p.price),unit:p.unit,min:Number(p.min_qty),stock:p.in_stock,
+      seller:p.seller_id,shop:p.shop_name,imgs:p.images||[]});
+  });
+  prodsLoaded=true;
+  renderProds();
+}
+
+renderProds=function(){
+  const box=document.getElementById('market-body');
+  if(!PRODS.length){
+    box.innerHTML='<div class="card" style="color:var(--text3)">'+(prodsLoaded?'No products yet. Check back soon.':'Loading products...')+'</div>';
+    return;
+  }
+  const list=curFilter==='all'?PRODS:PRODS.filter(p=>p.cat===curFilter);
+  if(!list.length){box.innerHTML='<div class="card" style="color:var(--text3)">Nothing here yet.</div>';return;}
+  box.innerHTML=list.map(p=>{
+    const pics=p.imgs.length
+      ?'<div class="pgal" style="display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;margin-bottom:4px">'+
+        p.imgs.map((u,i)=>'<img src="'+esc(u)+'" alt="'+esc(p.name)+'" loading="lazy" onclick="openGallery(\''+esc(p.id)+'\','+i+')" style="flex:0 0 100%;scroll-snap-align:center;height:260px;object-fit:contain;background:#f8fafb;border-radius:14px;cursor:zoom-in"/>').join('')+'</div>'+
+        '<div style="font-size:11px;color:var(--text3);margin-bottom:10px">'+(p.imgs.length>1?p.imgs.length+' photos · swipe · tap to enlarge':'Tap to enlarge')+'</div>'
+      :'';
+    const tile=p.imgs.length?'':'<div style="width:64px;height:64px;border-radius:16px;background:'+p.ibg+';display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid '+p.ico+'" style="color:'+p.ic+';font-size:26px"></i></div>';
+    return '<div style="background:#fff;border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 2px 16px rgba(0,0,0,0.07)">'+pics+
+      '<div style="display:flex;gap:14px;align-items:center;margin-bottom:12px">'+tile+
+      '<div><div style="font-family:var(--sans);font-size:16px;font-weight:900">'+esc(p.name)+'</div><div style="font-size:12px;color:var(--text2);margin-top:3px">Sold by <b>'+esc(p.shop)+'</b></div></div></div>'+
+      '<div style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-family:var(--sans);font-size:20px;font-weight:900;color:'+p.col+'">GH₵'+p.price+'<span style="font-size:12px;font-weight:600;color:var(--text3)"> / '+esc(p.unit)+'</span></div>'+
+      '<div style="font-size:11px;color:var(--text3)">Min. '+p.min+' × '+esc(p.unit)+'</div></div>'+
+      (p.stock?'<button onclick="openOrder(\''+esc(p.id)+'\')" style="background:'+p.col+';color:#fff;border:none;border-radius:14px;padding:13px 20px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--sans)"><i class="fa-solid fa-cart-shopping"></i> Order</button>'
+        :'<span style="font-weight:800;color:var(--text3)">Sold out</span>')+'</div></div>';
+  }).join('');
+};
+
+// Full-screen photo viewer
+(function(){
+  if(document.getElementById('gal'))return;
+  const g=document.createElement('div');
+  g.id='gal';
+  g.style.cssText='position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.94);display:none;flex-direction:column';
+  g.innerHTML='<button onclick="closeGallery()" style="align-self:flex-end;margin:16px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(255,255,255,0.2);color:#fff;font-size:22px;cursor:pointer">×</button>'+
+    '<div id="gal-row" class="pgal" style="flex:1;display:flex;overflow-x:auto;scroll-snap-type:x mandatory"></div>'+
+    '<div id="gal-count" style="color:#fff;text-align:center;padding:14px 0 28px;font-size:13px"></div>';
+  document.body.appendChild(g);
+})();
+function openGallery(id,i){
+  const p=PRODS.find(x=>x.id===id);
+  if(!p||!p.imgs.length)return;
+  const row=document.getElementById('gal-row');
+  row.innerHTML=p.imgs.map(u=>'<div style="flex:0 0 100%;scroll-snap-align:center;display:flex;align-items:center;justify-content:center"><img src="'+esc(u)+'" alt="" style="max-width:100%;max-height:100%;object-fit:contain"/></div>').join('');
+  document.getElementById('gal').style.display='flex';
+  const w=row.clientWidth;row.scrollLeft=i*w;
+  const upd=()=>{document.getElementById('gal-count').textContent=(Math.round(row.scrollLeft/w)+1)+' of '+p.imgs.length;};
+  upd();row.onscroll=upd;
+}
+function closeGallery(){document.getElementById('gal').style.display='none';}
 
 </script>
 </body>
