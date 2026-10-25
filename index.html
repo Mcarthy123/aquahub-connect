@@ -3698,6 +3698,169 @@ goTo=function(id){_goTo4(id);if(id==='game-screen')loadGame();};
 sb.auth.onAuthStateChange((event,session)=>{
   if(session&&(event==='SIGNED_IN'||event==='INITIAL_SESSION'))setTimeout(loadGame,0);
 });
+// ===== GAME REDESIGN =====
+const gst=document.createElement('style');
+gst.textContent=`
+#arena{background:radial-gradient(120% 60% at 50% 0%,#172554,#0b1020 70%);animation:arIn .25s ease}
+@keyframes arIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+@keyframes pburst{from{opacity:1;transform:translate(0,0)}to{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.3)}}
+@keyframes wave{to{transform:translateX(-50%)}}
+@keyframes shk{0%,100%{transform:none}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+#ar-area.shake{animation:shk .3s}
+#ar-area{box-shadow:0 20px 50px -20px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.08)}
+#ar-area.arena-sort{background:radial-gradient(120% 80% at 50% 0%,#1d4ed8,#0f172a 68%)}
+#ar-area.arena-sort::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:34px 34px}
+#ar-area.arena-sort::after{content:'';position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,transparent,#34d399,transparent);box-shadow:0 0 24px 6px rgba(52,211,153,.5)}
+.fall{position:absolute;width:88px;text-align:center}
+.tok{width:62px;height:62px;margin:0 auto;border-radius:20px;background:linear-gradient(145deg,#fff,#cbd5e1);display:flex;align-items:center;justify-content:center;font-size:28px;color:#0f172a;box-shadow:0 12px 26px rgba(0,0,0,.5),inset 0 -3px 0 rgba(0,0,0,.08)}
+.tkn{margin-top:6px;display:inline-block;background:rgba(15,23,42,.78);color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px}
+.binbtn{border:none;border-radius:18px;padding:12px 2px;color:#fff;font-weight:800;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;touch-action:manipulation;background-color:var(--c);background-image:linear-gradient(rgba(255,255,255,.25),rgba(0,0,0,.2));box-shadow:0 10px 22px -8px var(--c)}
+.binbtn i{font-size:22px}.binbtn:active{transform:scale(.93)}
+.ftok{position:absolute;z-index:2;width:56px;height:56px;border-radius:18px;background:linear-gradient(145deg,#fde68a,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:24px;color:#451a03;box-shadow:0 8px 18px rgba(0,0,0,.5);cursor:pointer}
+.gico{display:inline-flex;align-items:center;justify-content:center;width:1.7em;height:1.7em;border-radius:50%;background:radial-gradient(circle at 30% 25%,#22d3ee,#2563eb);box-shadow:0 0 40px rgba(34,211,238,.45);color:#fff}
+.gico i{font-size:.8em}
+.gcard{position:relative;overflow:hidden;border-radius:22px;padding:18px;margin-bottom:12px;cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--a),var(--b));box-shadow:0 14px 30px -14px var(--a);transition:transform .15s}
+.gcard:active{transform:scale(.98)}
+.gcard::after{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.1)}
+.gcard-ico{width:48px;height:48px;border-radius:16px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:12px}
+.gcard-t{font-family:var(--sans);font-size:19px;font-weight:900}
+.gcard-s{font-size:12px;opacity:.85;margin:4px 0 14px}
+.gcard-f{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700}
+.gcard-go{background:#fff;color:#0f172a;border-radius:20px;padding:6px 14px;font-weight:800}`;
+document.head.appendChild(gst);
+
+// Icons instead of emoji
+const BIN_ICONS={organic:'fa-leaf',recycle:'fa-recycle',hazard:'fa-skull-crossbones',general:'fa-trash'};
+BINS.forEach(b=>{b.i=BIN_ICONS[b.k];});
+SORT_ITEMS.splice(0,SORT_ITEMS.length,
+  {i:'fa-lemon',n:'Lemon peel',b:'organic'},{i:'fa-apple-whole',n:'Apple core',b:'organic'},{i:'fa-carrot',n:'Vegetable scraps',b:'organic'},{i:'fa-bread-slice',n:'Stale bread',b:'organic'},
+  {i:'fa-box',n:'Cardboard box',b:'recycle'},{i:'fa-wine-bottle',n:'Glass bottle',b:'recycle'},{i:'fa-bottle-water',n:'Plastic bottle',b:'recycle'},{i:'fa-newspaper',n:'Newspaper',b:'recycle'},
+  {i:'fa-battery-full',n:'Battery',b:'hazard'},{i:'fa-syringe',n:'Used syringe',b:'hazard'},{i:'fa-flask',n:'Chemicals',b:'hazard'},{i:'fa-pills',n:'Old medicine',b:'hazard'},
+  {i:'fa-bag-shopping',n:'Plastic bag',b:'general'},{i:'fa-toilet-paper',n:'Used tissue',b:'general'},{i:'fa-shoe-prints',n:'Broken sandal',b:'general'},{i:'fa-broom',n:'Sweepings',b:'general'});
+const FL_ICON={documents:'fa-file-lines',phone:'fa-mobile-screen',food:'fa-bowl-rice',toy:'fa-puzzle-piece',torch:'fa-lightbulb','clean water':'fa-bottle-water',bag:'fa-suitcase','school books':'fa-book'};
+
+arLives=function(n){
+  ge('ar-lives').innerHTML='<i class="fa-solid fa-heart" style="color:#f43f5e;margin-left:4px"></i>'.repeat(Math.max(0,n))+
+    '<i class="fa-regular fa-heart" style="color:#475569;margin-left:4px"></i>'.repeat(Math.max(0,3-n));
+};
+arScore=function(){
+  ge('ar-score').textContent=G?G.score:0;
+  ge('ar-combo').innerHTML=G&&G.combo>=3?'<i class="fa-solid fa-fire"></i> streak '+G.combo+' · x'+Math.min(4,1+Math.floor(G.combo/5)):'';
+};
+const _arPanel=arPanel;
+arPanel=function(html){
+  const map=[['\u267B\uFE0F','fa-recycle'],['\u267B','fa-recycle'],['\uD83C\uDF0A','fa-water'],['\uD83C\uDFC6','fa-trophy'],['\u23F3','fa-hourglass-half']];
+  map.forEach(([k,v])=>{html=html.split(k).join('<span class="gico"><i class="fa-solid '+v+'"></i></span>');});
+  _arPanel(html);
+};
+
+function burst(x,y,color){
+  const a=ge('ar-area');
+  for(let i=0;i<12;i++){
+    const p=document.createElement('i'),ang=Math.random()*6.28,d=34+Math.random()*44;
+    p.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;width:7px;height:7px;border-radius:50%;background:'+color+';pointer-events:none;z-index:9;--dx:'+(Math.cos(ang)*d)+'px;--dy:'+(Math.sin(ang)*d)+'px;animation:pburst .5s ease-out forwards';
+    a.appendChild(p);setTimeout(()=>p.remove(),520);
+  }
+}
+function shakeArea(){const a=ge('ar-area');a.classList.remove('shake');void a.offsetWidth;a.classList.add('shake');}
+
+// ----- Sort It! look -----
+runSort=function(){
+  arHidePanel();openArena('Sort It!');
+  const a=ge('ar-area');a.style.background='';a.className='arena-sort';
+  ge('ar-controls').innerHTML=BINS.map(b=>'<button class="binbtn" style="--c:'+b.c+'" onclick="sortTap(\''+b.k+'\')"><i class="fa-solid '+b.i+'"></i><span>'+b.l+'</span></button>').join('');
+  G={mode:'sort',score:0,lives:3,combo:0,speed:90,running:true,item:null,last:performance.now()};
+  arScore();spawnSort();
+  G.raf=requestAnimationFrame(tickSort);
+};
+spawnSort=function(){
+  if(!G||G.mode!=='sort'||!G.running)return;
+  const it=SORT_ITEMS[Math.floor(Math.random()*SORT_ITEMS.length)];
+  const area=ge('ar-area'),el=document.createElement('div');
+  el.className='fall';
+  el.style.left=(10+Math.random()*Math.max(10,area.clientWidth-98))+'px';
+  el.style.top='-80px';
+  el.style.zIndex=2;
+  el.innerHTML='<div class="tok"><i class="fa-solid '+it.i+'"></i></div><div class="tkn">'+esc(it.n)+'</div>';
+  area.appendChild(el);
+  G.item={d:it,el,y:-80};
+};
+const _sortTap=sortTap;
+sortTap=function(k){
+  const it=G&&G.running?G.item:null;
+  if(it&&it.d.b===k){
+    const r=it.el.getBoundingClientRect(),a=ge('ar-area').getBoundingClientRect();
+    burst(r.left-a.left+44,r.top-a.top+31,BINS.find(b=>b.k===k).c);
+  }
+  _sortTap(k);
+};
+const _sortLose=sortLose;
+sortLose=function(m){shakeArea();_sortLose(m);};
+
+// ----- Flood Rescue look -----
+const _runFlood=runFlood;
+runFlood=function(){
+  _runFlood();
+  const a=ge('ar-area');
+  a.style.background='linear-gradient(#0f172a,#1e3a5f 60%,#334155)';
+  const roof=a.firstElementChild;
+  roof.style.cssText+=';background:linear-gradient(#16a34a,#15803d);color:#fff;border-bottom:3px solid #86efac';
+  roof.innerHTML='<i class="fa-solid fa-house-chimney" style="margin-right:8px"></i> SAFE ROOF';
+  [112,202,292].forEach(y=>{
+    const s=document.createElement('div');
+    s.style.cssText='position:absolute;left:10px;right:10px;top:'+y+'px;height:6px;border-radius:3px;background:linear-gradient(#92400e,#78350f);z-index:1;box-shadow:0 4px 10px rgba(0,0,0,.4)';
+    a.appendChild(s);
+  });
+  const w=ge('fl-water');
+  w.style.background='linear-gradient(rgba(59,130,246,.82),rgba(30,64,175,.96))';
+  w.insertAdjacentHTML('afterbegin','<svg viewBox="0 0 400 20" preserveAspectRatio="none" style="position:absolute;top:-13px;left:0;width:200%;height:16px;animation:wave 3s linear infinite"><path d="M0 10 Q25 0 50 10 T100 10 T150 10 T200 10 T250 10 T300 10 T350 10 T400 10 V20 H0Z" fill="rgba(59,130,246,.82)"/></svg>');
+};
+const _spawnFlood=spawnFlood;
+spawnFlood=function(s){
+  _spawnFlood(s);
+  const it=G.items[G.items.length-1];
+  it.el.className='ftok';
+  it.el.style.cssText='left:'+s.left+'px;top:'+s.top+'px';
+  it.el.innerHTML='<i class="fa-solid '+(FL_ICON[it.label]||'fa-box')+'"></i>';
+};
+const _rescue=rescue;
+rescue=function(it){
+  if(G&&G.running&&it.alive)burst(it.s.left+28,it.s.top+28,'#fbbf24');
+  _rescue(it);
+};
+const _floodLose=floodLose;
+floodLose=function(it){
+  shakeArea();_floodLose(it);
+  it.el.innerHTML='<i class="fa-solid fa-droplet" style="color:#60a5fa"></i>';
+};
+
+// ----- Hub look -----
+ge('game-screen').innerHTML=`
+<div class="game-hero2" style="background:radial-gradient(120% 120% at 0% 0%,#4c1d95,#1e1b4b 60%,#0f172a);padding:26px 20px 22px">
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+    <div class="gico" style="font-size:26px"><i class="fa-solid fa-gamepad"></i></div>
+    <div><div style="font-family:var(--sans);font-size:22px;font-weight:900;color:#fff">Climate Quest</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.7)">Play, earn XP and protect your community</div></div></div>
+  <div style="background:rgba(255,255,255,.12);border-radius:10px;height:10px;margin-bottom:8px;overflow:hidden"><div id="xp-bar" style="width:0%;height:100%;background:linear-gradient(90deg,#22d3ee,#a78bfa);border-radius:10px;transition:width .5s"></div></div>
+  <div style="display:flex;justify-content:space-between;align-items:center"><div id="xp-lbl" style="font-size:11px;color:rgba(255,255,255,.75);font-weight:600">0 XP · Level 1</div><div id="xp-badge" style="background:rgba(255,255,255,.16);border-radius:20px;padding:3px 10px;font-size:11px;color:#fde68a;font-weight:800">0 XP</div></div>
+</div>
+<div class="gbody">
+  <div class="slbl">Choose a game</div>
+  <div class="gcard" style="--a:#059669;--b:#064e3b" onclick="startSort()">
+    <div class="gcard-ico"><i class="fa-solid fa-recycle"></i></div>
+    <div class="gcard-t">Sort It!</div><div class="gcard-s">Catch the rubbish and pick the right bin before it lands.</div>
+    <div class="gcard-f"><span>Best <b id="gm-best-sort">0</b></span><span class="gcard-go">Play <i class="fa-solid fa-play"></i></span></div></div>
+  <div class="gcard" style="--a:#2563eb;--b:#1e1b4b" onclick="startFlood()">
+    <div class="gcard-ico"><i class="fa-solid fa-water"></i></div>
+    <div class="gcard-t">Flood Rescue</div><div class="gcard-s">The water is rising. Carry your belongings to the safe roof.</div>
+    <div class="gcard-f"><span>Best <b id="gm-best-flood">0</b></span><span class="gcard-go">Play <i class="fa-solid fa-play"></i></span></div></div>
+  <div class="card" id="gm-fact" style="font-size:12px;line-height:1.6;color:var(--text2)"></div>
+  <div class="slbl">Your Badges</div>
+  <div id="gm-badges" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px"></div>
+  <div class="slbl">Leaderboard</div>
+  <div class="card" id="gm-board" style="padding:14px 16px"></div>
+</div>`;
+if(ge('game-screen').classList.contains('active'))loadGame();
 
 </script>
 </body>
