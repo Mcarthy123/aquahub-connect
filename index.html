@@ -3926,6 +3926,7 @@ loadWeather=async function(){
 document.addEventListener('visibilitychange',()=>{
   if(!document.hidden&&Date.now()-lastWx>10*60*1000)loadWeather();
 });
+startFlood=function(){location.href='flood-rescue.html';};
 
 </script>
 </body>
