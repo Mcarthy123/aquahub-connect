@@ -3216,6 +3216,21 @@ renderProds=function(){
         :'<span style="font-weight:800;color:var(--text3)">Sold out</span>')+'</div></div>';
   }).join('');
 };
+  // ===== KEEP THE MARKET UP TO DATE =====
+// Reload the products every time the Market is opened
+const _goTo3=goTo;
+goTo=function(id){
+  _goTo3(id);
+  if(id==='market')syncProducts();
+};
+
+// Reload the Market whenever the shop list changes (after saving or removing a product)
+const _loadShop2=loadShop;
+loadShop=async function(){
+  await _loadShop2();
+  syncProducts();
+};
+
 </script>
 </body>
 </html>
