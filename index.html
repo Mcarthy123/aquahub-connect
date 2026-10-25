@@ -3412,6 +3412,292 @@ function openGallery(id,i){
   upd();row.onscroll=upd;
 }
 function closeGallery(){document.getElementById('gal').style.display='none';}
+// ===== CLIMATE QUEST: ARCADE GAMES =====
+const ge=id=>document.getElementById(id);
+const BINS=[
+  {k:'organic',l:'Food',c:'#16a34a',e:'🌱'},{k:'recycle',l:'Recycle',c:'#2563eb',e:'♻️'},
+  {k:'hazard',l:'Danger',c:'#dc2626',e:'☣️'},{k:'general',l:'General',c:'#64748b',e:'🗑️'}];
+const SORT_ITEMS=[
+  {e:'🍌',n:'Banana peel',b:'organic'},{e:'🍎',n:'Apple core',b:'organic'},{e:'🥬',n:'Vegetable scraps',b:'organic'},{e:'🍞',n:'Stale bread',b:'organic'},
+  {e:'🥫',n:'Tin can',b:'recycle'},{e:'🍾',n:'Glass bottle',b:'recycle'},{e:'📦',n:'Cardboard box',b:'recycle'},{e:'🧴',n:'Plastic bottle',b:'recycle'},
+  {e:'🔋',n:'Battery',b:'hazard'},{e:'💉',n:'Used syringe',b:'hazard'},{e:'🧪',n:'Chemicals',b:'hazard'},{e:'💊',n:'Old medicine',b:'hazard'},
+  {e:'🛍️',n:'Dirty plastic bag',b:'general'},{e:'🧻',n:'Used tissue',b:'general'},{e:'🍂',n:'Sweepings',b:'general'},{e:'🩴',n:'Broken sandal',b:'general'}];
+const FLOOD_ITEMS=[
+  {e:'📄',n:'documents'},{e:'📱',n:'phone'},{e:'🍚',n:'food'},{e:'🧸',n:'toy'},
+  {e:'🔦',n:'torch'},{e:'💧',n:'clean water'},{e:'🧳',n:'bag'},{e:'📚',n:'school books'}];
+const FACTS=[
+  'When pit latrines overflow in floods, waste can contaminate wells and rivers and spread cholera and typhoid.',
+  'Batteries and syringes should never go in the general bin. They can poison soil and water or injure waste collectors.',
+  'Food scraps can be turned into compost and biogas instead of being thrown away.',
+  'Biogas is mostly methane. It burns cleanly, so it can replace charcoal and firewood for cooking.',
+  'Before heavy rain, move valuables and documents to higher ground and store clean drinking water.',
+  'A plastic bottle left in the street can block a drain and make floods worse.',
+  'Heat is most dangerous for children and the elderly. Drink water often and rest in the shade at midday.',
+  'Blocked drains are a main reason streets flood. Keep the drain near your home clear of rubbish.',
+  'Organic fertiliser made from treated waste returns nutrients to the soil and can help crops grow.',
+  'Washing hands with soap after using the toilet is one of the best ways to prevent diarrhoea.'];
+let G=null,lastLevel=0;
+
+// Game hub (replaces the old quiz screen)
+ge('game-screen').innerHTML=`
+<div class="game-hero2">
+  <div style="font-family:var(--sans);font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">🎮 Climate Quest</div>
+  <div style="font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:16px">Play, earn XP and protect your community.</div>
+  <div style="background:rgba(255,255,255,0.15);border-radius:10px;height:12px;margin-bottom:6px;overflow:hidden"><div id="xp-bar" style="width:0%;height:100%;background:linear-gradient(90deg,#ffd166,#ffaa00);border-radius:10px;transition:width .5s"></div></div>
+  <div style="display:flex;justify-content:space-between;align-items:center"><div id="xp-lbl" style="font-size:11px;color:rgba(255,255,255,0.8);font-weight:600">0 XP · Level 1</div><div id="xp-badge" style="background:rgba(255,255,255,0.2);border-radius:20px;padding:3px 10px;font-size:11px;color:#ffd166;font-weight:800">⚡ 0 XP</div></div>
+</div>
+<div class="gbody">
+  <div class="slbl">Choose a game</div>
+  <div onclick="startSort()" style="background:linear-gradient(135deg,#14532d,#16a34a);border-radius:var(--r);padding:18px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;gap:14px">
+    <div style="font-size:46px">♻️</div><div style="flex:1"><div style="font-family:var(--sans);font-size:18px;font-weight:900;color:#fff">Sort It!</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.85);margin:3px 0 6px">Tap the right bin before the rubbish hits the ground.</div>
+    <div style="font-size:11px;color:#bbf7d0;font-weight:800">Best: <span id="gm-best-sort">0</span></div></div><i class="fa-solid fa-play" style="color:#fff"></i></div>
+  <div onclick="startFlood()" style="background:linear-gradient(135deg,#1e3a8a,#2563eb);border-radius:var(--r);padding:18px;margin-bottom:16px;cursor:pointer;display:flex;align-items:center;gap:14px">
+    <div style="font-size:46px">🌊</div><div style="flex:1"><div style="font-family:var(--sans);font-size:18px;font-weight:900;color:#fff">Flood Rescue</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.85);margin:3px 0 6px">The water is rising! Save your belongings.</div>
+    <div style="font-size:11px;color:#bfdbfe;font-weight:800">Best: <span id="gm-best-flood">0</span></div></div><i class="fa-solid fa-play" style="color:#fff"></i></div>
+  <div class="card" id="gm-fact" style="font-size:12px;line-height:1.6;color:var(--text2)"></div>
+  <div class="slbl">Your Badges</div>
+  <div id="gm-badges" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px"></div>
+  <div class="slbl">Leaderboard</div>
+  <div class="card" id="gm-board" style="padding:14px 16px"></div>
+</div>`;
+
+// Full-screen game arena
+(function(){
+  if(ge('arena'))return;
+  const a=document.createElement('div');
+  a.id='arena';
+  a.style.cssText='position:fixed;inset:0;z-index:2500;background:#0f172a;display:none;flex-direction:column;padding-top:env(safe-area-inset-top,0px);user-select:none;-webkit-user-select:none';
+  a.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;color:#fff">
+      <button onclick="quitGame()" style="width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:#fff;font-size:18px;cursor:pointer">✕</button>
+      <div id="ar-title" style="font-family:var(--sans);font-weight:900;font-size:16px"></div>
+      <div id="ar-lives" style="font-size:18px;min-width:70px;text-align:right"></div></div>
+    <div style="display:flex;justify-content:space-between;padding:0 16px 8px;color:#fff;font-weight:800"><div>Score <span id="ar-score">0</span></div><div id="ar-combo" style="color:#fbbf24;font-size:13px"></div></div>
+    <div id="ar-area" style="position:relative;margin:0 12px;height:340px;border-radius:20px;overflow:hidden;background:linear-gradient(#e0f2fe,#bae6fd);touch-action:manipulation"></div>
+    <div id="ar-controls" style="padding:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
+    <div id="ar-hint" style="color:#cbd5e1;text-align:center;font-size:13px;font-weight:700;padding:0 16px;min-height:20px"></div>
+    <div id="ar-result" style="display:none;position:absolute;inset:0;background:rgba(15,23,42,0.97);color:#fff;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;overflow-y:auto"></div>`;
+  document.body.appendChild(a);
+})();
+
+function vib(ms){if(S.haptic&&navigator.vibrate)navigator.vibrate(ms);}
+function arLives(n){ge('ar-lives').textContent='❤️'.repeat(Math.max(0,n))+'🖤'.repeat(Math.max(0,3-n));}
+function arScore(){
+  ge('ar-score').textContent=G?G.score:0;
+  ge('ar-combo').textContent=G&&G.combo>=3?'🔥 streak '+G.combo+' · x'+Math.min(4,1+Math.floor(G.combo/5)):'';
+}
+function arHint(t,c){const h=ge('ar-hint');h.textContent=t;h.style.color=c||'#cbd5e1';}
+function arPanel(html){const r=ge('ar-result');r.innerHTML=html;r.style.display='flex';}
+function arHidePanel(){ge('ar-result').style.display='none';}
+function arIntro(icon,title,body,fn){
+  arPanel(`<div style="font-size:64px">${icon}</div>
+    <div style="font-family:var(--sans);font-size:26px;font-weight:900;margin:8px 0">${title}</div>
+    <div style="font-size:14px;line-height:1.6;color:#cbd5e1;max-width:300px;margin-bottom:22px">${body}</div>
+    <button class="btn btn-p" style="max-width:260px" onclick="${fn}()">Start</button>
+    <button class="btn" style="max-width:260px;margin-top:10px;background:transparent;color:#cbd5e1" onclick="quitGame()">Back</button>`);
+}
+function openArena(title){
+  stopGame();
+  ge('arena').style.display='flex';
+  ge('ar-title').textContent=title;
+  ge('ar-area').innerHTML='';ge('ar-controls').innerHTML='';
+  ge('ar-score').textContent='0';ge('ar-combo').textContent='';
+  arLives(3);arHint('');
+}
+function stopGame(){
+  if(G){G.running=false;cancelAnimationFrame(G.raf);clearTimeout(G.spawnT);G=null;}
+}
+function quitGame(){stopGame();ge('arena').style.display='none';loadGame();}
+
+async function endGame(){
+  if(!G)return;
+  const g=G;g.running=false;cancelAnimationFrame(g.raf);clearTimeout(g.spawnT);
+  const mode=g.mode,win=g.win===true;
+  if(mode==='flood'&&win)g.score+=g.lives*20;
+  const score=g.score;
+  G=null;
+  arPanel('<div style="font-size:54px">⏳</div><div style="margin-top:8px">Saving your score...</div>');
+  let gained=0,best=score;
+  const {data}=await sb.rpc('submit_score',{p_game:mode,p_score:score});
+  if(data&&data[0]){gained=data[0].o_gained;best=mode==='sort'?data[0].o_best_sort:data[0].o_best_flood;}
+  const msg=mode==='sort'?'Game over!':
+    win?'The water went down. You saved '+g.saved+' belongings!':'The flood took too much this time. You saved '+g.saved+'.';
+  const icon=mode==='sort'?'♻️':win?'🏆':'🌊';
+  const fact=FACTS[Math.floor(Math.random()*FACTS.length)];
+  const again=mode==='sort'?'runSort':'runFlood';
+  arPanel(`<div style="font-size:60px">${icon}</div>
+    <div style="font-family:var(--sans);font-size:22px;font-weight:900;margin:6px 0;max-width:300px">${esc(msg)}</div>
+    <div style="font-size:46px;font-weight:900;color:#fbbf24;line-height:1">${score}</div>
+    <div style="font-size:12px;color:#cbd5e1;margin:4px 0 10px">points</div>
+    <div style="font-size:14px;font-weight:800;color:#86efac">${gained>0?'+'+gained+' XP earned':'No XP this round. Wait a few seconds between rounds.'}</div>
+    <div style="font-size:12px;color:#cbd5e1;margin:4px 0 14px">Your best: ${best}</div>
+    <div style="background:rgba(255,255,255,0.1);border-radius:14px;padding:12px;font-size:12px;line-height:1.6;max-width:320px;margin-bottom:18px"><b>Did you know?</b><br>${esc(fact)}</div>
+    <button class="btn btn-p" style="max-width:260px" onclick="${again}()">Play again</button>
+    <button class="btn" style="max-width:260px;margin-top:10px;background:transparent;color:#cbd5e1" onclick="quitGame()">Done</button>`);
+  loadGame();
+}
+
+// ---------- Sort It! ----------
+function startSort(){
+  openArena('Sort It!');
+  arIntro('♻️','Sort It!','Rubbish falls from the top. Tap the right bin before it hits the ground. Streaks give bonus points. You have 3 lives.','runSort');
+}
+function runSort(){
+  arHidePanel();openArena('Sort It!');
+  ge('ar-area').style.background='linear-gradient(#e0f2fe,#bae6fd)';
+  ge('ar-controls').innerHTML=BINS.map(b=>`<button onclick="sortTap('${b.k}')" style="background:${b.c};color:#fff;border:none;border-radius:16px;padding:12px 2px;font-weight:800;font-size:12px;cursor:pointer;touch-action:manipulation"><div style="font-size:26px">${b.e}</div>${b.l}</button>`).join('');
+  G={mode:'sort',score:0,lives:3,combo:0,speed:90,running:true,item:null,last:performance.now()};
+  arScore();spawnSort();
+  G.raf=requestAnimationFrame(tickSort);
+}
+function spawnSort(){
+  if(!G||G.mode!=='sort'||!G.running)return;
+  const it=SORT_ITEMS[Math.floor(Math.random()*SORT_ITEMS.length)];
+  const area=ge('ar-area'),el=document.createElement('div');
+  const x=10+Math.random()*Math.max(10,area.clientWidth-90);
+  el.style.cssText='position:absolute;left:'+x+'px;top:-60px;width:76px;font-size:44px;text-align:center;line-height:1.1';
+  el.innerHTML=it.e+'<div style="font-size:10px;font-weight:800;color:#0f172a">'+esc(it.n)+'</div>';
+  area.appendChild(el);
+  G.item={d:it,el,y:-60};
+}
+function sortRight(it){return BINS.find(b=>b.k===it.d.b).l;}
+function sortLose(msg){
+  G.lives--;G.combo=0;arLives(G.lives);arScore();vib(60);
+  if(G.item){G.item.el.remove();G.item=null;}
+  if(G.lives<=0){endGame();return;}
+  arHint(msg,'#fca5a5');
+  G.spawnT=setTimeout(spawnSort,700);
+}
+function tickSort(t){
+  if(!G||G.mode!=='sort'||!G.running)return;
+  const dt=Math.min(0.05,(t-G.last)/1000);G.last=t;
+  const H=ge('ar-area').clientHeight;
+  if(G.item){
+    G.item.y+=G.speed*dt;
+    G.item.el.style.top=G.item.y+'px';
+    if(G.item.y>H-62){sortLose('Too slow! '+G.item.d.n+' goes in '+sortRight(G.item));}
+  }
+  if(G&&G.running)G.raf=requestAnimationFrame(tickSort);
+}
+function sortTap(k){
+  if(!G||G.mode!=='sort'||!G.running||!G.item)return;
+  const it=G.item;
+  if(it.d.b===k){
+    G.combo++;G.score+=10*Math.min(4,1+Math.floor(G.combo/5));
+    G.speed=Math.min(260,G.speed+5);vib(15);
+    it.el.style.transition='transform .2s, opacity .2s';
+    it.el.style.transform='scale(1.6)';it.el.style.opacity='0';
+    const el=it.el;setTimeout(()=>el.remove(),200);
+    G.item=null;arScore();arHint('Nice! '+it.d.n+' ✓','#86efac');
+    G.spawnT=setTimeout(spawnSort,250);
+  }else{
+    sortLose(it.d.n+' goes in '+sortRight(it));
+  }
+}
+
+// ---------- Flood Rescue ----------
+function startFlood(){
+  openArena('Flood Rescue');
+  arIntro('🌊','Flood Rescue','The water is rising! Tap your belongings to carry them to the safe roof before the water reaches them. The low ones go first. You have 3 lives.','runFlood');
+}
+function runFlood(){
+  arHidePanel();openArena('Flood Rescue');
+  const area=ge('ar-area');
+  area.style.background='linear-gradient(#e0f2fe,#fef3c7)';
+  area.innerHTML='<div style="position:absolute;top:0;left:0;right:0;height:38px;background:rgba(22,163,74,0.28);z-index:1;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#166534">🏠 SAFE ROOF</div>'+
+    '<div id="fl-water" style="position:absolute;left:0;right:0;bottom:0;height:0;z-index:3;pointer-events:none;background:linear-gradient(rgba(59,130,246,0.55),rgba(30,64,175,0.85))"></div>';
+  const W=area.clientWidth,H=area.clientHeight;
+  const tops=[56,146,236],lefts=[0.08,0.38,0.68].map(f=>Math.round(W*f));
+  const slots=[];
+  tops.forEach(t=>lefts.forEach(l=>slots.push({top:t,left:l,req:H-(t+56),used:false})));
+  G={mode:'flood',score:0,lives:3,combo:0,running:true,t0:performance.now(),dur:50000,H,slots,items:[],lastSpawn:-9999,saved:0};
+  arScore();arHint('Tap the items to rescue them!');
+  G.raf=requestAnimationFrame(tickFlood);
+}
+function spawnFlood(s){
+  const f=FLOOD_ITEMS[Math.floor(Math.random()*FLOOD_ITEMS.length)];
+  const el=document.createElement('div');
+  el.textContent=f.e;
+  el.style.cssText='position:absolute;z-index:2;width:56px;height:56px;font-size:40px;line-height:56px;text-align:center;cursor:pointer;left:'+s.left+'px;top:'+s.top+'px';
+  const it={s,el,label:f.n,alive:true};
+  el.addEventListener('pointerdown',e=>{e.preventDefault();rescue(it);});
+  ge('ar-area').appendChild(el);
+  s.used=true;G.items.push(it);
+}
+function rescue(it){
+  if(!G||G.mode!=='flood'||!G.running||!it.alive)return;
+  it.alive=false;it.s.used=false;
+  G.items=G.items.filter(x=>x!==it);
+  G.saved++;G.combo++;G.score+=10+(G.combo>=4?5:0);
+  vib(15);arScore();arHint('Saved your '+it.label+'! ✓','#86efac');
+  it.el.style.transition='transform .5s ease-in, opacity .5s';
+  it.el.style.transform='translateY('+(-(it.s.top-6))+'px) scale(0.5)';
+  it.el.style.opacity='0';
+  const el=it.el;setTimeout(()=>el.remove(),520);
+}
+function floodLose(it){
+  G.items=G.items.filter(x=>x!==it);it.s.used=false;it.alive=false;
+  it.el.textContent='💦';
+  const el=it.el;setTimeout(()=>el.remove(),350);
+  G.lives--;G.combo=0;arLives(G.lives);arScore();vib(60);
+  arHint('The water took your '+it.label+'!','#fca5a5');
+  if(G.lives<=0){G.win=false;endGame();}
+}
+function tickFlood(t){
+  if(!G||G.mode!=='flood'||!G.running)return;
+  const p=Math.min(1,(t-G.t0)/G.dur);
+  const water=G.H*0.9*(0.25*p*p+0.75*p);
+  ge('fl-water').style.height=water+'px';
+  const gap=Math.max(550,1150-p*600);
+  if(t-G.lastSpawn>gap){
+    const free=G.slots.filter(s=>!s.used&&s.req>water+40);
+    if(free.length){spawnFlood(free[Math.floor(Math.random()*free.length)]);G.lastSpawn=t;}
+  }
+  for(const it of G.items.slice()){
+    if(water>=it.s.req){floodLose(it);if(!G)return;}
+  }
+  if(p>=1){G.win=true;endGame();return;}
+  G.raf=requestAnimationFrame(tickFlood);
+}
+
+// ---------- Hub: XP, badges, leaderboard ----------
+async function loadGame(){
+  const [{data:me},{data:board}]=await Promise.all([sb.rpc('my_game'),sb.rpc('leaderboard')]);
+  const m=(me&&me[0])||{o_xp:0,o_best_sort:0,o_best_flood:0,o_plays:0};
+  const xp=Number(m.o_xp),lvl=Math.floor(xp/250)+1,into=xp%250;
+  ge('xp-bar').style.width=(into/250*100)+'%';
+  ge('xp-lbl').textContent=xp+' XP · Level '+lvl+' · '+(250-into)+' XP to next level';
+  ge('xp-badge').textContent='⚡ '+xp+' XP';
+  ge('gm-best-sort').textContent=m.o_best_sort;
+  ge('gm-best-flood').textContent=m.o_best_flood;
+  ge('gm-fact').innerHTML='<b>Did you know?</b><br>'+esc(FACTS[Math.floor(Math.random()*FACTS.length)]);
+  const defs=[
+    {n:'First Play',i:'fa-flag',c:'var(--teal)',on:m.o_plays>=1},
+    {n:'Sorter',i:'fa-recycle',c:'var(--green)',on:m.o_best_sort>=100},
+    {n:'Rescuer',i:'fa-life-ring',c:'var(--sky)',on:m.o_best_flood>=100},
+    {n:'Champion',i:'fa-trophy',c:'#d97706',on:xp>=1000}];
+  ge('gm-badges').innerHTML=defs.map(b=>'<div style="background:#fff;border-radius:var(--rsm);padding:12px 8px;text-align:center;box-shadow:var(--sh);'+(b.on?'':'opacity:.35;filter:grayscale(1)')+'"><div style="font-size:26px;margin-bottom:4px"><i class="fa-solid '+b.i+'" style="color:'+b.c+'"></i></div><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px">'+b.n+'</div></div>').join('');
+  const rows=board||[];
+  ge('gm-board').innerHTML=rows.length?rows.map((r,i)=>'<div class="lbi'+(r.is_me?' lbme':'')+'"><div class="lbr '+(i===0?'g':i===1?'s':i===2?'b':'')+'">'+(i+1)+'</div><div class="lba" style="background:var(--teal-l)"><i class="fa-solid fa-user" style="color:var(--teal)"></i></div><div class="lbn"'+(r.is_me?' style="color:var(--teal);font-weight:800"':'')+'>'+esc(r.display_name)+(r.is_me?' (you)':'')+'</div><div class="lbp">'+esc(r.o_xp)+' XP</div></div>').join('')
+    :'<div style="color:var(--text3);font-size:13px">No scores yet. Be the first!</div>';
+  // Home and Profile
+  const hx=ge('home-xp');if(hx)hx.textContent=xp+' XP';
+  const pills=document.querySelectorAll('.game-pills .gpill');
+  const badgeCount=defs.filter(b=>b.on).length;
+  if(pills[1])pills[1].innerHTML='<i class="fa-solid fa-shield"></i> Level '+lvl;
+  if(pills[2])pills[2].innerHTML='<i class="fa-solid fa-medal"></i> '+badgeCount+' Badge'+(badgeCount===1?'':'s');
+  const px=ge('ps-xp');if(px)px.textContent=xp;
+  const pp=ge('p-xp');if(pp)pp.textContent=xp+' XP · Level '+lvl;
+  if(lastLevel&&lvl>lastLevel)toast('Level up! You are now level '+lvl,'fa-trophy');
+  lastLevel=lvl;
+}
+
+const _goTo4=goTo;
+goTo=function(id){_goTo4(id);if(id==='game-screen')loadGame();};
+sb.auth.onAuthStateChange((event,session)=>{
+  if(session&&(event==='SIGNED_IN'||event==='INITIAL_SESSION'))setTimeout(loadGame,0);
+});
 
 </script>
 </body>
