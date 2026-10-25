@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Flood Rescue</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#0b2545;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff;touch-action:none}
+#g,#g canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+.s{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;background:linear-gradient(rgba(11,37,69,.78),rgba(11,37,69,.92));z-index:5;text-align:center;overflow-y:auto}
+.s.on{display:flex}
+.logo{font:900 clamp(44px,13vw,92px)/.92 Impact,"Arial Black",system-ui,sans-serif;letter-spacing:1px;text-shadow:0 6px 0 #0b2545,0 0 40px rgba(34,211,238,.45)}
+.logo b{display:block}.logo .o{color:#f97316}
+.tag{margin:0 0 10px;color:#a5f3fc;font-weight:700}
+button{font:700 17px system-ui,sans-serif;color:#fff;background:#12396b;border:2px solid #22d3ee;border-radius:14px;padding:14px 20px;min-width:230px;cursor:pointer;touch-action:manipulation}
+button:active{transform:scale(.97)}button.p{background:#f97316;border-color:#fdba74}button:disabled{opacity:.4}
+.card{background:rgba(255,255,255,.08);border:1px solid rgba(34,211,238,.35);border-radius:16px;padding:16px;max-width:430px;width:100%;text-align:left;line-height:1.55;font-size:15px}
+.m{display:flex;justify-content:space-between;align-items:center;gap:10px}.lock{opacity:.5}
+#hud{position:fixed;inset:0;z-index:3;pointer-events:none;display:none;padding:env(safe-area-inset-top,0) 0 0}
+#hud.on{display:block}#hud>*{pointer-events:none}#hud button,#joy{pointer-events:auto}
+#top{position:absolute;left:10px;top:10px;right:10px;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.pn{background:rgba(11,37,69,.82);border:1px solid rgba(34,211,238,.5);border-radius:12px;padding:8px 11px;font-size:12.5px;line-height:1.5}
+#tm{font:900 26px system-ui;color:#fdba74;text-align:center}
+.bar{height:7px;border-radius:4px;background:rgba(255,255,255,.2);overflow:hidden;margin:2px 0 5px;width:120px}.bar i{display:block;height:100%;background:#22d3ee}
+#ob div.d{color:#86efac;text-decoration:line-through}
+#mm{position:absolute;left:10px;top:150px;width:96px;height:96px;border-radius:12px;border:2px solid #22d3ee;background:rgba(11,37,69,.7)}
+#pb{position:absolute;right:10px;top:84px;min-width:0;padding:8px 14px;font-size:15px}
+#act{position:absolute;right:16px;bottom:calc(26px + env(safe-area-inset-bottom,0px));min-width:0;width:112px;height:112px;border-radius:50%;font-size:16px}
+#joy{position:absolute;left:18px;bottom:calc(26px + env(safe-area-inset-bottom,0px));width:132px;height:132px;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(34,211,238,.6)}
+#st{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(34,211,238,.7)}
+#toast{position:absolute;left:50%;top:38%;transform:translateX(-50%);background:rgba(11,37,69,.9);border:1px solid #f97316;border-radius:12px;padding:9px 16px;font-weight:700;opacity:0;transition:opacity .25s;text-align:center;max-width:86%}
+@media(min-width:900px){#joy{display:none}#mm{width:140px;height:140px}}
+</style></head><body>
+<div id="g"></div>
+
+<section class="s on" id="menu">
+ <div class="logo"><b>FLOOD</b><b class="o">RESCUE</b></div>
+ <p class="tag">Plan. Rescue. Save lives.</p>
+ <button class="p" id="bNew">New Game</button><button id="bCont">Continue</button>
+ <button data-go="mis">Missions</button><button data-go="how">How to Play</button><button data-go="set">Settings</button>
+</section>
+<section class="s" id="how"><h2>How to Play</h2><div class="card">
+ <b>Goal:</b> rescue at least 10 residents, take them to the green Evacuation Centre, and visit the white Clinic before time runs out.<br><br>
+ <b>Drive:</b> W A S D or arrow keys, or the on-screen joystick.<br>
+ <b>Rescue / Drop off:</b> Space, or the big orange button, when it lights up near a resident or a centre.<br>
+ <b>Watch out:</b> the water keeps rising. Hitting houses and cars damages the boat. The engine burns fuel, and the Evacuation Centre refuels you. The boat holds 4 people.<br>
+ <b>Pause:</b> Esc or P, or the Pause button.</div><button data-go="menu">Back</button></section>
+<section class="s" id="mis"><h2>Missions</h2>
+ <div class="card lock"><div class="m"><span><b>1. First Warning</b><br>Prepare before the flood</span><span>Coming soon</span></div></div>
+ <div class="card"><div class="m"><span><b>2. Rising Waters</b><br>Rescue residents from flooded homes</span><span id="mst">New</span></div><br><button class="p" id="bM2">Play</button></div>
+ <div class="card lock"><div class="m"><span><b>3. Cut Off</b><br>Find new routes</span><span>Coming soon</span></div></div>
+ <div class="card lock"><div class="m"><span><b>4. Community Crisis</b><br>Coordinate several teams</span><span>Coming soon</span></div></div>
+ <div class="card lock"><div class="m"><span><b>5. After the Flood</b><br>Help the community recover</span><span>Coming soon</span></div></div>
+ <button data-go="menu">Back</button></section>
+<section class="s" id="set"><h2>Settings</h2>
+ <button id="bSnd">Sound: On</button><button id="bQ">Graphics: High</button><button data-go="menu">Back</button></section>
+
+<div id="hud">
+ <div id="top">
+  <div class="pn" id="ob"></div>
+  <div class="pn"><div id="tm">3:00</div><div id="rc">Rescued 0 / 10</div>
+   <div>Hull</div><div class="bar"><i id="hu"></i></div><div>Fuel</div><div class="bar"><i id="fu"></i></div><div id="cp"></div></div>
+ </div>
+ <canvas id="mm" width="120" height="120"></canvas>
+ <button id="pb">Pause</button><div id="toast"></div>
+ <div id="joy"><div id="st"></div></div>
+ <button class="p" id="act">Rescue</button>
+</div>
+
+<section class="s" id="pause"><h2>Paused</h2><button class="p" id="bRes">Resume</button><button id="bRe">Restart</button><button id="bQuit">Main menu</button></section>
+<section class="s" id="res"><h2 id="rt">Mission Complete</h2><div class="card" id="rb"></div><div style="font-size:42px;color:#fdba74" id="rs"></div>
+ <button class="p" id="bCon">Continue</button><button id="bRetry">Play again</button></section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=i=>document.getElementById(i),T=THREE,rnd=Math.random;
+let save={};try{save=JSON.parse(localStorage.getItem('fr_save')||'{}')}catch(e){}
+const persist=()=>{try{localStorage.setItem('fr_save',JSON.stringify(save))}catch(e){}};
+let sound=true,low=false,mode='menu',paused=false;
+// ---------- scene ----------
+const R=new T.WebGLRenderer({antialias:true});R.setPixelRatio(Math.min(devicePixelRatio||1,2));$('g').appendChild(R.domElement);
+const S=new T.Scene();S.background=new T.Color(0x93aab8);S.fog=new T.Fog(0x93aab8,45,120);
+const cam=new T.PerspectiveCamera(48,1,.5,220);
+function rs(){R.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}addEventListener('resize',rs);rs();
+S.add(new T.HemisphereLight(0xdcecff,0x6b5a45,.95));
+const sun=new T.DirectionalLight(0xfff0d0,.75);sun.position.set(25,45,12);S.add(sun);
+const M=c=>new T.MeshLambertMaterial({color:c});
+function box(w,h,d,c,x,y,z,p){const m=new T.Mesh(new T.BoxGeometry(w,h,d),M(c));m.position.set(x,y,z);(p||S).add(m);return m}
+const gnd=new T.Mesh(new T.PlaneGeometry(130,130),M(0x6b5a45));gnd.rotation.x=-Math.PI/2;gnd.position.y=-1.1;S.add(gnd);
+const wg=new T.PlaneGeometry(130,130,44,44);wg.rotateX(-Math.PI/2);
+const water=new T.Mesh(wg,new T.MeshPhongMaterial({color:0x2aa7d8,transparent:true,opacity:.84,shininess:90,flatShading:true}));S.add(water);
+const wp=wg.attributes.position;
+function label(t,col,x,y,z){const c=document.createElement('canvas');c.width=256;c.height=64;const q=c.getContext('2d');q.fillStyle=col;q.fillRect(0,0,256,64);q.fillStyle='#fff';q.font='bold 27px sans-serif';q.textAlign='center';q.fillText(t,128,42);const s=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(c)}));s.scale.set(9,2.25,1);s.position.set(x,y,z);S.add(s)}
+// ---------- world ----------
+const obst=[],EV={x:26,z:-24},CL={x:-24,z:-24};
+function house(x,z,c){const g=new T.Group();g.position.set(x,0,z);box(5,3.4,5,c,0,.6,0,g);
+ const r=new T.Mesh(new T.ConeGeometry(4,1.8,4),M(0xc2410c));r.position.y=3.2;r.rotation.y=Math.PI/4;g.add(r);box(1,1.8,.1,0x5b3a29,0,-.2,2.53,g);S.add(g);obst.push({x,z,r:3.6})}
+const HC=[0xf5d0a9,0xbfdbfe,0xfde68a,0xd9f99d,0xfbcfe8,0xe9d5ff];
+const HP=[[-30,-8],[-20,6],[-12,-14],[-6,10],[2,-4],[8,18],[14,-12],[18,6],[26,14],[-26,22],[-8,28],[30,-2],[4,-26],[10,-32]];
+HP.forEach((p,i)=>house(p[0],p[1],HC[i%6]));
+// evacuation centre
+box(9,4,7,0x16a34a,EV.x,.9,EV.z);box(9.6,.5,7.6,0xf8fafc,EV.x,3.1,EV.z);box(.2,5,.2,0xe5e7eb,EV.x+4,4.6,EV.z);box(2,1.2,.1,0xf97316,EV.x+5,6.6,EV.z);
+label('EVACUATION CENTRE','#15803d',EV.x,7.8,EV.z);obst.push({x:EV.x,z:EV.z,r:5.4});
+// clinic
+box(8,4,6,0xf8fafc,CL.x,.9,CL.z);box(2.4,.7,.1,0xdc2626,CL.x,2.2,CL.z+3.05);box(.7,2.4,.1,0xdc2626,CL.x,2.2,CL.z+3.05);
+label('CLINIC','#dc2626',CL.x,6.2,CL.z);obst.push({x:CL.x,z:CL.z,r:5});
+// cars and palms
+[[-4,-16],[12,-2],[-16,18],[20,-14],[-30,6],[0,22]].forEach((p,i)=>{box(2.2,1.1,4,[0xdc2626,0xfacc15,0x1d4ed8][i%3],p[0],-.45,p[1]);obst.push({x:p[0],z:p[1],r:1.9})});
+[[-34,-20],[-14,-26],[-2,2],[12,10],[34,10],[-34,30],[20,28],[34,-30],[-16,-4],[6,-12],[-24,-36],[40,20]].forEach(p=>{const t=new T.Mesh(new T.CylinderGeometry(.22,.32,4,6),M(0x7c4a21));t.position.set(p[0],.9,p[1]);S.add(t);
+ const f=new T.Mesh(new T.SphereGeometry(1.5,8,6),M(0x15803d));f.scale.y=.4;f.position.set(p[0],3.1,p[1]);S.add(f);obst.push({x:p[0],z:p[1],r:.9})});
+// rain
+const RN=600,rp=new Float32Array(RN*6),rg=new T.BufferGeometry();
+for(let i=0;i<RN;i++){const x=rnd()*80-40,y=rnd()*30,z=rnd()*80-40;rp.set([x,y,z,x,y-1,z],i*6)}
+rg.setAttribute('position',new T.BufferAttribute(rp,3));const rain=new T.LineSegments(rg,new T.LineBasicMaterial({color:0xcfe8ff,transparent:true,opacity:.45}));rain.frustumCulled=false;S.add(rain);
+// boat
+const boat=new T.Group();
+[-1.1,1.1].forEach(s=>{const t=new T.Mesh(new T.CylinderGeometry(.5,.5,5.2,10),M(0xf97316));t.rotation.x=Math.PI/2;t.position.set(s,.2,0);boat.add(t)});
+box(1.8,.2,4.6,0x1f2937,0,.05,0,boat);box(.6,1,.6,0x111827,0,.5,-2.7,boat);box(1.8,.12,.3,0xe5e7eb,0,.6,.8,boat);
+const pax=[];for(let i=0;i<4;i++){const m=new T.Mesh(new T.CylinderGeometry(.3,.35,1,8),M([0xe11d48,0x2563eb,0x7c3aed,0xf59e0b][i]));m.position.set(i%2?.5:-.5,.8,-.6+Math.floor(i/2)*1.3);m.visible=false;boat.add(m);pax.push(m)}
+const crew=new T.Mesh(new T.CylinderGeometry(.3,.35,1,8),M(0x1e3a8a));crew.position.set(0,.8,-1.8);boat.add(crew);
+const hat=new T.Mesh(new T.SphereGeometry(.28,8,6),M(0xfacc15));hat.position.set(0,1.5,-1.8);boat.add(hat);S.add(boat);
+// ---------- game state ----------
+let P,civ=[],G,K={},joy={x:0,y:0};
+const civs=[];
+function person(x,z){const g=new T.Group(),col=[0xe11d48,0x2563eb,0x7c3aed,0xf59e0b,0x059669][rnd()*5|0];
+ box(1.8,2.3,1.8,0x8b6b4a,0,0,0,g);
+ const b=new T.Mesh(new T.CylinderGeometry(.32,.4,1.2,10),M(col));b.position.y=1.8;g.add(b);
+ const h=new T.Mesh(new T.SphereGeometry(.3,10,8),M(0x5a3825));h.position.y=2.65;g.add(h);
+ const arm=box(.12,.8,.12,col,.45,2.4,0,g);
+ const bc=new T.Mesh(new T.ConeGeometry(.35,.8,8),new T.MeshBasicMaterial({color:0xf97316}));bc.rotation.x=Math.PI;bc.position.y=3.9;g.add(bc);
+ g.position.set(x,0,z);S.add(g);return {g,arm,bc,x,z,t:95+rnd()*55,s:0}}
+function build(){civs.forEach(c=>S.remove(c.g));civs.length=0;
+ HP.forEach((p,i)=>{civs.push(person(p[0]+3.9,p[1]));if(i<2)civs.push(person(p[0]-3.9,p[1]))})}
+build();
+function start(){
+ P={x:-28,z:26,a:Math.PI*.75,v:0};
+ G={t:180,el:0,hull:100,fuel:100,on:0,del:0,lost:0,clinic:false,cd:0,done:false};
+ civs.forEach(c=>{c.s=0;c.t=95+rnd()*55;c.g.visible=true});
+ mode='play';paused=false;show(null);$('hud').classList.add('on');say('Rescue the stranded residents!');beep(520)}
+function show(id){document.querySelectorAll('.s').forEach(e=>e.classList.toggle('on',e.id===id))}
+// ---------- audio ----------
+let AC,eg,eo;
+function aud(){if(AC||!sound)return;try{AC=new(window.AudioContext||window.webkitAudioContext)();eo=AC.createOscillator();eg=AC.createGain();eo.type='sawtooth';eo.frequency.value=55;eg.gain.value=0;eo.connect(eg);eg.connect(AC.destination);eo.start()}catch(e){}}
+function beep(f,d=.16){if(!AC||!sound)return;const o=AC.createOscillator(),g=AC.createGain();o.frequency.value=f;g.gain.value=.07;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.stop(AC.currentTime+d)}
+let tt;function say(m){const t=$('toast');t.textContent=m;t.style.opacity=1;clearTimeout(tt);tt=setTimeout(()=>t.style.opacity=0,2200)}
+// ---------- actions ----------
+const dist=(a,b,c,d)=>Math.hypot(a-c,b-d);
+function nearCiv(){let b=null,bd=6.6;civs.forEach(c=>{if(c.s===0){const d=dist(P.x,P.z,c.g.position.x,c.g.position.z);if(d<bd){bd=d;b=c}}});return b}
+function ctx(){if(G.on<4){const c=nearCiv();if(c)return{k:'rescue',c}}
+ if(G.on>0&&dist(P.x,P.z,EV.x,EV.z)<11)return{k:'drop'};
+ if(dist(P.x,P.z,CL.x,CL.z)<10&&!G.clinic)return{k:'clinic'};return null}
+function act(){if(mode!=='play'||paused)return;aud();const a=ctx();if(!a){say('Nothing to do here');return}
+ if(a.k==='rescue'){a.c.s=1;a.c.g.visible=false;G.on++;beep(660);say('Resident on board ('+G.on+'/4)')}
+ else if(a.k==='drop'){G.del+=G.on;G.on=0;G.fuel=Math.min(100,G.fuel+25);beep(880,.3);say('Evacuated! Fuel topped up')}
+ else{G.clinic=true;G.hull=Math.min(100,G.hull+40);beep(740,.3);say('Medical centre reached. Boat repaired')}}
+function end(win,why){if(G.done)return;G.done=true;mode='over';$('hud').classList.remove('on');
+ const sc=G.del*100+(G.clinic?150:0)+(win?Math.round(G.t)*3:0)+Math.round(G.hull)*2+Math.round(G.fuel);
+ const stars=!win?0:(G.del>=14&&G.hull>50?3:(G.del>=12||G.t>40?2:1));
+ $('rt').textContent=win?'Mission Complete':'Mission Failed';
+ $('rb').innerHTML='<div class="m"><span>People rescued</span><b>'+G.del+'</b></div><div class="m"><span>Time used</span><b>'+Math.round(G.el)+' s</b></div><div class="m"><span>Team safety</span><b>'+(G.lost?G.lost+' lost':'All safe')+'</b></div><div class="m"><span>Hull / Fuel left</span><b>'+Math.round(G.hull)+'% / '+Math.round(G.fuel)+'%</b></div><div class="m"><span>Score</span><b>'+sc+'</b></div>'+(win?'':'<p>'+why+'</p>');
+ $('rs').textContent=win?'★'.repeat(stars)+'☆'.repeat(3-stars):'';
+ if(win){save.m2=Math.max(save.m2||0,stars);save.best=Math.max(save.best||0,sc);persist();upd()}
+ beep(win?990:200,.5);show('res')}
+function upd(){$('bCont').disabled=!('m2' in save);$('mst').textContent='m2' in save?'★'.repeat(save.m2)+'☆'.repeat(3-save.m2):'New'}
+// ---------- loop ----------
+const mm=$('mm').getContext('2d');
+function minimap(){mm.clearRect(0,0,120,120);const X=v=>60+v,Z=v=>60+v;
+ mm.fillStyle='#64748b';HP.forEach(p=>mm.fillRect(X(p[0])-2,Z(p[1])-2,4,4));
+ mm.fillStyle='#16a34a';mm.fillRect(X(EV.x)-4,Z(EV.z)-3,8,6);mm.fillStyle='#fff';mm.fillRect(X(CL.x)-3,Z(CL.z)-3,6,6);
+ civs.forEach(c=>{if(c.s===0){mm.fillStyle='#ef4444';mm.beginPath();mm.arc(X(c.g.position.x),Z(c.g.position.z),2,0,7);mm.fill()}});
+ mm.save();mm.translate(X(P.x),Z(P.z));mm.rotate(-P.a);mm.fillStyle='#f97316';mm.beginPath();mm.moveTo(0,5);mm.lineTo(-3,-3);mm.lineTo(3,-3);mm.fill();mm.restore()}
+let last=performance.now(),tm=0;
+function frame(n){requestAnimationFrame(frame);const dt=Math.min(.05,(n-last)/1000);last=n;tm+=dt;
+ for(let i=0;i<wp.count;i++){const x=wp.getX(i),z=wp.getZ(i);wp.setY(i,Math.sin(x*.32+tm*1.6)*.1+Math.cos(z*.27+tm*1.2)*.09)}wp.needsUpdate=true;
+ if(!low){const a=rg.attributes.position.array;for(let i=0;i<RN;i++){const j=i*6;a[j+1]-=34*dt;a[j+4]=a[j+1]-1;if(a[j+1]<-1){const y=28;a[j+1]=y;a[j+4]=y-1}}rg.attributes.position.needsUpdate=true;rain.visible=true;
+  rain.position.set(boat.position.x,0,boat.position.z)}else rain.visible=false;
+ civs.forEach((c,i)=>{c.arm.rotation.z=Math.sin(tm*6+i)*.9+.4;c.bc.position.y=3.9+Math.sin(tm*3+i)*.18});
+ if(mode==='play'&&!paused)play(dt);else if(mode!=='play'&&mode!=='over'){const a=tm*.12;cam.position.set(Math.sin(a)*38,22,Math.cos(a)*38);cam.lookAt(0,0,0)}
+ R.render(S,cam)}
+function play(dt){G.t-=dt;G.el+=dt;G.cd-=dt;const lvl=Math.min(.9,.9*G.el/150);water.position.y=lvl;
+ const f=Math.max(-.6,Math.min(1,((K.w||K.ArrowUp)?1:0)-((K.s||K.ArrowDown)?.6:0)+joy.y));
+ const tn=Math.max(-1,Math.min(1,((K.a||K.ArrowLeft)?1:0)-((K.d||K.ArrowRight)?1:0)+joy.x));
+ if(G.fuel>0){P.v+=f*11*dt;G.fuel-=Math.abs(f)*.42*dt}
+ P.v*=1-1.1*dt;P.v=Math.max(-5,Math.min(13,P.v));P.a+=tn*dt*2*(Math.min(1,Math.abs(P.v)/4)+.25);
+ let nx=P.x+Math.sin(P.a)*P.v*dt,nz=P.z+Math.cos(P.a)*P.v*dt;
+ nx=Math.max(-56,Math.min(56,nx));nz=Math.max(-56,Math.min(56,nz));
+ obst.forEach(o=>{const d=dist(nx,nz,o.x,o.z),m=o.r+1.4;if(d<m){const k=(m-d)/(d||1);nx+=(nx-o.x)*k;nz+=(nz-o.z)*k;
+  if(Math.abs(P.v)>3&&G.cd<=0){G.hull-=6+Math.abs(P.v)*.7;G.cd=.8;say('Hull hit! Steer clear of buildings');beep(140,.25);if(navigator.vibrate)navigator.vibrate(60)}P.v*=-.25}});
+ P.x=nx;P.z=nz;
+ boat.position.set(P.x,Math.sin(tm*2)*.06+lvl,P.z);boat.rotation.y=P.a;boat.rotation.z=-tn*.08*Math.min(1,P.v/6);
+ pax.forEach((m,i)=>m.visible=i<G.on);
+ civs.forEach(c=>{if(c.s===0){c.t-=dt*(1+lvl*1.6);c.bc.material.color.setHex(c.t<25?0xef4444:0xf97316);
+  if(c.t<=0){c.s=3;c.g.visible=false;G.lost++;say('A resident was lost to the water');beep(180,.3)}}});
+ cam.position.set(P.x+15,19,P.z+15);cam.lookAt(P.x,0,P.z);
+ if(eg)eg.gain.value=sound?Math.min(.05,Math.abs(P.v)/220+.008):0;if(eo)eo.frequency.value=50+Math.abs(P.v)*4;
+ if(G.del>=10&&G.clinic)end(true);
+ else if(G.t<=0)end(false,G.del>=10?'Time ran out before you reached the clinic.':'Time ran out.');
+ else if(G.hull<=0)end(false,'The boat was wrecked.');
+ else if(G.fuel<=0&&Math.abs(P.v)<.4)end(false,'The boat ran out of fuel.');
+ else if(G.lost>5)end(false,'Too many residents were lost to the rising water.');
+ hud()}
+function hud(){const s=Math.max(0,Math.ceil(G.t));$('tm').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+ $('rc').textContent='Rescued '+G.del+' / 10';$('hu').style.width=Math.max(0,G.hull)+'%';$('fu').style.width=Math.max(0,G.fuel)+'%';$('hu').style.background=G.hull<35?'#ef4444':'#22d3ee';$('fu').style.background=G.fuel<25?'#ef4444':'#22d3ee';
+ $('cp').textContent='On board '+G.on+'/4 · Lost '+G.lost;
+ $('ob').innerHTML='<b>Rising Waters</b><div class="'+(G.del>=10?'d':'')+'">Rescue 10 people ('+G.del+'/10)</div><div class="'+(G.clinic?'d':'')+'">Reach the medical centre</div><div>Keep the team safe</div>';
+ const c=ctx(),b=$('act');b.textContent=c?(c.k==='rescue'?'Rescue':c.k==='drop'?'Drop off':'Clinic'):'—';b.style.opacity=c?1:.45;minimap()}
+// ---------- input ----------
+addEventListener('keydown',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;K[k]=true;if(k===' '){e.preventDefault();act()}if(k==='Escape'||k==='p')pause(!paused)});
+addEventListener('keyup',e=>{K[e.key.length===1?e.key.toLowerCase():e.key]=false});
+const jb=$('joy');let jid=null;
+function jm(e){const r=jb.getBoundingClientRect(),dx=(e.clientX-r.left-66)/50,dy=(e.clientY-r.top-66)/50,l=Math.hypot(dx,dy)||1,k=Math.min(1,l)/l;
+ joy.x=-dx*k;joy.y=-dy*k;$('st').style.transform='translate('+(dx*k*40)+'px,'+(dy*k*40)+'px)'}
+jb.addEventListener('pointerdown',e=>{aud();jid=e.pointerId;jb.setPointerCapture(jid);jm(e)});
+jb.addEventListener('pointermove',e=>{if(e.pointerId===jid)jm(e)});
+const jr=e=>{if(e.pointerId===jid){jid=null;joy.x=joy.y=0;$('st').style.transform=''}};
+jb.addEventListener('pointerup',jr);jb.addEventListener('pointercancel',jr);
+$('act').addEventListener('pointerdown',e=>{e.preventDefault();act()});
+function pause(on){if(mode!=='play')return;paused=on;show(on?'pause':null);if(eg)eg.gain.value=0}
+$('pb').onclick=()=>pause(true);$('bRes').onclick=()=>pause(false);
+$('bRe').onclick=()=>start();$('bRetry').onclick=()=>start();$('bNew').onclick=()=>{aud();start()};$('bM2').onclick=()=>{aud();start()};
+$('bCont').onclick=()=>{aud();start()};
+$('bQuit').onclick=()=>{mode='menu';$('hud').classList.remove('on');show('menu')};
+$('bCon').onclick=()=>{mode='menu';show('menu')};
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>show(b.dataset.go));
+$('bSnd').onclick=function(){sound=!sound;this.textContent='Sound: '+(sound?'On':'Off');if(sound)aud();if(eg&&!sound)eg.gain.value=0};
+$('bQ').onclick=function(){low=!low;this.textContent='Graphics: '+(low?'Low (no rain)':'High');R.setPixelRatio(low?1:Math.min(devicePixelRatio||1,2));rs()};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pause(true)});
+upd();requestAnimationFrame(frame);
+</script></body></html>
