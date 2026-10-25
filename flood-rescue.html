@@ -29,6 +29,15 @@ button:active{transform:scale(.97)}button.p{background:#f97316;border-color:#fdb
 #st{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(34,211,238,.7)}
 #toast{position:absolute;left:50%;top:38%;transform:translateX(-50%);background:rgba(11,37,69,.9);border:1px solid #f97316;border-radius:12px;padding:9px 16px;font-weight:700;opacity:0;transition:opacity .25s;text-align:center;max-width:86%}
 @media(min-width:900px){#joy{display:none}#mm{width:140px;height:140px}}
+#rot{position:fixed;inset:0;z-index:20;background:#0b2545;display:none;align-items:center;justify-content:center;text-align:center;font-size:20px;padding:30px;line-height:1.7}
+@media (orientation:portrait) and (max-width:700px){body.playing #rot{display:flex}}
+@media (max-height:520px){
+.logo{font-size:46px}.s{gap:8px;padding:12px}button{padding:9px 16px;font-size:15px;min-width:200px}.tag{margin:0 0 4px}
+#ob{font-size:11px;padding:6px 8px}#top .pn{font-size:11px}#tm{font-size:20px}.bar{width:90px;margin:1px 0 3px}
+#mm{top:auto;bottom:14px;left:50%;margin-left:-48px;width:96px;height:96px}
+#pb{top:8px;left:50%;right:auto;margin-left:-35px}
+#act{width:96px;height:96px;bottom:18px}#joy{bottom:18px;width:120px;height:120px}
+.card{font-size:13px;padding:10px}}
 </style></head><body>
 <div id="g"></div>
 
@@ -40,7 +49,7 @@ button:active{transform:scale(.97)}button.p{background:#f97316;border-color:#fdb
 </section>
 <section class="s" id="how"><h2>How to Play</h2><div class="card">
  <b>Goal:</b> rescue at least 10 residents, take them to the green Evacuation Centre, and visit the white Clinic before time runs out.<br><br>
- <b>Drive:</b> W A S D or arrow keys, or the on-screen joystick.<br>
+ <b>Drive:</b> push the joystick (or W A S D) in the direction you want to go. The boat turns and sails there by itself. Play with your phone in landscape.<br>
  <b>Rescue / Drop off:</b> Space, or the big orange button, when it lights up near a resident or a centre.<br>
  <b>Watch out:</b> the water keeps rising. Hitting houses and cars damages the boat. The engine burns fuel, and the Evacuation Centre refuels you. The boat holds 4 people.<br>
  <b>Pause:</b> Esc or P, or the Pause button.</div><button data-go="menu">Back</button></section>
@@ -66,6 +75,7 @@ button:active{transform:scale(.97)}button.p{background:#f97316;border-color:#fdb
  <button class="p" id="act">Rescue</button>
 </div>
 
+<div id="rot"><div><b>Rotate your phone</b><br>Flood Rescue plays best in landscape</div></div>
 <section class="s" id="pause"><h2>Paused</h2><button class="p" id="bRes">Resume</button><button id="bRe">Restart</button><button id="bQuit">Main menu</button></section>
 <section class="s" id="res"><h2 id="rt">Mission Complete</h2><div class="card" id="rb"></div><div style="font-size:42px;color:#fdba74" id="rs"></div>
  <button class="p" id="bCon">Continue</button><button id="bRetry">Play again</button></section>
@@ -119,7 +129,7 @@ const pax=[];for(let i=0;i<4;i++){const m=new T.Mesh(new T.CylinderGeometry(.3,.
 const crew=new T.Mesh(new T.CylinderGeometry(.3,.35,1,8),M(0x1e3a8a));crew.position.set(0,.8,-1.8);boat.add(crew);
 const hat=new T.Mesh(new T.SphereGeometry(.28,8,6),M(0xfacc15));hat.position.set(0,1.5,-1.8);boat.add(hat);S.add(boat);
 // ---------- game state ----------
-let P,civ=[],G,K={},joy={x:0,y:0};
+let P,civ=[],G,K={},joy={x:0,y:0,sx:0,sy:0};
 const civs=[];
 function person(x,z){const g=new T.Group(),col=[0xe11d48,0x2563eb,0x7c3aed,0xf59e0b,0x059669][rnd()*5|0];
  box(1.8,2.3,1.8,0x8b6b4a,0,0,0,g);
@@ -135,7 +145,7 @@ function start(){
  P={x:-28,z:26,a:Math.PI*.75,v:0};
  G={t:180,el:0,hull:100,fuel:100,on:0,del:0,lost:0,clinic:false,cd:0,done:false};
  civs.forEach(c=>{c.s=0;c.t=95+rnd()*55;c.g.visible=true});
- mode='play';paused=false;show(null);$('hud').classList.add('on');say('Rescue the stranded residents!');beep(520)}
+ mode='play';paused=false;show(null);document.body.classList.add('playing');try{if(matchMedia('(pointer:coarse)').matches){const d=document.documentElement;(d.requestFullscreen?d.requestFullscreen():Promise.reject()).then(()=>screen.orientation.lock('landscape')).catch(()=>{})}}catch(e){}$('hud').classList.add('on');say('Rescue the stranded residents!');beep(520)}
 function show(id){document.querySelectorAll('.s').forEach(e=>e.classList.toggle('on',e.id===id))}
 // ---------- audio ----------
 let AC,eg,eo;
@@ -152,7 +162,7 @@ function act(){if(mode!=='play'||paused)return;aud();const a=ctx();if(!a){say('N
  if(a.k==='rescue'){a.c.s=1;a.c.g.visible=false;G.on++;beep(660);say('Resident on board ('+G.on+'/4)')}
  else if(a.k==='drop'){G.del+=G.on;G.on=0;G.fuel=Math.min(100,G.fuel+25);beep(880,.3);say('Evacuated! Fuel topped up')}
  else{G.clinic=true;G.hull=Math.min(100,G.hull+40);beep(740,.3);say('Medical centre reached. Boat repaired')}}
-function end(win,why){if(G.done)return;G.done=true;mode='over';$('hud').classList.remove('on');
+function end(win,why){if(G.done)return;G.done=true;mode='over';document.body.classList.remove('playing');$('hud').classList.remove('on');
  const sc=G.del*100+(G.clinic?150:0)+(win?Math.round(G.t)*3:0)+Math.round(G.hull)*2+Math.round(G.fuel);
  const stars=!win?0:(G.del>=14&&G.hull>50?3:(G.del>=12||G.t>40?2:1));
  $('rt').textContent=win?'Mission Complete':'Mission Failed';
@@ -174,13 +184,14 @@ function frame(n){requestAnimationFrame(frame);const dt=Math.min(.05,(n-last)/10
  if(!low){const a=rg.attributes.position.array;for(let i=0;i<RN;i++){const j=i*6;a[j+1]-=34*dt;a[j+4]=a[j+1]-1;if(a[j+1]<-1){const y=28;a[j+1]=y;a[j+4]=y-1}}rg.attributes.position.needsUpdate=true;rain.visible=true;
   rain.position.set(boat.position.x,0,boat.position.z)}else rain.visible=false;
  civs.forEach((c,i)=>{c.arm.rotation.z=Math.sin(tm*6+i)*.9+.4;c.bc.position.y=3.9+Math.sin(tm*3+i)*.18});
- if(mode==='play'&&!paused)play(dt);else if(mode!=='play'&&mode!=='over'){const a=tm*.12;cam.position.set(Math.sin(a)*38,22,Math.cos(a)*38);cam.lookAt(0,0,0)}
+ if(mode==='play'&&!paused&&!(innerWidth<700&&innerHeight>innerWidth))play(dt);else if(mode!=='play'&&mode!=='over'){const a=tm*.12;cam.position.set(Math.sin(a)*38,22,Math.cos(a)*38);cam.lookAt(0,0,0)}
  R.render(S,cam)}
 function play(dt){G.t-=dt;G.el+=dt;G.cd-=dt;const lvl=Math.min(.9,.9*G.el/150);water.position.y=lvl;
- const f=Math.max(-.6,Math.min(1,((K.w||K.ArrowUp)?1:0)-((K.s||K.ArrowDown)?.6:0)+joy.y));
- const tn=Math.max(-1,Math.min(1,((K.a||K.ArrowLeft)?1:0)-((K.d||K.ArrowRight)?1:0)+joy.x));
- if(G.fuel>0){P.v+=f*11*dt;G.fuel-=Math.abs(f)*.42*dt}
- P.v*=1-1.1*dt;P.v=Math.max(-5,Math.min(13,P.v));P.a+=tn*dt*2*(Math.min(1,Math.abs(P.v)/4)+.25);
+ let ix=((K.d||K.ArrowRight)?1:0)-((K.a||K.ArrowLeft)?1:0)+joy.sx,iy=((K.w||K.ArrowUp)?1:0)-((K.s||K.ArrowDown)?1:0)+joy.sy;
+ const mg=Math.min(1,Math.hypot(ix,iy));let tn=0,f=0;
+ if(mg>.12){const wx=(ix-iy)/1.414,wz=(-iy-ix)/1.414;let da=Math.atan2(wx,wz)-P.a;da=Math.atan2(Math.sin(da),Math.cos(da));tn=Math.max(-1,Math.min(1,da*2.2));P.a+=tn*dt*3.2;f=mg*Math.max(.25,1-Math.abs(da)/2.2)}
+ if(G.fuel>0){P.v+=f*13*dt;G.fuel-=f*.42*dt}
+ P.v*=1-1.1*dt;P.v=Math.max(-2,Math.min(12,P.v));
  let nx=P.x+Math.sin(P.a)*P.v*dt,nz=P.z+Math.cos(P.a)*P.v*dt;
  nx=Math.max(-56,Math.min(56,nx));nz=Math.max(-56,Math.min(56,nz));
  obst.forEach(o=>{const d=dist(nx,nz,o.x,o.z),m=o.r+1.4;if(d<m){const k=(m-d)/(d||1);nx+=(nx-o.x)*k;nz+=(nz-o.z)*k;
@@ -190,7 +201,7 @@ function play(dt){G.t-=dt;G.el+=dt;G.cd-=dt;const lvl=Math.min(.9,.9*G.el/150);w
  pax.forEach((m,i)=>m.visible=i<G.on);
  civs.forEach(c=>{if(c.s===0){c.t-=dt*(1+lvl*1.6);c.bc.material.color.setHex(c.t<25?0xef4444:0xf97316);
   if(c.t<=0){c.s=3;c.g.visible=false;G.lost++;say('A resident was lost to the water');beep(180,.3)}}});
- cam.position.set(P.x+15,19,P.z+15);cam.lookAt(P.x,0,P.z);
+ const kz=innerWidth>innerHeight?.85:1.15;cam.position.set(P.x+15*kz,19*kz,P.z+15*kz);cam.lookAt(P.x,0,P.z);
  if(eg)eg.gain.value=sound?Math.min(.05,Math.abs(P.v)/220+.008):0;if(eo)eo.frequency.value=50+Math.abs(P.v)*4;
  if(G.del>=10&&G.clinic)end(true);
  else if(G.t<=0)end(false,G.del>=10?'Time ran out before you reached the clinic.':'Time ran out.');
@@ -207,18 +218,18 @@ function hud(){const s=Math.max(0,Math.ceil(G.t));$('tm').textContent=Math.floor
 addEventListener('keydown',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;K[k]=true;if(k===' '){e.preventDefault();act()}if(k==='Escape'||k==='p')pause(!paused)});
 addEventListener('keyup',e=>{K[e.key.length===1?e.key.toLowerCase():e.key]=false});
 const jb=$('joy');let jid=null;
-function jm(e){const r=jb.getBoundingClientRect(),dx=(e.clientX-r.left-66)/50,dy=(e.clientY-r.top-66)/50,l=Math.hypot(dx,dy)||1,k=Math.min(1,l)/l;
- joy.x=-dx*k;joy.y=-dy*k;$('st').style.transform='translate('+(dx*k*40)+'px,'+(dy*k*40)+'px)'}
+function jm(e){const r=jb.getBoundingClientRect(),dx=(e.clientX-r.left-r.width/2)/(r.width*.38),dy=(e.clientY-r.top-r.height/2)/(r.width*.38),l=Math.hypot(dx,dy)||1,k=Math.min(1,l)/l;
+ joy.x=-dx*k;joy.y=-dy*k;joy.sx=dx*k;joy.sy=-dy*k;$('st').style.transform='translate('+(dx*k*40)+'px,'+(dy*k*40)+'px)'}
 jb.addEventListener('pointerdown',e=>{aud();jid=e.pointerId;jb.setPointerCapture(jid);jm(e)});
 jb.addEventListener('pointermove',e=>{if(e.pointerId===jid)jm(e)});
-const jr=e=>{if(e.pointerId===jid){jid=null;joy.x=joy.y=0;$('st').style.transform=''}};
+const jr=e=>{if(e.pointerId===jid){jid=null;joy.x=joy.y=joy.sx=joy.sy=0;$('st').style.transform=''}};
 jb.addEventListener('pointerup',jr);jb.addEventListener('pointercancel',jr);
 $('act').addEventListener('pointerdown',e=>{e.preventDefault();act()});
 function pause(on){if(mode!=='play')return;paused=on;show(on?'pause':null);if(eg)eg.gain.value=0}
 $('pb').onclick=()=>pause(true);$('bRes').onclick=()=>pause(false);
 $('bRe').onclick=()=>start();$('bRetry').onclick=()=>start();$('bNew').onclick=()=>{aud();start()};$('bM2').onclick=()=>{aud();start()};
 $('bCont').onclick=()=>{aud();start()};
-$('bQuit').onclick=()=>{mode='menu';$('hud').classList.remove('on');show('menu')};
+$('bQuit').onclick=()=>{mode='menu';document.body.classList.remove('playing');$('hud').classList.remove('on');show('menu')};
 $('bCon').onclick=()=>{mode='menu';show('menu')};
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>show(b.dataset.go));
 $('bSnd').onclick=function(){sound=!sound;this.textContent='Sound: '+(sound?'On':'Off');if(sound)aud();if(eg&&!sound)eg.gain.value=0};
