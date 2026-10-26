@@ -3927,6 +3927,400 @@ document.addEventListener('visibilitychange',()=>{
   if(!document.hidden&&Date.now()-lastWx>10*60*1000)loadWeather();
 });
 startFlood=function(){location.href='flood-rescue.html';};
+// ===== MARKET REDESIGN (Jumia style) =====
+const mkSt=document.createElement('style');
+mkSt.textContent=`#mk-new{position:sticky;top:0;z-index:6;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.mk-top{display:flex;gap:8px;padding:10px 12px 6px}
+.mk-s{flex:1;display:flex;align-items:center;gap:8px;background:#f1f5f9;border-radius:12px;padding:0 12px;color:var(--text3)}
+.mk-s input{flex:1;border:none;background:transparent;padding:11px 0;font-size:16px;outline:none;font-family:var(--body);min-width:0}
+#mk-cart{position:relative;width:46px;border:none;background:var(--teal);color:#fff;border-radius:12px;font-size:18px;cursor:pointer}
+#mk-cb{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;border-radius:9px;background:#f97316;color:#fff;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;border:2px solid #fff}
+.mk-ban{margin:4px 12px 8px;padding:12px 14px;border-radius:14px;background:linear-gradient(120deg,#0f5a44,#1a7a5e 60%,#2a9d7a);color:#fff;font-size:12px;line-height:1.5}
+.mk-ban b{display:block;font-size:14px;font-family:var(--sans)}
+.mk-cats{display:flex;gap:6px;overflow-x:auto;padding:4px 10px 8px;scrollbar-width:none}.mk-cats::-webkit-scrollbar{display:none}
+.ct{flex:0 0 66px;text-align:center;font-size:10.5px;font-weight:700;color:var(--text2);cursor:pointer}
+.ct span{display:flex;width:50px;height:50px;margin:0 auto 4px;border-radius:50%;background:var(--teal-l);color:var(--teal);align-items:center;justify-content:center;font-size:19px}
+.ct.on span{background:var(--teal);color:#fff}.ct.on{color:var(--teal)}
+.mk-bar{display:flex;justify-content:space-between;align-items:center;padding:4px 14px 8px;font-size:12px;color:var(--text2)}
+.mk-bar select{border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:12px;background:#fff}
+.mk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pk{position:relative;background:#fff;border:1px solid #e8edf3;border-radius:14px;overflow:hidden;cursor:pointer}
+.pk-i{position:relative;aspect-ratio:1/1;background:#f1f5f9;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.pk-i img{width:100%;height:100%;object-fit:cover}
+.pk-b{padding:9px 10px 12px}
+.pk-n{font-size:13px;font-weight:700;line-height:1.3;height:34px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pk-s{font-size:11px;color:var(--text3);margin:3px 0 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pk-p{font-size:16px;font-weight:900;font-family:var(--sans)}.pk-u{font-size:10.5px;color:var(--text3)}
+.pk-a{position:absolute;right:8px;bottom:8px;width:34px;height:34px;border-radius:50%;border:none;background:var(--teal);color:#fff;font-size:20px;cursor:pointer}
+.pk-so{position:absolute;inset:0;background:rgba(255,255,255,.65);display:flex;align-items:center;justify-content:center;font-weight:800;color:#475569}
+.sk{height:230px;background:linear-gradient(90deg,#f1f5f9,#e2e8f0,#f1f5f9);background-size:200% 100%;animation:skl 1.2s infinite}@keyframes skl{to{background-position:-200% 0}}
+.mk-empty{text-align:center;color:var(--text3);padding:40px 10px}
+.qs{display:flex;align-items:center;gap:14px;border:1.5px solid var(--border);border-radius:12px;padding:4px 8px}
+.qs button{width:34px;height:34px;border:none;background:var(--teal-l);color:var(--teal);border-radius:10px;font-size:20px;font-weight:800;cursor:pointer}`;
+document.head.appendChild(mkSt);
+
+const mq=id=>document.getElementById(id);
+let mkQ='',mkSort='f';
+const CI={fertilizer:['Fertilizer','fa-seedling'],biogas:['Biogas','fa-fire'],water:['Water','fa-droplet'],shoes:['Shoes','fa-shoe-prints'],clothes:['Clothes','fa-shirt'],bags:['Bags','fa-bag-shopping'],accessories:['Accessories','fa-gem'],beauty:['Beauty','fa-spa'],electronics:['Phones','fa-mobile-screen'],household:['Household','fa-broom'],building:['Building','fa-hammer'],food:['Food','fa-bowl-food'],other:['Other','fa-box']};
+const fmt=n=>{n=Number(n);return 'GH₵'+(Number.isInteger(n)?n.toLocaleString('en-GH'):n.toLocaleString('en-GH',{minimumFractionDigits:2,maximumFractionDigits:2}))};
+
+(function(){
+  const m=mq('market');
+  [...m.children].forEach(c=>{if(c.id!=='market-body'&&c.id!=='cart-bar')c.style.display='none'});
+  const t=document.createElement('div');t.id='mk-new';
+  t.innerHTML='<div class="mk-top"><div class="mk-s"><i class="fa-solid fa-magnifying-glass"></i><input id="mk-q" type="search" placeholder="Search products or shops"/></div>'+
+    '<button id="mk-cart"><i class="fa-solid fa-cart-shopping"></i><span id="mk-cb"></span></button></div>'+
+    '<div class="mk-ban"><b>Shop from local sellers</b>Pay safely with mobile money or card.</div>'+
+    '<div class="mk-cats" id="mk-cats"></div>'+
+    '<div class="mk-bar"><span id="mk-count"></span><select id="mk-sort"><option value="f">Sort: Featured</option><option value="a">Price: low to high</option><option value="d">Price: high to low</option></select></div>';
+  m.prepend(t);
+  mq('market-body').style.padding='8px 12px 130px';
+  mq('mk-q').oninput=function(){mkQ=this.value.trim().toLowerCase();renderProds();};
+  mq('mk-sort').onchange=function(){mkSort=this.value;renderProds();};
+  mq('mk-cart').onclick=()=>S.cart.length?checkout():toast('Your cart is empty','fa-cart-shopping');
+})();
+
+const _uc=updateCart;
+updateCart=function(){_uc();const b=mq('mk-cb');if(b){b.textContent=S.cart.length;b.style.display=S.cart.length?'flex':'none';}};
+
+function mkCat(id){curFilter=id;renderProds();}
+function mkCats(){
+  const ids=[...new Set(PRODS.map(p=>p.cat))];
+  if(curFilter!=='all'&&!ids.includes(curFilter))curFilter='all';
+  const info=id=>{const c=(typeof CATS!=='undefined'?CATS:[]).find(x=>x.id===id);return c?[c.name,c.icon]:(CI[id]||[id,'fa-box']);};
+  mq('mk-cats').innerHTML=['all',...ids].map(id=>{
+    const [n,ic]=id==='all'?['All','fa-border-all']:info(id);
+    return '<div class="ct'+(curFilter===id?' on':'')+'" onclick="mkCat(\''+esc(id)+'\')"><span><i class="fa-solid '+esc(ic)+'"></i></span>'+esc(n.split(' ')[0])+'</div>';
+  }).join('');
+}
+function mkCard(p){
+  const img=p.imgs&&p.imgs.length
+    ?'<img src="'+esc(p.imgs[0])+'" alt="'+esc(p.name)+'" loading="lazy"/>'
+    :'<i class="fa-solid '+p.ico+'" style="font-size:38px;color:'+p.ic+'"></i>';
+  return '<div class="pk" onclick="pdOpen(\''+esc(p.id)+'\')"><div class="pk-i">'+img+(p.stock?'':'<div class="pk-so">Sold out</div>')+'</div>'+
+    '<div class="pk-b"><div class="pk-n">'+esc(p.name)+'</div><div class="pk-s">'+esc(p.shop)+'</div>'+
+    '<div class="pk-p">'+fmt(p.price)+'</div><div class="pk-u">per '+esc(p.unit)+'</div></div>'+
+    (p.stock?'<button class="pk-a" onclick="event.stopPropagation();addToCart(\''+esc(p.id)+'\')">+</button>':'')+'</div>';
+}
+renderProds=function(){
+  const box=mq('market-body');
+  mkCats();
+  if(!PRODS.length){
+    const loaded=typeof prodsLoaded!=='undefined'&&prodsLoaded;
+    box.innerHTML=loaded?'<div class="mk-empty">No products yet. Check back soon.</div>':'<div class="mk-grid">'+'<div class="pk sk"></div>'.repeat(4)+'</div>';
+    mq('mk-count').textContent='';return;
+  }
+  let l=curFilter==='all'?PRODS.slice():PRODS.filter(p=>p.cat===curFilter);
+  if(mkQ)l=l.filter(p=>(p.name+' '+p.shop+' '+(p.desc||'')).toLowerCase().includes(mkQ));
+  if(mkSort==='a')l.sort((a,b)=>a.price-b.price);else if(mkSort==='d')l.sort((a,b)=>b.price-a.price);
+  mq('mk-count').textContent=l.length+' product'+(l.length===1?'':'s');
+  box.innerHTML=l.length?'<div class="mk-grid">'+l.map(mkCard).join('')+'</div>':'<div class="mk-empty">Nothing matches your search.</div>';
+};
+
+// Add to cart without the old address form (the address is asked at checkout)
+function addToCart(id,qty){
+  const p=PRODS.find(x=>x.id===id);if(!p||!p.stock)return false;
+  qty=Math.max(p.min,qty||p.min);
+  if(S.cart.length&&S.cart[0].seller!==p.seller){toast('Please order from one shop at a time. Check out first.','fa-triangle-exclamation');return false;}
+  const ex=S.cart.find(c=>c.id===id);
+  if(ex){ex.qty+=qty;ex.total=ex.price*ex.qty;}
+  else S.cart.push({id,name:p.name,qty,unit:p.unit,price:p.price,total:p.price*qty,col:p.col,seller:p.seller});
+  updateCart();toast(p.name+' added to cart','fa-cart-shopping');return true;
+}
+
+// Product detail sheet
+(function(){
+  if(mq('pd'))return;
+  const d=document.createElement('div');d.className='mo';d.id='pd';d.onclick=()=>cm('pd');
+  d.innerHTML='<div class="ms" id="pd-b" onclick="event.stopPropagation()"></div>';
+  document.body.appendChild(d);
+})();
+let pdId=null,pdQ=1;
+function pdOpen(id){const p=PRODS.find(x=>x.id===id);if(!p)return;pdId=id;pdQ=p.min;pdDraw();openM('pd');}
+function pdDraw(){
+  const p=PRODS.find(x=>x.id===pdId);
+  const pics=p.imgs&&p.imgs.length
+    ?'<div class="pgal" style="display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;margin-bottom:6px">'+p.imgs.map((u,i)=>'<img src="'+esc(u)+'" alt="" onclick="openGallery(\''+esc(p.id)+'\','+i+')" style="flex:0 0 100%;scroll-snap-align:center;height:300px;object-fit:contain;background:#f8fafb;border-radius:14px"/>').join('')+'</div><div style="font-size:11px;color:var(--text3);margin-bottom:8px">'+(p.imgs.length>1?p.imgs.length+' photos · swipe · tap to enlarge':'Tap to enlarge')+'</div>':'';
+  mq('pd-b').innerHTML='<div class="mh"></div>'+pics+
+    '<div style="font-family:var(--sans);font-size:19px;font-weight:900">'+esc(p.name)+'</div>'+
+    '<div style="font-size:12px;color:var(--text2);margin:3px 0 8px">Sold by <b>'+esc(p.shop)+'</b></div>'+
+    '<div style="font-size:26px;font-weight:900;font-family:var(--sans)">'+fmt(p.price)+'<span style="font-size:13px;font-weight:600;color:var(--text3)"> / '+esc(p.unit)+'</span></div>'+
+    (p.desc?'<div style="font-size:13px;color:var(--text2);line-height:1.6;margin:10px 0">'+esc(p.desc)+'</div>':'')+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0"><div class="qs"><button onclick="pdQty(-1)">−</button><b id="pd-q">'+pdQ+'</b><button onclick="pdQty(1)">+</button></div><div style="font-weight:800">Total <span id="pd-t">'+fmt(p.price*pdQ)+'</span></div></div>'+
+    (p.stock?'<button class="btn btn-p" style="margin-bottom:8px" onclick="pdAdd(false)"><i class="fa-solid fa-cart-plus"></i> Add to cart</button><button class="btn btn-o" onclick="pdAdd(true)">Buy now</button>':'<div style="text-align:center;font-weight:800;color:var(--text3)">Sold out</div>')+
+    (typeof reportProduct==='function'?'<div style="text-align:center;margin-top:12px"><a href="#" onclick="cm(\'pd\');reportProduct(\''+esc(p.id)+'\');return false" style="font-size:11px;color:var(--text3)">Report this listing</a></div>':'');
+}
+function pdQty(d){
+  const p=PRODS.find(x=>x.id===pdId);
+  pdQ=Math.max(p.min,pdQ+d);
+  mq('pd-q').textContent=pdQ;mq('pd-t').textContent=fmt(p.price*pdQ);
+}
+function pdAdd(now){if(addToCart(pdId,pdQ)){cm('pd');if(now)checkout();}}
+updateCart();renderProds();
+// ===== SELLER PAYOUT PREVIEW =====
+let myPct=null;
+async function loadMyPct(){
+  const {data:{user}}=await sb.auth.getUser();
+  const {data}=await sb.from('sellers').select('commission_pct').eq('user_id',user.id).maybeSingle();
+  myPct=data?Number(data.commission_pct):null;
+  updatePayout();
+}
+(function(){
+  const pr=ge('sp-price');
+  if(pr&&!ge('sp-payout')){
+    const d=document.createElement('div');
+    d.id='sp-payout';
+    d.style.cssText='font-size:12px;color:var(--text2);margin-top:6px;font-weight:600';
+    pr.after(d);
+    pr.addEventListener('input',updatePayout);
+  }
+})();
+function updatePayout(){
+  const d=ge('sp-payout');if(!d)return;
+  const p=Number(ge('sp-price').value);
+  if(!p||myPct===null){d.textContent='';return;}
+  const fee=Math.round(p*myPct)/100;
+  d.textContent=myPct===0
+    ?'No AquaHub commission on your shop right now. You receive GH₵'+p.toFixed(2)+'.'
+    :'AquaHub commission '+myPct+'% (GH₵'+fee.toFixed(2)+'). You receive about GH₵'+(p-fee).toFixed(2)+'.';
+}
+const _openShop=openShop;
+openShop=function(){_openShop();loadMyPct();};
+// ===== REMOVE HARDCODED VALUES, COMPACT LANGUAGE =====
+const fixStyle=document.createElement('style');
+fixStyle.textContent=`.fsel{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' fill='none' stroke='%2364748b' stroke-width='2'/></svg>") !important;background-repeat:no-repeat !important;background-position:right 14px center !important;padding-right:38px !important}`;
+document.head.appendChild(fixStyle);
+
+// Language: one compact dropdown instead of four big cards
+(function(){
+  const grid=document.querySelector('#profile-screen .lgrid');
+  if(grid&&!ge('lang-sel')){
+    grid.style.display='none';
+    const s=document.createElement('select');
+    s.id='lang-sel';s.className='fsel';s.style.marginBottom='4px';
+    s.innerHTML='<option>English</option><option>Dagbani (coming soon)</option><option>Twi (coming soon)</option><option>Hausa (coming soon)</option>';
+    s.onchange=function(){
+      if(this.selectedIndex!==0){toast(this.value.replace(' (coming soon)','')+' is coming soon','fa-globe');this.selectedIndex=0;}
+    };
+    grid.after(s);
+  }
+  const mis=document.querySelector('.mi[onclick="openEdit()"] .mis');
+  if(mis)mis.textContent='Update your name and phone';
+})();
+
+// Collect: honest descriptions instead of made-up prices
+(function(){
+  const d=[
+    'Everyday rubbish from the home',
+    'Plastic, glass, cans and paper',
+    'Food scraps and garden waste',
+    'Medical or chemical waste needs a licensed collector'];
+  document.querySelectorAll('#garbage-screen .wt2 .wtp').forEach((e,i)=>{if(d[i])e.textContent=d[i];});
+})();
+
+// Book: remove the option that does not exist and the unverified claims
+(function(){
+  const a=ge('svc1');if(a)a.style.display='none';
+  const sd=document.querySelector('#svc0 .sd');
+  if(sd)sd.textContent='Verified drivers collect sludge from your toilet or pit latrine and take it for treatment. The price depends on the tank size and the distance, and each driver sets their own.';
+  const tags=document.querySelector('#svc0 .ftags');
+  if(tags)tags.innerHTML='<span class="ftag">Verified drivers</span><span class="ftag">Rated by customers</span><span class="ftag">Live tracking</span>';
+})();
+
+// Collect: the waste type you pick goes to the driver, and the location can be a map pin instead
+function bookGarbage(){
+  const loc=ge('gcloc').value.trim();
+  const sched=ge('gcsched').value;
+  const notes=ge('gcnotes').value.trim();
+  const names=document.querySelectorAll('#garbage-screen .wt2 .wtn');
+  const type=names[S.selWaste]?names[S.selWaste].textContent:'';
+  startRealBooking('Garbage Collection',loc,sched,'Waste type: '+type+(notes?'. '+notes:''));
+}
+
+// Real numbers for Collect and Book, from the approved drivers
+function svcStats(res){
+  const d=(res&&res.data)||[];
+  const prices=d.map(x=>x.price).filter(p=>p!=null).map(Number);
+  const rated=d.filter(x=>x.avg_rating!=null).map(x=>Number(x.avg_rating));
+  return {n:d.length,min:prices.length?Math.min(...prices):null,
+    avg:rated.length?rated.reduce((a,b)=>a+b,0)/rated.length:null};
+}
+async function loadServiceStats(){
+  const [g,t]=await Promise.all([
+    sb.rpc('list_drivers',{p_service:'Garbage Collection'}),
+    sb.rpc('list_drivers',{p_service:'Toilet / Pit Draining'})]);
+  const gs=svcStats(g),ts=svcStats(t);
+  const it=document.querySelectorAll('#garbage-screen .gcsi');
+  if(it.length>=3){
+    it[0].querySelector('.gcsiv').textContent=gs.n;
+    it[0].querySelector('.gcsil').textContent='Drivers available';
+    it[1].querySelector('.gcsiv').textContent=gs.avg!=null?gs.avg.toFixed(1)+' ★':'New';
+    it[1].querySelector('.gcsil').textContent='Avg rating';
+    it[2].querySelector('.gcsiv').textContent=gs.min!=null?'GH₵'+gs.min:'Ask';
+    it[2].querySelector('.gcsil').textContent='Lowest price';
+  }
+  const sp=document.querySelector('#svc0 .sp2');
+  if(sp){
+    sp.textContent=!ts.n?'No drivers available yet':
+      (ts.min!=null?'From GH₵'+ts.min+' · ':'Price set by driver · ')+ts.n+' driver'+(ts.n>1?'s':'')+' available';
+  }
+}
+
+// Profile: real badge count
+const _loadGame2=loadGame;
+loadGame=async function(){
+  await _loadGame2();
+  const st=document.querySelectorAll('#profile-screen .pstats .pstv');
+  const cells=[...ge('gm-badges').children];
+  if(st[2]&&cells.length)st[2].textContent=cells.filter(c=>!c.style.opacity).length;
+};
+
+const _goTo6=goTo;
+goTo=function(id){
+  _goTo6(id);
+  if(id==='garbage-screen'||id==='book')loadServiceStats();
+};
+sb.auth.onAuthStateChange((event,session)=>{
+  if(session&&(event==='SIGNED_IN'||event==='INITIAL_SESSION'))setTimeout(loadServiceStats,0);
+});
+// ===== NOTIFICATIONS + SHOP ORDERS =====
+mkScreen('notif-screen',`<div class="shdr"><h2>Notifications</h2><p>What is happening with your requests and orders</p></div>
+  <div class="bbody"><div id="notif-list"></div></div>`);
+mkScreen('shop-orders-screen',`<div class="shdr"><h2>Shop Orders</h2><p>Paid orders waiting for delivery</p></div>
+  <div class="bbody"><div id="shop-orders-list"></div></div>`);
+
+// Bell on Home opens the notification list
+(function(){
+  const bell=document.querySelector('.hero-bell');
+  if(bell){
+    bell.setAttribute('onclick','openNotifs()');
+    if(!ge('bell-count')){
+      const c=document.createElement('div');c.id='bell-count';
+      c.style.cssText='display:none;position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#dc2626;color:#fff;font-size:11px;font-weight:800;align-items:center;justify-content:center;border:2px solid #fff';
+      bell.appendChild(c);
+    }
+    const dot=bell.querySelector('.hero-bell-dot');if(dot)dot.style.display='none';
+  }
+  const shopBody=document.querySelector('#shop-screen .bbody');
+  if(shopBody&&!ge('shop-orders-btn')){
+    const b=document.createElement('button');
+    b.id='shop-orders-btn';b.className='btn btn-p';b.style.marginBottom='12px';
+    b.innerHTML='<i class="fa-solid fa-box"></i> View orders';
+    b.onclick=openShopOrders;
+    shopBody.prepend(b);
+  }
+})();
+
+// The alerts tab badge is for weather only. The bell is for notifications.
+function paintAlertBadge(){
+  const seen=seenSet();
+  const n=lastAlerts.filter(a=>!seen.has(a.id)).length;
+  const badge=document.querySelector('.bnav .ni:nth-child(4) .nbadge');
+  if(badge){badge.textContent=n;badge.style.display=n?'block':'none';}
+}
+
+const NK={request:['fa-bell','var(--orange)'],booking:['fa-truck','var(--green)'],sale:['fa-sack-dollar','var(--teal)'],
+  order:['fa-box','var(--blue)'],admin_driver:['fa-user-check','var(--purple)'],admin_seller:['fa-store','var(--purple)'],
+  admin_order:['fa-box','var(--purple)'],acct_seller:['fa-store','var(--green)'],acct_driver:['fa-id-card','var(--green)']};
+let notifCache=[];
+const notifToasted=new Set();
+let notifFirst=true;
+
+function ago(t){
+  const s=Math.max(0,Math.round((Date.now()-new Date(t).getTime())/1000));
+  if(s<60)return 'just now';
+  if(s<3600)return Math.round(s/60)+' min ago';
+  if(s<86400)return Math.round(s/3600)+' h ago';
+  return Math.round(s/86400)+' d ago';
+}
+function paintBell(n){
+  const c=ge('bell-count');if(!c)return;
+  c.textContent=n>9?'9+':n;
+  c.style.display=n?'flex':'none';
+}
+async function refreshNotifs(){
+  const {data,error}=await sb.rpc('my_notifications');
+  if(error||!data)return;
+  notifCache=data;
+  const unread=data.filter(n=>!n.is_read);
+  const fresh=unread.filter(n=>!notifToasted.has(n.id));
+  if(!notifFirst&&fresh.length)toast(fresh[0].title,'fa-bell');
+  unread.forEach(n=>notifToasted.add(n.id));
+  notifFirst=false;
+  paintBell(ge('notif-screen').classList.contains('active')?0:unread.length);
+  if(ge('notif-screen').classList.contains('active'))renderNotifs();
+}
+function renderNotifs(){
+  const box=ge('notif-list');
+  if(!notifCache.length){box.innerHTML='<div class="card" style="color:var(--text3)">No notifications yet. Updates about your requests and orders will appear here.</div>';return;}
+  box.innerHTML=notifCache.map(n=>{
+    const [ic,col]=NK[n.kind]||['fa-bell','var(--teal)'];
+    return '<div class="card" style="display:flex;gap:12px;cursor:pointer;'+(n.is_read?'':'border-left:4px solid var(--teal);background:var(--teal-l)')+'" data-kind="'+esc(n.kind)+'" data-ref="'+esc(n.ref||'')+'" onclick="notifTap(this)">'+
+      '<div style="width:40px;height:40px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid '+ic+'" style="color:'+col+'"></i></div>'+
+      '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:800">'+esc(n.title)+'</div>'+
+      '<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-top:2px">'+esc(n.body)+'</div>'+
+      '<div style="font-size:10px;color:var(--text3);margin-top:4px">'+ago(n.created_at)+'</div></div></div>';
+  }).join('');
+}
+function notifTap(el){
+  const k=el.dataset.kind,ref=el.dataset.ref;
+  if(k==='request')openJobs();
+  else if(k==='booking'&&ref)openLive(ref);
+  else if(k==='sale')openShopOrders();
+  else if(k==='order')openOrders();
+  else if(k==='admin_driver')openAdmin();
+  else if(k==='admin_seller')openAdminSellers();
+  else if(k==='admin_order')openAdminOrders();
+  else if(k==='acct_seller')openShop();
+  else if(k==='acct_driver')openJobs();
+}
+async function openNotifs(){
+  goTo('notif-screen');
+  await refreshNotifs();
+  renderNotifs();
+  paintBell(0);
+  await sb.rpc('mark_notifications_read');
+}
+
+// ----- Seller: see orders and deliver -----
+function openShopOrders(){goTo('shop-orders-screen');loadShopOrders();}
+async function loadShopOrders(){
+  const box=ge('shop-orders-list');
+  box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.rpc('seller_orders');
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No paid orders yet. You will get a notification when a customer pays.</div>';return;}
+  box.innerHTML=data.map(o=>{
+    const receive=(Number(o.total)-Number(o.commission)).toFixed(2);
+    const act=o.status==='paid'
+      ?'<a class="btn btn-o" style="margin-top:12px;text-decoration:none" href="'+esc(telHref(o.buyer_phone))+'"><i class="fa-solid fa-phone"></i> Call '+esc(o.buyer_name||'buyer')+' · '+esc(o.buyer_phone)+'</a>'+
+       '<button class="btn btn-p" style="margin-top:10px" onclick="deliverShopOrder(\''+o.id+'\')">Mark Delivered</button>':'';
+    return '<div class="card"><div style="font-size:11px;color:var(--text3)">'+new Date(o.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>'+
+      '<div style="font-size:14px;font-weight:800;margin-top:4px">'+esc(o.buyer_name||'Customer')+'</div>'+
+      '<div style="font-size:13px;color:var(--text2);margin:6px 0;line-height:1.7">'+esc(o.items).replace(/\n/g,'<br>')+'</div>'+
+      '<div style="font-size:12px;color:var(--text2);line-height:1.7">Deliver to: '+esc(o.address)+'</div>'+
+      '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px"><span>Total <b style="color:var(--teal)">GH₵'+Number(o.total).toFixed(2)+'</b></span><b>'+(o.status==='paid'?'Ready to deliver':'Delivered')+'</b></div>'+
+      '<div style="font-size:11px;color:var(--text3);margin-top:4px">You receive GH₵'+receive+' after AquaHub commission (GH₵'+Number(o.commission).toFixed(2)+'). AquaHub pays you.</div>'+act+'</div>';
+  }).join('');
+}
+async function deliverShopOrder(id){
+  if(!confirm('Mark this order as delivered?'))return;
+  const {error}=await sb.rpc('seller_mark_delivered',{p_order:id});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  toast('Order marked delivered','fa-circle-check');
+  loadShopOrders();
+}
+
+// Check for notifications while the app is open
+let notifTimer=null;
+sb.auth.onAuthStateChange((event,session)=>{
+  clearInterval(notifTimer);
+  if(session){
+    if(event==='SIGNED_IN'||event==='INITIAL_SESSION'){notifFirst=true;notifToasted.clear();setTimeout(refreshNotifs,0);}
+    notifTimer=setInterval(()=>{if(!document.hidden)refreshNotifs();},30000);
+  }else{paintBell(0);}
+});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshNotifs();});
 
 </script>
 </body>
