@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Sorted!</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--n:#0a1f3a;--t:#0f3b4a;--g:#22c55e;--b:#3b82f6;--r:#ef4444;--s:#64748b;--o:#f59e0b;--c:#22d3ee}
+html,body{margin:0;height:100%;background:#06142a;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+#app{position:relative;height:100dvh;max-width:520px;margin:0 auto;overflow:hidden;background:linear-gradient(170deg,var(--n),var(--t))}
+.scr{position:absolute;inset:0;display:none;flex-direction:column;padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));overflow-y:auto;animation:fin .3s ease}
+.scr.on{display:flex}@keyframes fin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+button{font:700 16px system-ui,sans-serif;color:#fff;border:0;border-radius:16px;padding:15px 18px;cursor:pointer;touch-action:manipulation;min-height:48px}
+button:active{transform:scale(.97)}
+.pri{background:linear-gradient(#34d399,#16a34a);box-shadow:0 6px 0 #166534,0 10px 24px rgba(34,197,94,.35)}
+.blu{background:linear-gradient(#60a5fa,#2563eb);box-shadow:0 5px 0 #1e3a8a}.pur{background:linear-gradient(#a78bfa,#6d28d9);box-shadow:0 5px 0 #4c1d95}
+.sl{background:linear-gradient(#475569,#334155);box-shadow:0 5px 0 #1e293b}.org{background:linear-gradient(#fbbf24,#f59e0b);box-shadow:0 5px 0 #b45309;color:#3b1d00}
+.ghost{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);box-shadow:none}
+h2{margin:0;font-size:22px}.row{display:flex;align-items:center;gap:10px}.sp{flex:1}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:14px}.top button{width:46px;padding:0;height:46px}
+.card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:14px;margin-bottom:10px}
+.tag{font-size:12px;color:#a5f3fc}.pill{background:rgba(0,0,0,.3);border-radius:20px;padding:6px 12px;font-weight:800;font-size:14px}
+/* menu */
+#menu{background:linear-gradient(#7dd3fc,#bbf7d0 62%,#4ade80);justify-content:flex-end;color:#0a1f3a;padding:0}
+#menu .bg{position:absolute;inset:0;width:100%;height:100%}
+.mc{position:relative;z-index:2;padding:16px 22px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:11px}
+.logo{font:900 clamp(54px,17vw,84px)/1 Impact,"Arial Black",system-ui,sans-serif;color:#fff;text-align:center;letter-spacing:1px;-webkit-text-stroke:3px #0a3b2a;paint-order:stroke fill;text-shadow:0 6px 0 #0a3b2a,0 10px 24px rgba(0,0,0,.3)}
+.logo i{color:#4ade80;font-size:.82em;vertical-align:.04em;-webkit-text-stroke:0}
+.tl{text-align:center;font-weight:800;color:#0a3b2a;margin:-2px 0 6px}
+.mstars{position:absolute;z-index:3;top:calc(14px + env(safe-area-inset-top,0px));right:14px}
+/* game */
+#game{background:radial-gradient(120% 70% at 50% 0%,#12486a,#0a1f3a 60%,#06142a);padding-bottom:10px;overflow:hidden}
+.hd{display:flex;align-items:center;gap:8px}.hd button{width:42px;height:42px;padding:0;min-height:0;border-radius:12px}
+.mn{flex:1;text-align:center;font-weight:800;font-size:14px;line-height:1.15}.mn small{display:block;font-weight:600;color:#a5f3fc;font-size:11px}
+.hd2{display:flex;justify-content:space-between;align-items:center;margin:10px 0 6px}
+.bar{height:8px;background:rgba(255,255,255,.12);border-radius:5px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--c),var(--g));width:0;transition:width .3s}
+.hr i{color:#f43f5e;margin-left:3px}.hr i.x{color:#334155}
+#stage{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;touch-action:none}
+#item{width:170px;padding:18px 10px 14px;border-radius:26px;text-align:center;background:linear-gradient(145deg,rgba(255,255,255,.2),rgba(255,255,255,.06));border:2px solid rgba(255,255,255,.25);box-shadow:0 18px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.3);touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;transition:transform .2s,box-shadow .2s;will-change:transform}
+#item.drag{transition:none;z-index:20;cursor:grabbing}#item.sel{border-color:var(--c);box-shadow:0 0 0 4px rgba(34,211,238,.35),0 18px 40px rgba(0,0,0,.45)}
+#item.in{animation:pop .35s ease}@keyframes pop{from{transform:scale(.6) translateY(-30px);opacity:0}to{transform:none;opacity:1}}
+#item.ok{transform:scale(.2);opacity:0;transition:.35s}#item.no{animation:shk .4s}@keyframes shk{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+.ico{width:96px;height:96px;margin:0 auto 10px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:46px;background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.4),rgba(255,255,255,.05));box-shadow:inset 0 -6px 14px rgba(0,0,0,.25)}
+#iname{font-weight:800;font-size:16px}
+#hint{margin-top:12px;font-size:13px;color:#a5f3fc;text-align:center}
+#fb{position:absolute;left:0;right:0;bottom:8px;display:none;padding:12px 14px;border-radius:16px;font-size:13.5px;line-height:1.45;z-index:15;animation:fin .25s}
+#fb b{display:block;font-size:15px;margin-bottom:2px}#fb.good{background:rgba(22,101,52,.95);border:1px solid #4ade80}#fb.bad{background:rgba(127,29,29,.96);border:1px solid #f87171}
+#fb button{margin-top:8px;padding:10px 16px;min-height:0;font-size:14px;border-radius:12px}
+#bins{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.bin{border-radius:16px 16px 10px 10px;padding:14px 2px 10px;text-align:center;font-weight:800;font-size:12px;border:2px solid rgba(255,255,255,.25);background:linear-gradient(rgba(255,255,255,.22),rgba(0,0,0,.25)),var(--k);box-shadow:0 8px 18px -8px var(--k);cursor:pointer;transition:transform .15s,box-shadow .15s;min-height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.bin i{font-size:28px}.bin.hot{transform:scale(1.07);box-shadow:0 0 0 3px #fff,0 0 24px var(--k)}.bin.flash{animation:fl .5s}@keyframes fl{50%{box-shadow:0 0 0 4px #fff,0 0 30px #fff}}
+.pt{position:absolute;width:9px;height:9px;border-radius:50%;pointer-events:none;z-index:30;animation:pb .6s ease-out forwards}@keyframes pb{to{transform:translate(var(--x),var(--y)) scale(.3);opacity:0}}
+/* overlays */
+.ov{position:absolute;inset:0;z-index:50;background:rgba(4,12,26,.88);display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.ov.on{display:flex}.box{width:100%;max-height:100%;overflow-y:auto;background:linear-gradient(#12365a,#0a1f3a);border:1px solid rgba(255,255,255,.18);border-radius:24px;padding:20px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.stars{font-size:42px;color:#fbbf24;letter-spacing:6px;margin:6px 0 12px}.stars .e{color:#334155}
+.st{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.1);font-size:15px}
+.grid4{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.mini{border-radius:14px;padding:10px 6px;font-size:11px;line-height:1.35;background:linear-gradient(rgba(255,255,255,.15),rgba(0,0,0,.2)),var(--k)}.mini i{font-size:24px;display:block;margin-bottom:4px}
+.tog{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.sw{width:54px;height:30px;border-radius:15px;background:#334155;position:relative;cursor:pointer;flex:none}.sw::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s}.sw.on{background:var(--g)}.sw.on::after{transform:translateX(24px)}
+.ms{display:flex;gap:12px;align-items:center;cursor:pointer}.ms .num{width:44px;height:44px;border-radius:14px;background:linear-gradient(#34d399,#0f766e);display:flex;align-items:center;justify-content:center;font-weight:900;flex:none}
+.ms.lock{opacity:.5}.ms.lock .num{background:#334155}
+.tabs{display:flex;gap:6px;margin-bottom:12px}.tabs button{flex:1;padding:10px 4px;min-height:0;font-size:13px;border-radius:12px;background:rgba(255,255,255,.1)}.tabs button.on{background:var(--g)}
+.opt{display:block;width:100%;text-align:left;margin-top:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);box-shadow:none}.opt.ok{background:#166534;border-color:#4ade80}.opt.no{background:#7f1d1d;border-color:#f87171}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+body.rm *{animation:none!important;transition:none!important}
+</style></head><body>
+<div id="app">
+<section class="scr on" id="menu">
+ <svg class="bg" viewBox="0 0 400 700" preserveAspectRatio="xMidYMax slice"><ellipse cx="80" cy="520" rx="220" ry="90" fill="#86efac"/><ellipse cx="340" cy="540" rx="230" ry="100" fill="#4ade80"/>
+ <g fill="#bae6fd"><rect x="230" y="330" width="40" height="150"/><rect x="275" y="290" width="46" height="190"/><rect x="325" y="350" width="50" height="130"/></g><g fill="#e0f2fe"><rect x="244" y="350" width="8" height="10"/><rect x="290" y="310" width="8" height="10"/><rect x="305" y="340" width="8" height="10"/></g>
+ <g fill="#0a3b2a"><rect x="60" y="300" width="4" height="150"/></g><rect x="64" y="300" width="56" height="12" fill="#dc2626"/><rect x="64" y="312" width="56" height="12" fill="#fcd116"/><rect x="64" y="324" width="56" height="12" fill="#16a34a"/><path d="M92 313l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z" fill="#111"/>
+ <g fill="#15803d"><circle cx="40" cy="470" r="34"/><circle cx="370" cy="450" r="40"/><circle cx="330" cy="470" r="30"/></g></svg>
+ <div class="pill mstars"><i class="fa-solid fa-star" style="color:#fbbf24"></i> <span id="tstars">0</span></div>
+ <div class="mc"><div class="logo">S<i class="fa-solid fa-recycle"></i>RTED!</div><div class="tl">Sort Today. A Greener Tomorrow.</div>
+  <button class="pri" id="bPlay" style="font-size:20px"><i class="fa-solid fa-play"></i> Play</button>
+  <button class="blu" data-go="miss"><i class="fa-solid fa-trophy"></i> Missions</button>
+  <button class="pur" data-go="learn"><i class="fa-solid fa-book-open"></i> Learn &amp; Explore</button>
+  <div class="row"><button class="sl sp" data-go="ach"><i class="fa-solid fa-medal"></i> Achievements</button><button class="sl sp" data-go="set"><i class="fa-solid fa-gear"></i> Settings</button></div></div>
+</section>
+<section class="scr" id="miss"><div class="top"><button class="ghost" data-go="menu"><i class="fa-solid fa-arrow-left"></i></button><h2>Missions</h2><div class="sp"></div><div class="pill"><i class="fa-solid fa-star" style="color:#fbbf24"></i> <span id="mstars">0</span></div></div><div id="ml"></div></section>
+<section class="scr" id="learn"><div class="top"><button class="ghost" data-go="menu"><i class="fa-solid fa-arrow-left"></i></button><h2>Learn &amp; Explore</h2></div>
+ <div class="tabs" id="lt"><button class="on" data-t="0">Waste types</button><button data-t="1">Facts</button><button data-t="2">Quiz</button></div><div id="lb"></div></section>
+<section class="scr" id="ach"><div class="top"><button class="ghost" data-go="menu"><i class="fa-solid fa-arrow-left"></i></button><h2>Achievements</h2></div><div id="al"></div></section>
+<section class="scr" id="set"><div class="top"><button class="ghost" data-go="menu"><i class="fa-solid fa-arrow-left"></i></button><h2>Settings</h2></div><div id="sl"></div>
+ <button class="ghost" id="bHow" style="margin-top:14px">How to play</button><button class="ghost" id="bReset" style="margin-top:10px;color:#fca5a5">Reset progress</button></section>
+<section class="scr" id="game">
+ <div class="hd"><button class="ghost" id="bPause"><i class="fa-solid fa-pause"></i></button><div class="mn"><span id="mname"></span><small id="msub"></small></div><div class="pill"><i class="fa-regular fa-clock"></i> <span id="tm">0:00</span></div></div>
+ <div class="hd2"><div class="pill"><i class="fa-solid fa-star" style="color:#fbbf24"></i> <span id="sc">0</span></div><div class="pill" id="pg">0/0</div><div class="hr" id="hr"></div></div>
+ <div class="bar"><i id="pb"></i></div>
+ <div id="stage"><div id="item"><div class="ico" id="iico"></div><div id="iname"></div></div><div id="hint">Drag the item to a bin, or tap the item and then a bin</div><div id="fb"></div></div>
+ <div id="bins"></div>
+</section>
+<div class="ov" id="how"><div class="box"><h2>How to play</h2><p class="tag" style="font-size:14px;margin:6px 0 4px">Sort each item into the correct bin. Drag it, or tap it and then tap a bin.</p><div class="grid4" id="hg"></div><div class="card" style="text-align:left;font-size:13.5px"><b>Tip:</b> Look carefully. Rules differ between places, so each answer explains why.</div><button class="pri" id="bGot" style="width:100%">Got it!</button></div></div>
+<div class="ov" id="pause"><div class="box"><h2>Paused</h2><div style="display:grid;gap:12px;margin-top:16px"><button class="pri" id="bRes">Resume</button><button class="blu" id="bRe">Restart</button><button class="sl" id="bQuit">Quit to missions</button></div></div></div>
+<div class="ov" id="res"><div class="box" id="rb"></div></div>
+</div>
+<script>
+const $=i=>document.getElementById(i);
+const CATS={o:{n:'Organic',c:'#16a34a',i:'fa-leaf',d:'Food scraps, peels and plant waste that break down naturally.'},r:{n:'Recyclable',c:'#2563eb',i:'fa-recycle',d:'Clean paper, cardboard, suitable plastics, glass and metals.'},d:{n:'Dangerous',c:'#dc2626',i:'fa-skull-crossbones',d:'Batteries, chemicals, medicines, sharps and e-waste.'},g:{n:'General',c:'#64748b',i:'fa-trash',d:'Residual waste that cannot reasonably be composted or recycled.'}};
+// [name, category, icon, colour, difficulty, tags(h home,s school,m market,b beach), explanation]
+const ITEMS=[
+['Banana peel','o','fa-lemon','#eab308',1,'hsmb','Banana peels break down naturally and can be composted.'],
+['Leftover rice','o','fa-bowl-rice','#fde68a',1,'hm','Cooked food scraps are biodegradable. Compost them or use organic waste collection, not the recycling bin.'],
+['Vegetable scraps','o','fa-carrot','#fb923c',1,'hm','Vegetable waste rots into compost that can feed soil.'],
+['Fruit core','o','fa-apple-whole','#ef4444',1,'hsm','Fruit cores and peels are biodegradable and suitable for composting.'],
+['Dry leaves','o','fa-leaf','#84cc16',1,'hsmb','Leaves are plant material that composts easily or can be used as mulch.'],
+['Eggshells','o','fa-egg','#e7e5e4',2,'hm','Eggshells are biodegradable and add calcium to compost.'],
+['Fish bones','o','fa-fish','#94a3b8',2,'mb','Fish bones are organic food waste. Use a proper composting or collection system, since they can attract pests.'],
+['Stale bread','o','fa-bread-slice','#d6a35c',1,'hsm','Bread is biodegradable food waste and can be composted.'],
+['Plastic bottle (clean)','r','fa-bottle-water','#38bdf8',1,'hsmb','Clean plastic bottles can be collected and recycled where a scheme exists.'],
+['Cardboard box','r','fa-box','#c08457',1,'hsm','Clean, dry cardboard can be flattened and recycled.'],
+['Newspaper','r','fa-newspaper','#cbd5e1',1,'hs','Clean, dry paper can be recycled into new paper.'],
+['Glass bottle','r','fa-wine-bottle','#34d399',2,'hmb','Glass bottles can be reused or recycled where collected. Handle with care.'],
+['Drink can','r','fa-beer-mug-empty','#cbd5e1',2,'smb','Aluminium and steel cans are valuable metal and can be recycled again and again.'],
+['Metal scrap','r','fa-screwdriver-wrench','#94a3b8',2,'m','Scrap metal can often be sold to scrap collectors and recycled.'],
+['Office paper','r','fa-file-lines','#e2e8f0',1,'s','Clean paper can be recycled. Keep it dry and free of food.'],
+['Exercise book','r','fa-book','#a78bfa',2,'s','Old paper books can be recycled or reused when they are dry and clean.'],
+['Plastic bucket','r','fa-bucket','#60a5fa',2,'mh','Hard plastic items like buckets can be recycled or reused.'],
+['Used battery','d','fa-battery-full','#f59e0b',1,'hsm','Batteries contain harmful substances. Take them to a collection point, not the bin.'],
+['Pesticide container','d','fa-flask','#ef4444',2,'m','Chemical residues harm people and the environment. Follow local disposal instructions.'],
+['Used syringe','d','fa-syringe','#f87171',2,'bh','Medical sharps can injure and spread infection. Use a sharps container and a health facility.'],
+['Old medicine','d','fa-pills','#fb7185',2,'h','Expired medicine should go back to a pharmacy or health facility, not the household bin.'],
+['Old phone','d','fa-mobile-screen','#94a3b8',2,'hs','Electronic waste contains metals and chemicals. Take it to an e-waste collection point or a repairer.'],
+['Paint tin','d','fa-fill-drip','#f97316',3,'hm','Leftover paint is hazardous waste. Do not pour it down drains.'],
+['Aerosol can','d','fa-spray-can','#38bdf8',3,'hs','Aerosol cans can explode if crushed or burned. Take them to a hazardous waste point.'],
+['Cleaning chemicals','d','fa-vial','#a3e635',3,'h','Strong cleaning chemicals can burn skin and pollute water. Use hazardous waste collection.'],
+['Used tissue','g','fa-toilet-paper','#e2e8f0',1,'hsb','Used tissues are contaminated and cannot be composted or recycled in most systems.'],
+['Food wrapper','g','fa-cookie-bite','#f59e0b',3,'hsmb','Greasy or food-contaminated packaging is usually unsuitable for recycling, unless a local scheme accepts it.'],
+['Broken sandal','g','fa-shoe-prints','#94a3b8',2,'hmb','Mixed-material items like worn shoes usually go to general waste unless they can be repaired.'],
+['Cigarette butt','g','fa-smoking','#d6a35c',2,'mb','Cigarette butts contain plastic filters and cannot be recycled. Never drop them on the ground.'],
+['Sweepings','g','fa-broom','#a8a29e',1,'hs','Dust and sweepings are mixed residual waste.'],
+['Dirty plastic bag','g','fa-bag-shopping','#475569',2,'mb','Dirty, thin bags are usually not accepted for recycling. Reuse clean ones first.'],
+['Foam food box','g','fa-bowl-food','#fef3c7',2,'mb','Foam food containers are rarely recycled and break into small pieces. Choose reusable containers when possible.'],
+['Water sachet','g','fa-droplet','#38bdf8',2,'smb','Plastic sachets are hard to recycle and often not accepted. Put them in a bin so they do not block drains.'],
+['Broken glass','g','fa-burst','#7dd3fc',3,'hmb','Broken glass can cut people and often cannot go with bottles. Wrap it safely and use general waste unless your local scheme says otherwise.']];
+// missions: items, seconds, lives, max difficulty, tag
+const MIS=[
+{n:'Getting Started',s:'Learn the four waste categories',k:10,t:90,l:3,d:1,g:'',m:'Sorting at the source makes composting and recycling possible.'},
+{n:'Clean Community',s:'Sort everyday household waste',k:16,t:100,l:3,d:2,g:'h',m:'Clean homes start with sorting. Food waste, recyclables and dangerous items all need different handling.'},
+{n:'School Cleanup',s:'Identify common school waste',k:16,t:100,l:3,d:2,g:'s',m:'Schools can lead by example. Paper and cans can be recycled, and batteries need special care.'},
+{n:'Market Cleanup',s:'Sort food waste and packaging',k:20,t:110,l:3,d:2,g:'m',m:'Markets produce a lot of food waste. Composting it keeps drains clear and makes useful soil.'},
+{n:'Beach Cleanup',s:'Manage mixed waste on the coast',k:20,t:100,l:3,d:3,g:'b',m:'Plastic and sharps that reach rivers and beaches harm people and wildlife. Sorting stops waste escaping.'},
+{n:'City Challenge',s:'Sort fast against the clock',k:24,t:90,l:3,d:3,g:'',m:'Fast, correct sorting saves collectors time and keeps streets clean.'},
+{n:'Planet Protector',s:'The final challenge: only 2 lives',k:30,t:100,l:2,d:3,g:'',m:'You sorted like a champion. Every correct choice protects people and the planet.'}];
+const ACH=[['first','First Sort','Complete a mission'],['perfect','Perfect Run','Finish a mission with no mistakes'],['streak','Streak Master','Get 10 correct in a row'],['speed','Speed Sorter','Finish with over half the time left'],['stars','Star Collector','Earn 10 stars in total'],['all','Planet Protector','Complete all 7 missions']];
+const FACTS=[['Composting','Organic waste breaks down into compost that feeds soil. Keep meat, bones and cooked food in a proper system so it does not attract pests.'],['Recycling','Recycling works best with clean, dry materials. Dirty or mixed items can spoil a whole batch.'],['Hazardous waste','Batteries, chemicals, medicines and sharps can injure people and pollute soil and water. Never burn or bin them with ordinary rubbish.'],['Reduce and reuse','The best waste is the waste you never create. Refill bottles, reuse bags and repair things before throwing them away.'],['Effects of poor disposal','Plastic can block drains and make flooding worse. Waste in water spreads disease, and burning rubbish pollutes the air.'],['Sorting in Ghana','Sorting at home helps collectors, composters and scrap dealers do their work, and keeps gutters, beaches and markets cleaner.']];
+const QUIZ=[['Which bin is right for a banana peel?',['Organic','Dangerous','General'],0,'Banana peels are biodegradable and can be composted.'],['A used battery goes in the...',['Recycling','Dangerous bin','Organic'],1,'Batteries contain harmful substances and need a collection point.'],['Why should food waste be separate from recycling?',['It smells','It contaminates clean materials','It is heavier'],1,'Food can spoil paper and plastic that would otherwise be recyclable.'],['What helps stop drains blocking?',['Dropping plastic in gutters','Using a bin for sachets and wrappers','Burning rubbish'],1,'Putting plastic in a bin keeps it out of drains and reduces flooding.']];
+// ---------- state ----------
+let SV={stars:{},best:{},time:{},ach:{},st:{snd:1,mus:0,vib:1,rm:0},seen:0};
+try{const x=JSON.parse(localStorage.getItem('sorted_v1')||'null');if(x){SV=Object.assign(SV,x);SV.st=Object.assign({snd:1,mus:0,vib:1,rm:0},x.st||{})}}catch(e){}
+const save=()=>{try{localStorage.setItem('sorted_v1',JSON.stringify(SV))}catch(e){}};
+let G=null,cur=0,sel=false,drag=null;
+const tot=()=>Object.values(SV.stars).reduce((a,b)=>a+b,0);
+const unlocked=i=>i===0||(SV.stars[i-1]||0)>0;
+function go(id){document.querySelectorAll('.scr').forEach(e=>e.classList.toggle('on',e.id===id));if(id==='menu'||id==='miss')refresh();if(id==='miss')drawM();if(id==='ach')drawA();if(id==='set')drawS();if(id==='learn')drawL(0)}
+function refresh(){$('tstars').textContent=tot();$('mstars').textContent=tot()}
+document.body.classList.toggle('rm',!!SV.st.rm);
+// ---------- audio ----------
+let AC=null,mt=null,mi=0;
+function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}return AC}
+function tone(f,d,ty,v){if(!SV.st.snd||!ac())return;const o=AC.createOscillator(),g=AC.createGain();o.type=ty||'sine';o.frequency.value=f;g.gain.value=v||.07;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.stop(AC.currentTime+d)}
+const sfx={ok(){tone(660,.12);setTimeout(()=>tone(880,.18),90)},no(){tone(180,.3,'sawtooth',.06)},win(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.25),i*120))}};
+function music(){clearInterval(mt);mt=null;if(SV.st.mus&&ac()){const n=[262,330,392,330,294,370,440,370];mt=setInterval(()=>{if(G&&!G.paused)tone(n[mi++%8],.35,'triangle',.025)},420)}}
+const vib=ms=>{if(SV.st.vib&&navigator.vibrate)navigator.vibrate(ms)};
+// ---------- menus ----------
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{ac();go(b.dataset.go)});
+function drawM(){$('ml').innerHTML=MIS.map((m,i)=>{const u=unlocked(i),s=SV.stars[i]||0;return '<div class="card ms'+(u?'':' lock')+'" data-i="'+i+'"><div class="num">'+(u?(i+1):'<i class="fa-solid fa-lock"></i>')+'</div><div class="sp"><b>'+m.n+'</b><div class="tag">'+m.s+' · '+m.k+' items</div><div class="tag">Best '+(SV.best[i]||0)+(SV.time[i]?' · '+SV.time[i]+'s':'')+'</div></div><div style="color:#fbbf24;white-space:nowrap">'+'<i class="fa-solid fa-star"></i>'.repeat(s)+'<i class="fa-regular fa-star"></i>'.repeat(3-s)+'</div></div>'}).join('');
+ document.querySelectorAll('.ms').forEach(e=>e.onclick=()=>{const i=+e.dataset.i;if(unlocked(i))start(i);else tone(180,.2)})}
+function drawA(){$('al').innerHTML=ACH.map(a=>{const on=SV.ach[a[0]];return '<div class="card row" style="'+(on?'':'opacity:.5')+'"><div class="num" style="width:44px;height:44px;border-radius:50%;background:'+(on?'#f59e0b':'#334155')+';display:flex;align-items:center;justify-content:center"><i class="fa-solid '+(on?'fa-medal':'fa-lock')+'"></i></div><div><b>'+a[1]+'</b><div class="tag">'+a[2]+'</div></div></div>'}).join('')}
+function drawS(){const t=[['snd','Sound effects','fa-volume-high'],['mus','Music','fa-music'],['vib','Vibration','fa-mobile-screen'],['rm','Reduce motion','fa-wind']];
+ $('sl').innerHTML=t.map(x=>'<div class="tog"><span><i class="fa-solid '+x[2]+'" style="width:26px"></i> '+x[1]+'</span><div class="sw'+(SV.st[x[0]]?' on':'')+'" data-k="'+x[0]+'"></div></div>').join('');
+ document.querySelectorAll('.sw').forEach(e=>e.onclick=()=>{const k=e.dataset.k;SV.st[k]=SV.st[k]?0:1;save();e.classList.toggle('on',!!SV.st[k]);if(k==='rm')document.body.classList.toggle('rm',!!SV.st.rm);if(k==='mus')music();if(k==='snd'||k==='vib'){sfx.ok();vib(30)}})}
+$('bReset').onclick=()=>{if(confirm('Delete all progress?')){SV={stars:{},best:{},time:{},ach:{},st:SV.st,seen:0};save();refresh();drawS()}};
+$('bHow').onclick=()=>showHow();
+function showHow(){$('hg').innerHTML=Object.keys(CATS).map(k=>'<div class="mini" style="--k:'+CATS[k].c+'"><i class="fa-solid '+CATS[k].i+'"></i><b>'+CATS[k].n+'</b><br>'+CATS[k].d+'</div>').join('');$('how').classList.add('on')}
+$('bGot').onclick=()=>{$('how').classList.remove('on');SV.seen=1;save()};
+function drawL(t){document.querySelectorAll('#lt button').forEach(b=>b.classList.toggle('on',+b.dataset.t===t));
+ if(t===0)$('lb').innerHTML=Object.keys(CATS).map(k=>'<div class="card row" style="background:linear-gradient(rgba(255,255,255,.12),rgba(0,0,0,.25)),'+CATS[k].c+'"><i class="fa-solid '+CATS[k].i+'" style="font-size:30px;width:40px;text-align:center"></i><div><b>'+CATS[k].n+' waste</b><div style="font-size:13px">'+CATS[k].d+'</div></div></div>').join('');
+ else if(t===1)$('lb').innerHTML=FACTS.map(f=>'<div class="card"><b>'+f[0]+'</b><div style="font-size:14px;margin-top:4px;line-height:1.5">'+f[1]+'</div></div>').join('');
+ else quiz(0,0)}
+document.querySelectorAll('#lt button').forEach(b=>b.onclick=()=>drawL(+b.dataset.t));
+function quiz(i,sc){if(i>=QUIZ.length){$('lb').innerHTML='<div class="card" style="text-align:center"><h2>Quiz complete</h2><p>You scored '+sc+' / '+QUIZ.length+'</p><button class="pri" id="qa">Try again</button></div>';$('qa').onclick=()=>quiz(0,0);return}
+ const q=QUIZ[i];$('lb').innerHTML='<div class="card"><div class="tag">Question '+(i+1)+' of '+QUIZ.length+'</div><b style="font-size:17px">'+q[0]+'</b>'+q[1].map((o,j)=>'<button class="opt" data-j="'+j+'">'+o+'</button>').join('')+'<div id="qe" style="margin-top:10px;font-size:14px"></div></div>';
+ document.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(b.dataset.done)return;const j=+b.dataset.j;document.querySelectorAll('.opt').forEach(x=>{x.dataset.done=1;if(+x.dataset.j===q[2])x.classList.add('ok')});if(j!==q[2])b.classList.add('no');j===q[2]?sfx.ok():sfx.no();$('qe').innerHTML=q[3]+'<br><br><button class="blu" id="qn">'+(i+1<QUIZ.length?'Next':'Finish')+'</button>';$('qn').onclick=()=>quiz(i+1,sc+(j===q[2]?1:0))})}
+// ---------- game ----------
+function build(m){let pool=ITEMS.filter(x=>x[4]<=m.d&&(!m.g||x[5].includes(m.g)));const q=[];let prev=null;
+ while(q.length<m.k){const bag=pool.slice().sort(()=>Math.random()-.5);for(const it of bag){if(q.length>=m.k)break;if(it===prev&&pool.length>1)continue;q.push(it);prev=it}}return q}
+function start(i){ac();cur=i;const m=MIS[i];G={q:build(m),i:0,done:0,ok:0,mist:0,sc:0,st:0,best:0,lives:m.l,t:m.t,lock:false,paused:false,over:false};
+ $('mname').textContent=m.n;$('msub').textContent='Mission '+(i+1);$('bins').innerHTML=Object.keys(CATS).map(k=>'<div class="bin" data-c="'+k+'" style="--k:'+CATS[k].c+'"><i class="fa-solid '+CATS[k].i+'"></i>'+CATS[k].n+'</div>').join('');
+ document.querySelectorAll('.bin').forEach(b=>b.onclick=()=>sort(b.dataset.c));
+ ['res','pause'].forEach(x=>$(x).classList.remove('on'));go('game');hud();show();music();clearInterval(G.iv);G.iv=setInterval(tick,250);if(!SV.seen)showHow()}
+function hud(){const m=MIS[cur];$('sc').textContent=G.sc;$('pg').textContent=G.done+'/'+m.k;$('pb').style.width=(G.done/m.k*100)+'%';$('hr').innerHTML='<i class="fa-solid fa-heart"></i>'.repeat(G.lives)+'<i class="fa-solid fa-heart x"></i>'.repeat(m.l-G.lives);const s=Math.max(0,Math.ceil(G.t));$('tm').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
+function tick(){if(!G||G.paused||G.over||$('how').classList.contains('on'))return;G.t-=.25;hud();if(G.t<=0)finish(false)}
+function show(){const it=G.q[G.i],e=$('item');sel=false;e.className='in';e.style.transform='';$('iico').style.color=it[3];$('iico').innerHTML='<i class="fa-solid '+it[2]+'"></i>';$('iname').textContent=it[0];$('fb').style.display='none';G.lock=false}
+function sort(c){if(!G||G.lock||G.over||G.paused)return;G.lock=true;const it=G.q[G.i],good=c===it[1],e=$('item'),fb=$('fb');G.i++;G.done++;
+ const bin=document.querySelector('.bin[data-c="'+c+'"]');
+ if(good){G.ok++;G.streak=(G.streak||0)+1;G.best=Math.max(G.best,G.streak);G.sc+=10+Math.min(10,G.streak*2);sfx.ok();vib(25);e.className='ok';burst(bin,CATS[c].c);
+  fb.className='good';fb.innerHTML='<b><i class="fa-solid fa-circle-check"></i> Correct: '+CATS[c].n+'</b>'+it[6];}
+ else{G.mist++;G.streak=0;G.lives--;sfx.no();vib([80,40,80]);e.className='no';bin.classList.add('flash');
+  fb.className='bad';fb.innerHTML='<b><i class="fa-solid fa-circle-xmark"></i> Not quite. '+it[0]+' is '+CATS[it[1]].n+'</b>'+it[6]+'<br><button class="ghost" id="fc">Continue</button>';}
+ fb.style.display='block';hud();
+ const nx=()=>{if(G.over)return;if(G.lives<=0)return finish(false);if(G.done>=MIS[cur].k)return finish(true);G.paused=false;show()};
+ if(good)setTimeout(nx,1500);else{G.paused=true;$('fc').onclick=()=>{G.paused=false;nx()}}}
+function burst(el,col){if(SV.st.rm)return;const a=$('app').getBoundingClientRect(),r=el.getBoundingClientRect();for(let k=0;k<12;k++){const p=document.createElement('i');p.className='pt';const ang=Math.random()*6.28,d=40+Math.random()*50;p.style.cssText='left:'+(r.left-a.left+r.width/2)+'px;top:'+(r.top-a.top)+'px;background:'+col+';--x:'+Math.cos(ang)*d+'px;--y:'+Math.sin(ang)*d+'px';$('app').appendChild(p);setTimeout(()=>p.remove(),650)}}
+// drag and tap
+const card=$('item');
+function binAt(x,y){for(const b of document.querySelectorAll('.bin')){const r=b.getBoundingClientRect();if(x>=r.left-6&&x<=r.right+6&&y>=r.top-10&&y<=r.bottom+10)return b.dataset.c}return null}
+function hot(c){document.querySelectorAll('.bin').forEach(b=>b.classList.toggle('hot',b.dataset.c===c))}
+card.addEventListener('pointerdown',e=>{if(!G||G.lock||G.paused)return;card.setPointerCapture(e.pointerId);drag={id:e.pointerId,x:e.clientX,y:e.clientY,mv:false};card.classList.add('drag')});
+card.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.hypot(dx,dy)>8)drag.mv=true;if(drag.mv){card.style.transform='translate('+dx+'px,'+dy+'px) scale(1.08)';hot(binAt(e.clientX,e.clientY))}});
+function endDrag(e,cancel){if(!drag||e.pointerId!==drag.id)return;const d=drag;drag=null;card.classList.remove('drag');hot(null);
+ if(d.mv){const c=cancel?null:binAt(e.clientX,e.clientY);if(c){card.style.transform='';sort(c)}else card.style.transform=''}
+ else if(!cancel){sel=!sel;card.classList.toggle('sel',sel);$('hint').textContent=sel?'Now tap the correct bin':'Drag the item to a bin, or tap the item and then a bin'}}
+card.addEventListener('pointerup',e=>endDrag(e,false));card.addEventListener('pointercancel',e=>endDrag(e,true));
+addEventListener('keydown',e=>{if($('game').classList.contains('on')){const k={1:'o',2:'r',3:'d',4:'g'}[e.key];if(k)sort(k);if(e.key==='Escape')pause(true)}});
+// pause / finish
+function pause(on){if(!G||G.over)return;G.paused=on;$('pause').classList.toggle('on',on)}
+$('bPause').onclick=()=>pause(true);$('bRes').onclick=()=>pause(false);$('bRe').onclick=()=>{clearInterval(G.iv);start(cur)};$('bQuit').onclick=()=>{clearInterval(G.iv);G.over=true;$('pause').classList.remove('on');clearInterval(mt);go('miss')};
+function finish(win){if(G.over)return;G.over=true;clearInterval(G.iv);clearInterval(mt);const m=MIS[cur],used=Math.round(m.t-Math.max(0,G.t));
+ let stars=0,bonus=0;if(win){bonus=Math.round(G.t)*2;G.sc+=bonus;stars=1+(G.mist<=Math.floor(m.k/10)?1:0)+(G.t>=m.t*.3?1:0)}
+ const nw=[];const give=k=>{if(!SV.ach[k]){SV.ach[k]=1;nw.push(ACH.find(a=>a[0]===k)[1])}};
+ if(win){SV.stars[cur]=Math.max(SV.stars[cur]||0,stars);if(G.sc>(SV.best[cur]||0))SV.best[cur]=G.sc;if(!SV.time[cur]||used<SV.time[cur])SV.time[cur]=used;give('first');if(G.mist===0)give('perfect');if(G.t>=m.t/2)give('speed');if(tot()>=10)give('stars');if(MIS.every((_,i)=>SV.stars[i]>0))give('all')}
+ if(G.best>=10)give('streak');save();refresh();win?sfx.win():sfx.no();
+ const nextOk=win&&cur<MIS.length-1;
+ $('rb').innerHTML='<h2>'+(win?'Level complete!':(G.lives<=0?'Out of lives':'Time is up'))+'</h2><div class="stars">'+'<i class="fa-solid fa-star"></i>'.repeat(stars)+'<i class="fa-solid fa-star e"></i>'.repeat(3-stars)+'</div>'+
+ '<div class="st"><span>Sorted correctly</span><b>'+G.ok+' / '+m.k+'</b></div><div class="st"><span>Mistakes</span><b>'+G.mist+'</b></div><div class="st"><span>Score'+(bonus?' (incl. +'+bonus+' time bonus)':'')+'</span><b>'+G.sc+'</b></div><div class="st"><span>Time taken</span><b>'+used+' s</b></div><div class="st"><span>Stars earned</span><b>'+stars+' / 3</b></div>'+
+ (nw.length?'<div class="card" style="margin-top:12px;border-color:#fbbf24"><i class="fa-solid fa-medal" style="color:#fbbf24"></i> New: <b>'+nw.join(', ')+'</b></div>':'')+
+ '<p class="tag" style="font-size:13.5px;line-height:1.5;margin:12px 0">'+(win?m.m:'Keep practising. Read each explanation to learn why an item belongs in its bin.')+'</p>'+
+ '<div style="display:grid;gap:10px">'+(nextOk?'<button class="pri" id="rN">Next level</button>':'')+'<button class="blu" id="rA">Play again</button><button class="sl" id="rH">Return home</button></div>';
+ $('res').classList.add('on');if(nextOk)$('rN').onclick=()=>start(cur+1);$('rA').onclick=()=>start(cur);$('rH').onclick=()=>{$('res').classList.remove('on');go('menu')}}
+$('bPlay').onclick=()=>{ac();let n=0;while(n<MIS.length-1&&unlocked(n+1)&&(SV.stars[n]||0)>0)n++;start(n)};
+refresh();
+</script></body></html>
