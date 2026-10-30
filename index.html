@@ -4322,7 +4322,49 @@ sb.auth.onAuthStateChange((event,session)=>{
 });
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshNotifs();});
 startSort=function(){location.href='sorted.html';};
-
+// ===== LAUNCH READINESS: DELETE ACCOUNT, LEGAL LINKS, MODERATION =====
+mkScreen('reports-screen','<div class="shdr"><h2>Reported Listings</h2><p>Review reports from users</p></div><div class="bbody"><div id="reports-list"></div></div>');
+(function(){
+  const ref=document.querySelector('.mi[onclick="logout()"]');
+  const add=(fn,icon,bg,fg,title,sub,hidden)=>{
+    if(!ref||document.querySelector('.mi[onclick="'+fn+'"]'))return;
+    const d=document.createElement('div');d.className='mi';d.setAttribute('onclick',fn);if(hidden)d.style.display='none';
+    d.innerHTML='<div class="mil"><div class="mii" style="background:var(--'+bg+')"><i class="fa-solid '+icon+'" style="color:var(--'+fg+')"></i></div><div><div class="mit">'+title+'</div><div class="mis">'+sub+'</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>';
+    ref.before(d)};
+  add('openReports()','fa-flag','red-l','red','Reported Listings','Admin only',true);
+  add("window.open('privacy.html','_blank')",'fa-shield-halved','teal-l','teal','Privacy Policy','How we use your data');
+  add("window.open('terms.html','_blank')",'fa-file-contract','sky-l','sky','Terms of Use','Rules for using AquaHub');
+  add('openDelete()','fa-user-xmark','red-l','red','Delete Account','Permanently remove your account');
+  if(!ge('del')){const d=document.createElement('div');d.className='mo';d.id='del';d.onclick=()=>cm('del');
+   d.innerHTML='<div class="ms" onclick="event.stopPropagation()"><div class="mh"></div><div class="mt">Delete your account?</div><div class="msub">This permanently deletes your profile, requests, orders, ratings and notifications. It cannot be undone. Payment records kept by Paystack follow their own rules.</div><div class="fg"><label class="fl">Type DELETE to confirm</label><input class="fi" id="del-in" autocomplete="off" autocapitalize="characters"/></div><button class="btn btn-p" style="background:#dc2626;margin-bottom:8px" onclick="doDelete()">Delete my account</button><button class="btn btn-o" onclick="cm(\'del\')">Cancel</button></div>';
+   document.body.appendChild(d)}
+})();
+const _ar4=applyRole;
+applyRole=function(role){_ar4(role);showMenu('openReports()',role==='admin')};
+function openDelete(){ge('del-in').value='';openM('del')}
+async function doDelete(){
+  if(ge('del-in').value.trim()!=='DELETE'){toast('Type DELETE to confirm','fa-triangle-exclamation');return}
+  const {error}=await sb.rpc('delete_my_account');
+  if(error){toast(error.message,'fa-triangle-exclamation');return}
+  cm('del');toast('Your account was deleted','fa-circle-check');
+  await sb.auth.signOut();try{localStorage.clear()}catch(e){}}
+function openReports(){goTo('reports-screen');loadReports()}
+async function loadReports(){
+  const box=ge('reports-list');box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.rpc('admin_list_reports');
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No reports. All clear.</div>';return}
+  box.innerHTML=data.map(r=>'<div class="card"><div style="font-size:14px;font-weight:800">'+esc(r.product_name)+'</div><div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.7">Shop: <b>'+esc(r.shop_name)+'</b><br>Reason: '+esc(r.reason)+'<br>'+new Date(r.created_at).toLocaleDateString('en-GB')+' · '+(r.active?'Listing is live':'Listing removed')+'</div>'+
+   '<div style="display:flex;gap:8px;margin-top:12px">'+(r.active?'<button class="btn btn-p" style="background:#dc2626" onclick="removeListing(\''+esc(r.product_id)+'\')">Remove listing</button>':'')+'<button class="btn btn-o" onclick="dismissReport(\''+r.id+'\')">Dismiss</button></div></div>').join('')}
+async function removeListing(id){
+  if(!confirm('Remove this listing?'))return;
+  const {error}=await sb.rpc('admin_remove_product',{p_product:id});
+  if(error){toast(error.message,'fa-triangle-exclamation');return}
+  toast('Listing removed','fa-circle-check');loadReports();syncProducts()}
+async function dismissReport(id){
+  const {error}=await sb.rpc('admin_dismiss_report',{p_report:id});
+  if(error){toast(error.message,'fa-triangle-exclamation');return}
+  toast('Report dismissed','fa-circle-check');loadReports()}
 </script>
 </body>
 </html>
