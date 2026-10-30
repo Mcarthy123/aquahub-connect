@@ -4365,6 +4365,206 @@ async function dismissReport(id){
   const {error}=await sb.rpc('admin_dismiss_report',{p_report:id});
   if(error){toast(error.message,'fa-triangle-exclamation');return}
   toast('Report dismissed','fa-circle-check');loadReports()}
+  // ===== ADMIN DASHBOARD + PAYOUTS =====
+mkScreen('money-screen','<div class="shdr"><h2>Dashboard</h2><p>Income, activity and payouts</p></div><div class="bbody"><div id="money-body"></div></div>');
+(function(){
+  const ref=document.querySelector('.mi[onclick="openJobs()"]');
+  if(ref&&!document.querySelector('.mi[onclick="openMoney()"]')){
+    const d=document.createElement('div');d.className='mi';d.setAttribute('onclick','openMoney()');d.style.display='none';
+    d.innerHTML='<div class="mil"><div class="mii" style="background:var(--purple-l)"><i class="fa-solid fa-chart-line" style="color:var(--purple)"></i></div><div><div class="mit">Dashboard &amp; Payouts</div><div class="mis">Admin only</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>';
+    ref.before(d)}
+  const sb2=document.querySelector('#shop-screen .bbody');
+  if(sb2&&!ge('shop-bal')){const d=document.createElement('div');d.id='shop-bal';d.className='card';d.style.display='none';sb2.prepend(d)}
+})();
+const _ar5=applyRole;
+applyRole=function(role){_ar5(role);showMenu('openMoney()',role==='admin')};
+const gh=n=>'GH₵'+Number(n||0).toLocaleString('en-GH',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function openMoney(){goTo('money-screen');loadMoney()}
+async function loadMoney(){
+  const box=ge('money-body');box.innerHTML='<div class="card">Loading...</div>';
+  const [{data:s,error:e1},{data:b,error:e2}]=await Promise.all([sb.rpc('admin_stats'),sb.rpc('admin_balances')]);
+  if(e1||e2||!s){box.innerHTML='<div class="card">'+esc((e1||e2||{}).message||'Not allowed')+'</div>';return}
+  const inc=Number(s.deposits)+Number(s.driver_fees)+Number(s.commission)+Number(s.own_sales);
+  const k=(l,v,c)=>'<div class="card" style="margin:0;text-align:center"><div style="font:900 19px var(--sans);color:'+(c||'var(--text)')+'">'+v+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">'+l+'</div></div>';
+  box.innerHTML='<div class="card" style="background:linear-gradient(135deg,#0f5a44,#1a7a5e);color:#fff"><div style="font-size:12px;opacity:.85">AquaHub income (before Paystack fees)</div><div style="font:900 30px var(--sans)">'+gh(inc)+'</div>'+
+    '<div style="font-size:12px;opacity:.9;line-height:1.7;margin-top:6px">Booking deposits '+gh(s.deposits)+'<br>Driver registration fees '+gh(s.driver_fees)+'<br>Shop commission '+gh(s.commission)+'<br>Own product sales '+gh(s.own_sales)+'</div></div>'+
+    '<div class="slbl">Needs attention</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'+
+    k('Drivers to approve',s.drivers_pending,s.drivers_pending>0?'var(--orange)':'')+k('Shops to approve',s.sellers_pending,s.sellers_pending>0?'var(--orange)':'')+
+    k('Paid orders to deliver',gh(s.held))+k('Open reports',s.reports,s.reports>0?'var(--red)':'')+'</div>'+
+    '<div class="slbl">Activity</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'+
+    k('Users',s.users)+k('Verified drivers',s.drivers)+k('Verified shops',s.sellers)+k('Open jobs',s.jobs_open)+k('Jobs completed',s.jobs_done)+k('Orders delivered',s.orders_done)+'</div>'+
+    '<div class="slbl">Owed to sellers: <b style="color:var(--red)">'+gh(s.owed)+'</b></div>'+
+    (b.length?b.map(x=>'<div class="card"><div style="font-size:14px;font-weight:800">'+esc(x.shop_name)+'</div><div style="font-size:12px;color:var(--text2);line-height:1.8;margin-top:4px">Owner: '+esc(x.owner_name)+' · '+esc(x.phone)+'<br>Earned '+gh(x.earned)+' · Paid '+gh(x.paid)+'<br>Held until delivery '+gh(x.held)+'</div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px"><b style="font-size:16px;color:'+(Number(x.owed)>0?'var(--red)':'var(--green)')+'">Owed '+gh(x.owed)+'</b>'+
+      (Number(x.owed)>0?'<button class="btn btn-p" style="width:auto;padding:10px 16px" onclick="recordPayout(\''+x.seller_id+'\','+Number(x.owed)+')">Record payout</button>':'')+'</div></div>').join(''):'<div class="card" style="color:var(--text3)">No approved shops yet.</div>');
+}
+async function recordPayout(id,owed){
+  const a=prompt('Amount you paid the seller (GH₵). Owed: '+owed.toFixed(2),owed.toFixed(2));
+  if(a===null)return;const n=Number(a);
+  if(!(n>0)){toast('Enter an amount','fa-triangle-exclamation');return}
+  const r=prompt('Mobile money reference or note (optional)')||'';
+  const {error}=await sb.rpc('record_payout',{p_seller:id,p_amount:n,p_ref:r});
+  if(error){toast(error.message,'fa-triangle-exclamation');return}
+  toast('Payout recorded','fa-circle-check');loadMoney()}
+
+// Seller sees their own balance at the top of My Shop
+const _openShop2=openShop;
+openShop=function(){_openShop2();loadBal()};
+async function loadBal(){
+  const {data}=await sb.rpc('seller_balance'),x=data&&data[0],d=ge('shop-bal');if(!x||!d)return;
+  d.style.display='block';
+  d.innerHTML='<div style="font-size:12px;color:var(--text3)">Your earnings after AquaHub commission</div><div style="font:900 24px var(--sans);color:var(--teal)">'+gh(x.owed)+' <span style="font-size:12px;font-weight:600;color:var(--text3)">owed to you</span></div>'+
+    '<div style="font-size:12px;color:var(--text2);margin-top:4px">Already paid '+gh(x.paid)+' · Waiting for delivery '+gh(x.held)+'</div>'}
+  // ===== BLOCKING USERS =====
+mkScreen('blocks-screen','<div class="shdr"><h2>Blocked users</h2><p>People and shops you have blocked</p></div><div class="bbody"><div id="blocks-list"></div></div>');
+(function(){
+  const ref=document.querySelector('.mi[onclick="logout()"]');
+  if(ref&&!document.querySelector('.mi[onclick="openBlocks()"]')){
+    const d=document.createElement('div');d.className='mi';d.setAttribute('onclick','openBlocks()');
+    d.innerHTML='<div class="mil"><div class="mii" style="background:var(--red-l)"><i class="fa-solid fa-ban" style="color:var(--red)"></i></div><div><div class="mit">Blocked users</div><div class="mis">Manage who you blocked</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>';
+    ref.before(d)}
+})();
+const UU=/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
+function blockLink(card,fn,label){
+  const m=card.innerHTML.match(UU);if(!m||card.querySelector('.blk'))return;
+  const a=document.createElement('div');a.className='blk';a.style.cssText='text-align:right;margin-top:10px';
+  a.innerHTML='<a href="#" style="font-size:11px;color:var(--text3)" onclick="'+fn+'(\''+m[0]+'\');return false"><i class="fa-solid fa-ban"></i> '+label+'</a>';
+  card.appendChild(a)}
+async function doBlock(fn,args,msg,after){
+  if(!confirm(msg))return;
+  const {error}=await sb.rpc(fn,args);
+  if(error){toast(error.message,'fa-triangle-exclamation');return}
+  toast('Blocked','fa-ban');if(after)after()}
+const blkBooking=id=>doBlock('block_by_booking',{p_booking:id},'Block this person? You will no longer be able to make or accept requests with each other.',()=>{loadJobs();loadMyBookings();loadDrivers()});
+const blkOrder=id=>doBlock('block_by_order',{p_order:id},'Block this buyer? They will not be able to order from your shop.',()=>loadShopOrders());
+const blkUser=id=>doBlock('block_user',{p_user:id},'Block this driver? You will no longer see each other or be able to make requests.',()=>loadDrivers());
+const blkShop=id=>{cm('pd');doBlock('block_seller_of_product',{p_product:id},'Block this shop? You will no longer see its products.',()=>syncProducts())};
+
+const _lj3=loadJobs;loadJobs=async function(){await _lj3();document.querySelectorAll('#jobs-list .card').forEach(c=>blockLink(c,'blkBooking','Block customer'))};
+const _lmb3=loadMyBookings;loadMyBookings=async function(){await _lmb3();document.querySelectorAll('#my-bookings .card').forEach(c=>blockLink(c,'blkBooking','Block driver'))};
+const _lso3=loadShopOrders;loadShopOrders=async function(){await _lso3();document.querySelectorAll('#shop-orders-list .card').forEach(c=>blockLink(c,'blkOrder','Block buyer'))};
+const _ld3=loadDrivers;loadDrivers=async function(){await _ld3();document.querySelectorAll('#fd-list .card').forEach(c=>blockLink(c,'blkUser','Block driver'))};
+const _pd3=pdDraw;
+pdDraw=function(){_pd3();const p=PRODS.find(x=>x.id===pdId);
+  if(p&&p.seller){const d=document.createElement('div');d.style.cssText='text-align:center;margin-top:8px';
+    d.innerHTML='<a href="#" style="font-size:11px;color:var(--text3)" onclick="blkShop(\''+esc(p.id)+'\');return false"><i class="fa-solid fa-ban"></i> Block this shop</a>';ge('pd-b').appendChild(d)}};
+
+function openBlocks(){goTo('blocks-screen');loadBlocks()}
+async function loadBlocks(){
+  const box=ge('blocks-list');box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.rpc('my_blocks');
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">You have not blocked anyone.</div>';return}
+  box.innerHTML=data.map(b=>'<div class="card row"><div class="sp"><b>'+esc(b.display_name)+'</b><div style="font-size:11px;color:var(--text3)">Blocked '+new Date(b.created_at).toLocaleDateString('en-GB')+'</div></div><button class="btn btn-o" style="width:auto;padding:9px 14px" onclick="unblock(\''+b.user_id+'\')">Unblock</button></div>').join('')}
+async function unblock(id){
+  const {error}=await sb.rpc('unblock_user',{p_user:id});
+  if(error){toast(error.message,'fa-triangle-exclamation');return}
+  toast('Unblocked','fa-circle-check');loadBlocks();syncProducts()}
+  // ===== FASHION MARKET: SIZES, COLOURS, DELIVERY/PICKUP, SHOP PAGES =====
+// Seller form: sizes, colours and shop delivery settings
+(function(){
+  const u=ge('sp-unit');
+  if(u&&!ge('sp-sizes')){const d=document.createElement('div');d.className='fg';
+   d.innerHTML='<label class="fl">Sizes (optional, separate with commas)</label><input class="fi" id="sp-sizes" placeholder="e.g. 38, 39, 40, 41, 42"/><label class="fl" style="margin-top:10px">Colours (optional)</label><input class="fi" id="sp-colours" placeholder="e.g. Black, Brown, Red"/>';
+   u.closest('.fg').after(d)}
+  const body=document.querySelector('#shop-screen .bbody');
+  if(body&&!ge('shop-set')){const c=document.createElement('div');c.id='shop-set';c.className='card';
+   c.innerHTML='<div class="slbl">Delivery and pickup</div><div class="fg"><label class="fl">Do you deliver?</label><select class="fsel" id="ss-d"><option value="1">Yes</option><option value="0">No</option></select></div><div class="fg"><label class="fl">Delivery fee per order (GH₵)</label><input class="fi" id="ss-f" type="number" min="0" step="0.5" placeholder="0 for free delivery"/></div><div class="fg"><label class="fl">Can customers collect from you?</label><select class="fsel" id="ss-p"><option value="0">No</option><option value="1">Yes</option></select></div><div class="fg"><label class="fl">Pickup address</label><input class="fi" id="ss-n" maxlength="150" placeholder="Where customers collect"/></div><button class="btn btn-p" onclick="saveSettings()">Save delivery settings</button>';
+   const bal=ge('shop-bal');(bal||body.firstChild)?body.insertBefore(c,bal?bal.nextSibling:body.firstChild):body.appendChild(c)}
+  const o=sb.rpc.bind(sb),parse=v=>String(v||'').split(',').map(x=>x.trim()).filter(Boolean).slice(0,12);
+  sb.rpc=function(n,a){if(n==='seller_save_product'&&ge('sp-sizes'))a=Object.assign({},a,{p_sizes:parse(ge('sp-sizes').value),p_colours:parse(ge('sp-colours').value)});return o(n,a)};
+})();
+let shopRows=[];
+const _ls6=loadShop;loadShop=async function(){await _ls6();const {data}=await sb.rpc('seller_products');shopRows=data||[]};
+const _ep6=editProduct;editProduct=function(b){_ep6(b);const r=shopRows.find(x=>x.id===b.dataset.id)||{};ge('sp-sizes').value=(r.sizes||[]).join(', ');ge('sp-colours').value=(r.colours||[]).join(', ')};
+const _cp6=clearProduct;clearProduct=function(){_cp6();ge('sp-sizes').value='';ge('sp-colours').value=''};
+const _os6=openShop;openShop=function(){_os6();loadSettings()};
+async function loadSettings(){const {data}=await sb.rpc('my_shop_settings'),x=data&&data[0];if(!x)return;
+  ge('ss-d').value=x.offers_delivery?'1':'0';ge('ss-p').value=x.offers_pickup?'1':'0';ge('ss-f').value=x.delivery_fee;ge('ss-n').value=x.pickup_note||''}
+async function saveSettings(){
+  const {error}=await sb.rpc('seller_save_settings',{p_delivery:ge('ss-d').value==='1',p_pickup:ge('ss-p').value==='1',p_fee:Number(ge('ss-f').value||0),p_note:ge('ss-n').value});
+  toast(error?error.message:'Delivery settings saved',error?'fa-triangle-exclamation':'fa-circle-check')}
+
+// Market data carries sizes and colours
+async function syncProducts(){
+  if(!CATS.length)await loadCats();
+  const {data,error}=await sb.rpc('market_products');if(error||!data)return;
+  PRODS.length=0;
+  data.forEach(p=>{const s=PSTYLE[p.category]||{ico:((CATS.find(c=>c.id===p.category)||{}).icon)||'fa-box',ibg:'#f1f5f9',ic:'#0f766e',col:'var(--teal)'};
+    PRODS.push({id:p.id,cat:p.category,name:p.name,ico:s.ico,ibg:s.ibg,ic:s.ic,col:s.col,price:Number(p.price),unit:p.unit,min:Number(p.min_qty),stock:p.in_stock,seller:p.seller_id,shop:p.shop_name,imgs:p.images||[],desc:p.description||'',sizes:p.sizes||[],colours:p.colours||[]})});
+  prodsLoaded=true;renderProds()}
+
+// Product card: tapping the shop name opens the shop page
+function mkCard(p){
+  const img=p.imgs&&p.imgs.length?'<img src="'+esc(p.imgs[0])+'" alt="'+esc(p.name)+'" loading="lazy"/>':'<i class="fa-solid '+p.ico+'" style="font-size:38px;color:'+p.ic+'"></i>';
+  const shop=p.seller?'<span onclick="event.stopPropagation();openShopPage(\''+p.seller+'\')" style="text-decoration:underline">'+esc(p.shop)+'</span>':esc(p.shop);
+  const hasV=(p.sizes&&p.sizes.length)||(p.colours&&p.colours.length);
+  return '<div class="pk" onclick="pdOpen(\''+esc(p.id)+'\')"><div class="pk-i">'+img+(p.stock?'':'<div class="pk-so">Sold out</div>')+'</div><div class="pk-b"><div class="pk-n">'+esc(p.name)+'</div><div class="pk-s">'+shop+'</div><div class="pk-p">'+fmt(p.price)+'</div><div class="pk-u">per '+esc(p.unit)+(hasV?' · sizes/colours':'')+'</div></div>'+
+    (p.stock?'<button class="pk-a" onclick="event.stopPropagation();addToCart(\''+esc(p.id)+'\')">+</button>':'')+'</div>'}
+
+// Cart lines are per size and colour
+function addToCart(id,qty,o){
+  const p=PRODS.find(x=>x.id===id);if(!p||!p.stock)return false;
+  const hasV=(p.sizes&&p.sizes.length)||(p.colours&&p.colours.length);
+  if(hasV&&!o){pdOpen(id);toast('Choose a size or colour','fa-circle-info');return false}
+  qty=Math.max(p.min,qty||p.min);
+  if(S.cart.length&&S.cart[0].seller!==p.seller){toast('Please order from one shop at a time. Check out first.','fa-triangle-exclamation');return false}
+  o=o||{};const v=[o.size?'Size '+o.size:'',o.colour||''].filter(Boolean).join(', '),key=id+'|'+(o.size||'')+'|'+(o.colour||'');
+  const ex=S.cart.find(c=>c.key===key);
+  if(ex){ex.qty+=qty;ex.total=ex.price*ex.qty}else S.cart.push({key,id,name:p.name+(v?' ('+v+')':''),qty,unit:p.unit,price:p.price,total:p.price*qty,col:p.col,seller:p.seller,size:o.size,colour:o.colour});
+  updateCart();toast(p.name+' added to cart','fa-cart-shopping');return true}
+
+// Product sheet: size and colour pickers, visit shop
+const _pd6=pdDraw;
+pdDraw=function(){_pd6();const p=PRODS.find(x=>x.id===pdId);if(!p)return;
+  if((p.sizes&&p.sizes.length)||(p.colours&&p.colours.length)){const d=document.createElement('div');d.style.cssText='display:grid;gap:8px;margin:10px 0';
+    d.innerHTML=(p.sizes.length?'<select class="fsel" id="pd-size"><option value="">Choose size</option>'+p.sizes.map(s=>'<option>'+esc(s)+'</option>').join('')+'</select>':'')+(p.colours.length?'<select class="fsel" id="pd-col"><option value="">Choose colour</option>'+p.colours.map(s=>'<option>'+esc(s)+'</option>').join('')+'</select>':'');
+    ge('pd-b').querySelector('.qs').parentElement.before(d)}
+  if(p.seller){const a=document.createElement('div');a.style.cssText='text-align:center;margin-top:10px';a.innerHTML='<a href="#" style="font-size:12px;color:var(--teal);font-weight:700" onclick="cm(\'pd\');openShopPage(\''+p.seller+'\');return false">Visit this shop</a>';ge('pd-b').appendChild(a)}};
+function pdAdd(now){
+  const p=PRODS.find(x=>x.id===pdId),o={},hv=(p.sizes&&p.sizes.length)||(p.colours&&p.colours.length);
+  if(p.sizes&&p.sizes.length){o.size=ge('pd-size').value;if(!o.size){toast('Choose a size','fa-triangle-exclamation');return}}
+  if(p.colours&&p.colours.length){o.colour=ge('pd-col').value;if(!o.colour){toast('Choose a colour','fa-triangle-exclamation');return}}
+  if(addToCart(pdId,pdQ,hv?o:undefined)){cm('pd');if(now)checkout()}}
+
+// Shop page
+mkScreen('shop-page','<div class="shdr"><h2 id="sp-h">Shop</h2><p id="sp-s"></p></div><div class="bbody"><div id="sp-g"></div></div>');
+async function openShopPage(id){
+  goTo('shop-page');ge('sp-h').textContent='Shop';ge('sp-s').textContent='';ge('sp-g').innerHTML='';
+  const {data}=await sb.rpc('shop_info',{p_seller:id}),x=data&&data[0];if(!x){ge('sp-g').innerHTML='<div class="mk-empty">This shop is not available.</div>';return}
+  ge('sp-h').textContent=x.shop_name;
+  const f=[x.offers_delivery?'Delivery '+(Number(x.delivery_fee)>0?fmt(x.delivery_fee):'free'):'',x.offers_pickup?'Pickup available':''].filter(Boolean).join(' · ');
+  ge('sp-s').textContent=x.area+(f?' · '+f:'');
+  const l=PRODS.filter(p=>p.seller===id);
+  ge('sp-g').innerHTML=l.length?'<div class="mk-grid">'+l.map(mkCard).join('')+'</div>':'<div class="mk-empty">No products yet.</div>'}
+
+// Checkout: delivery or pickup
+let shopInfo=null,fulfil='delivery';
+(function(){const a=ge('ch-addr');if(a&&!ge('ch-ful')){const d=document.createElement('div');d.id='ch-ful';d.className='fg';a.closest('.fg').before(d)}})();
+function drawCheckout(){
+  const items=S.cart.reduce((s,i)=>s+i.total,0),fee=(fulfil==='delivery'&&shopInfo)?Number(shopInfo.delivery_fee):0;
+  ge('ch-items').innerHTML=S.cart.map(i=>'<div class="mr"><span class="mk">'+esc(i.name)+' ('+i.qty+' '+esc(i.unit)+')</span><span class="mv">'+gh(i.total)+'</span></div>').join('')+(fulfil==='delivery'&&shopInfo?'<div class="mr"><span class="mk">Delivery</span><span class="mv">'+(fee>0?gh(fee):'Free')+'</span></div>':'');
+  ge('ch-tot').textContent=gh(items+fee);
+  const cD=!shopInfo||shopInfo.offers_delivery,cP=!!(shopInfo&&shopInfo.offers_pickup);
+  ge('ch-ful').innerHTML='<label class="fl">How do you want to receive it?</label><div style="display:flex;gap:8px">'+(cD?'<button class="btn '+(fulfil==='delivery'?'btn-p':'btn-o')+'" onclick="setFul(\'delivery\')">Delivery</button>':'')+(cP?'<button class="btn '+(fulfil==='pickup'?'btn-p':'btn-o')+'" onclick="setFul(\'pickup\')">Pickup</button>':'')+'</div>'+
+    (fulfil==='pickup'&&shopInfo&&shopInfo.pickup_note?'<div style="font-size:12px;color:var(--text2);margin-top:8px">Collect from: '+esc(shopInfo.pickup_note)+'</div>':'')+(!cD&&!cP?'<div style="font-size:12px;color:var(--red);margin-top:8px">This shop has not set up delivery or pickup yet.</div>':'');
+  ge('ch-addr').closest('.fg').style.display=fulfil==='delivery'?'':'none'}
+function setFul(f){fulfil=f;drawCheckout()}
+async function checkout(){
+  if(!S.cart.length)return;shopInfo=null;fulfil='delivery';
+  const sel=S.cart[0].seller;if(sel){const {data}=await sb.rpc('shop_info',{p_seller:sel});shopInfo=data&&data[0]||null}
+  if(shopInfo&&!shopInfo.offers_delivery&&shopInfo.offers_pickup)fulfil='pickup';
+  drawCheckout();openM('chm')}
+async function placeOrder(){
+  const addr=ge('ch-addr').value.trim(),ph=ge('ch-ph').value.trim();
+  if(fulfil==='delivery'&&!addr){toast('Enter delivery address','fa-triangle-exclamation');return}
+  if(!ph){toast('Enter phone number','fa-triangle-exclamation');return}
+  if(!S.cart.length){toast('Your cart is empty','fa-triangle-exclamation');return}
+  const items=S.cart.map(i=>({id:i.id,qty:i.qty,size:i.size||null,colour:i.colour||null}));
+  const {data:orderId,error}=await sb.rpc('place_order',{p_items:items,p_address:addr,p_phone:ph,p_fulfil:fulfil});
+  if(error){toast(error.message,'fa-triangle-exclamation');return}
+  S.cart=[];updateCart();renderProds();cm('chm');payOrder(orderId)}
 </script>
 </body>
 </html>
