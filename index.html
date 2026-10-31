@@ -4565,6 +4565,18 @@ async function placeOrder(){
   const {data:orderId,error}=await sb.rpc('place_order',{p_items:items,p_address:addr,p_phone:ph,p_fulfil:fulfil});
   if(error){toast(error.message,'fa-triangle-exclamation');return}
   S.cart=[];updateCart();renderProds();cm('chm');payOrder(orderId)}
+  // Never show placeholder products; show the real error if loading fails
+PRODS.length=0;prodsLoaded=false;
+async function syncProducts(){
+  if(!CATS.length)await loadCats();
+  const {data,error}=await sb.rpc('market_products');
+  if(error||!data){prodsLoaded=true;ge('market-body').innerHTML='<div class="mk-empty">Could not load products.<br><small>'+esc((error&&error.message)||'No data')+'</small></div>';return}
+  PRODS.length=0;
+  data.forEach(p=>{const s=PSTYLE[p.category]||{ico:((CATS.find(c=>c.id===p.category)||{}).icon)||'fa-box',ibg:'#f1f5f9',ic:'#0f766e',col:'var(--teal)'};
+    PRODS.push({id:p.id,cat:p.category,name:p.name,ico:s.ico,ibg:s.ibg,ic:s.ic,col:s.col,price:Number(p.price),unit:p.unit,min:Number(p.min_qty),stock:p.in_stock,seller:p.seller_id,shop:p.shop_name,imgs:p.images||[],desc:p.description||'',sizes:p.sizes||[],colours:p.colours||[]})});
+  prodsLoaded=true;renderProds()}
+renderProds();
+
 </script>
 </body>
 </html>
