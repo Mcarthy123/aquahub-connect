@@ -4576,6 +4576,27 @@ async function syncProducts(){
     PRODS.push({id:p.id,cat:p.category,name:p.name,ico:s.ico,ibg:s.ibg,ic:s.ic,col:s.col,price:Number(p.price),unit:p.unit,min:Number(p.min_qty),stock:p.in_stock,seller:p.seller_id,shop:p.shop_name,imgs:p.images||[],desc:p.description||'',sizes:p.sizes||[],colours:p.colours||[]})});
   prodsLoaded=true;renderProds()}
 renderProds();
+// Market loader that always ends with products, an error, or a Retry button
+let mkTimer=null;
+async function syncProducts(){
+  const box=ge('market-body');
+  clearTimeout(mkTimer);
+  mkTimer=setTimeout(()=>{if(!prodsLoaded)box.innerHTML='<div class="mk-empty">Still loading...<br><button class="btn btn-p" style="width:auto;margin-top:10px" onclick="syncProducts()">Retry</button></div>'},8000);
+  try{
+    if(!CATS.length)await loadCats();
+    const {data,error}=await sb.rpc('market_products');
+    if(error)throw error;
+    if(!data)throw new Error('No data returned');
+    PRODS.length=0;
+    data.forEach(p=>{const s=PSTYLE[p.category]||{ico:((CATS.find(c=>c.id===p.category)||{}).icon)||'fa-box',ibg:'#f1f5f9',ic:'#0f766e',col:'var(--teal)'};
+      PRODS.push({id:p.id,cat:p.category,name:p.name,ico:s.ico,ibg:s.ibg,ic:s.ic,col:s.col,price:Number(p.price),unit:p.unit,min:Number(p.min_qty),stock:p.in_stock,seller:p.seller_id,shop:p.shop_name,imgs:p.images||[],desc:p.description||'',sizes:p.sizes||[],colours:p.colours||[]})});
+    prodsLoaded=true;clearTimeout(mkTimer);renderProds();
+  }catch(e){
+    prodsLoaded=true;clearTimeout(mkTimer);
+    box.innerHTML='<div class="mk-empty">Could not load products.<br><small>'+esc(e.message||String(e))+'</small><br><button class="btn btn-p" style="width:auto;margin-top:10px" onclick="syncProducts()">Retry</button></div>';
+  }
+}
+syncProducts();
 
 </script>
 </body>
