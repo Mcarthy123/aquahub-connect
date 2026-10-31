@@ -4597,6 +4597,23 @@ async function syncProducts(){
   }
 }
 syncProducts();
+// Safety net: define missing category helpers
+if(typeof window.CATS==='undefined')window.CATS=[];
+if(typeof window.catName==='undefined')window.catName=id=>((window.CATS||[]).find(c=>c.id===id)||{}).name||id;
+if(typeof window.loadCats==='undefined')window.loadCats=async function(){
+  const {data}=await sb.rpc('list_categories');
+  window.CATS=data||[];
+  const opts=n=>window.CATS.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+(n&&c.restricted?' (needs approval)':'')+'</option>').join('');
+  const a=ge('sa-cat');if(a)a.innerHTML=opts(false);
+  const p=ge('sp-cat');if(p)p.innerHTML=opts(true);
+};
+// Check which parts of the app are missing, and tell me
+(function(){
+  const need=['reportProduct','submitSeller','openShop','saveProduct','openGallery','pdOpen','addToCart','openShopPage','saveSettings','openNotifs','refreshNotifs','checkJobs','startShare','loadWeather','captureGps','openPick','startRealBooking','sendQuote','payDeposit','confirmDeposit','openLive','openRate','openBlocks','openMoney','openDelete','openReports','loadServiceStats','profileExtras','loadBal','showMenu','mkScreen'];
+  const miss=need.filter(n=>typeof window[n]!=='function');
+  console.warn('Missing parts:',miss);
+  try{if(miss.length&&!sessionStorage.getItem('aqh_miss')){sessionStorage.setItem('aqh_miss','1');setTimeout(()=>alert('Missing parts: '+miss.join(', ')),2500)}}catch(e){}
+})();
 
 </script>
 </body>
