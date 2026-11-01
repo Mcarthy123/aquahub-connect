@@ -385,7 +385,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
       <div class="fg"><label class="fl">Vehicle type</label><input class="fi" id="drv-vehicle" placeholder="e.g. Vacuum truck, tricycle"/></div>
       <div class="fg"><label class="fl">Plate number</label><input class="fi" id="drv-plate" placeholder="e.g. GT 1234-24"/></div>
       <div class="fg"><label class="fl">Area you cover</label><input class="fi" id="drv-area" placeholder="e.g. Tamale, Jirapa"/></div>
-      <div class="fg"><label class="fl">Mobile money network (for payouts)</label><select class="fsel" id="pay-net-D"><option>MTN</option><option>Vodafone</option><option>AirtelTigo</option></select></div><div class="fg"><label class="fl">Mobile money number</label><input class="fi" id="pay-num-D" inputmode="numeric" placeholder="0241234567"/></div><button class="btn btn-p" onclick="submitDriver()"><i class="fa-solid fa-paper-plane"></i> Submit Application</button>
+      <div class="fg"><label class="fl">Where should we pay you? (mobile money or bank)</label><select class="fsel" id="pay-net-D"><option>MTN</option><option>Vodafone</option><option>AirtelTigo</option></select></div><div class="fg"><label class="fl">Mobile money or bank account number</label><input class="fi" id="pay-num-D" inputmode="numeric" placeholder="Account or mobile money number"/></div><button class="btn btn-p" onclick="submitDriver()"><i class="fa-solid fa-paper-plane"></i> Submit Application</button>
     </div>
     <div class="card" id="drv-status" style="display:none"></div>
   </div>
@@ -2874,7 +2874,7 @@ mkScreen('seller-screen',`<div class="shdr"><h2>Become a Seller</h2><p>Open your
     <div class="fg"><label class="fl">What do you sell?</label><select class="fsel" id="sa-cat">
       <option value="fertilizer">Organic fertilizer</option><option value="biogas">Biogas</option><option value="water">Water</option></select></div>
     <div class="fg"><label class="fl">Town or area</label><input class="fi" id="sa-area" maxlength="80" placeholder="e.g. Tamale"/></div>
-    <div class="fg"><label class="fl">Mobile money network (for payouts)</label><select class="fsel" id="pay-net-S"><option>MTN</option><option>Vodafone</option><option>AirtelTigo</option></select></div><div class="fg"><label class="fl">Mobile money number</label><input class="fi" id="pay-num-S" inputmode="numeric" placeholder="0241234567"/></div><button class="btn btn-p" onclick="submitSeller()"><i class="fa-solid fa-paper-plane"></i> Submit Application</button></div>
+    <div class="fg"><label class="fl">Where should we pay you? (mobile money or bank)</label><select class="fsel" id="pay-net-S"><option>MTN</option><option>Vodafone</option><option>AirtelTigo</option></select></div><div class="fg"><label class="fl">Mobile money or bank account number</label><input class="fi" id="pay-num-S" inputmode="numeric" placeholder="Account or mobile money number"/></div><button class="btn btn-p" onclick="submitSeller()"><i class="fa-solid fa-paper-plane"></i> Submit Application</button></div>
     <div class="card" id="sa-status" style="display:none"></div></div>`);
 
 mkScreen('shop-screen',`<div class="shdr"><h2>My Shop</h2><p>Your products on the Market</p></div>
@@ -4627,7 +4627,7 @@ async function submitSeller(){
   const shop_name=ge('sa-name').value.trim(),category=ge('sa-cat').value,area=ge('sa-area').value.trim();
   const momo_network=ge('pay-net-S').value,momo_number=ge('pay-num-S').value.trim();
   if(shop_name.length<2||area.length<2){toast('Enter your shop name and area','fa-triangle-exclamation');return;}
-  if(!/^0\d{9}$/.test(momo_number)){toast('Enter a valid mobile money number','fa-triangle-exclamation');return;}
+  if(!/^\d{8,16}$/.test(momo_number)){toast('Enter a valid account or mobile money number','fa-triangle-exclamation');return;}
   const {data:{user}}=await sb.auth.getUser();
   const {error}=await sb.from('sellers').insert({user_id:user.id,shop_name,category,area,momo_network,momo_number});
   if(error){toast(error.message,'fa-triangle-exclamation');return;}
@@ -4637,7 +4637,7 @@ openSellerApply=async function(){await _openSellerApply();const {data:{user}}=aw
   const {data}=await sb.from('sellers').select('fee_paid').eq('user_id',user.id).maybeSingle();
   if(data&&!data.fee_paid)ge('sa-status').insertAdjacentHTML('beforeend','<button class="btn btn-p" style="margin-top:14px" onclick="payFee(\'seller\')">Pay Registration Fee</button>');};
 const _submitDriver=submitDriver;
-submitDriver=async function(){await _submitDriver();const n=ge('pay-num-D').value.trim();if(!/^0\d{9}$/.test(n))return;
+submitDriver=async function(){await _submitDriver();const n=ge('pay-num-D').value.trim();if(!/^\d{8,16}$/.test(n))return;
   const {data:{user}}=await sb.auth.getUser();await sb.from('collectors').update({momo_network:ge('pay-net-D').value,momo_number:n}).eq('user_id',user.id);};
 (async()=>{const q=new URLSearchParams(location.search),ref=q.get('reference')||q.get('trxref');if(!ref)return;
   history.replaceState({},'',location.pathname);const role=localStorage.getItem('aqh_role');
@@ -4687,6 +4687,13 @@ async function joinWaste(id){const a=prompt('Your house address');if(!a)return;c
   if(error){toast(error.message,'fa-triangle-exclamation');return;}toast('Joined! You can now pay in the app.','fa-circle-check');loadWaste();}
 async function setPickup(id,v){if(v==='')return;const {error}=await sb.rpc('set_pickup_day',{p_sub:id,p_day:Number(v)});toast(error?error.message:'Pickup day saved',error?'fa-triangle-exclamation':'fa-circle-check');}
 async function payWaste(id){toast('Opening payment...','fa-clock');const o=await callPay({action:'init-waste',sub_id:id});if(o.ok)location.href=o.url;else toast(o.error||'Could not start payment','fa-triangle-exclamation');}
+
+// ===== Payout list: all Ghana mobile money networks and banks, loaded from Paystack =====
+async function fillBanks(){try{const {data:{session}}=await sb.auth.getSession();if(!session)return;
+  if(!window._banks){const o=await callPay({action:'banks'});if(!o.ok)return;window._banks=o;}
+  const g=(t,a)=>'<optgroup label="'+t+'">'+a.map(x=>'<option value="'+esc(x.code)+'">'+esc(x.name)+'</option>').join('')+'</optgroup>';
+  ['pay-net-S','pay-net-D'].forEach(id=>{const e=ge(id);if(e)e.innerHTML=g('Mobile money',window._banks.mobile)+g('Banks',window._banks.banks);});}catch(e){}}
+fillBanks();sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN')fillBanks();});
 </script>
 </body>
 </html>
