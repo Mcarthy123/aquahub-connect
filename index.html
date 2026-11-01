@@ -319,30 +319,25 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
   input,select,textarea,.fi,.fsel{font-size:16px !important}
 </style>
+<style id="splash-v2">
+#splash{background:#fff}
+#splash .sp-top{padding:20px 36px 16px}
+#splash .sp-img{width:min(68%,250px);height:auto;margin-bottom:22px}
+#splash .sp-tag{font-size:14.5px;color:#5a6b65;line-height:1.6;max-width:290px}
+#splash .sp-btn{background:#1a7a5e;color:#fff;font-size:16px;font-weight:800;padding:16px;border-radius:14px}
+#splash .sp-acc{gap:8px;margin-top:2px}
+#splash .sp-ao{flex-direction:row;justify-content:center;gap:6px;padding:11px 6px;background:#f3f6f5;border:1px solid #e1e8e5;border-radius:12px}
+#splash .sp-ao i{font-size:14px;color:#1a7a5e}
+#splash .sp-ao span{font-size:12px;color:#3d4f49;font-weight:600}
+</style>
 </head>
 <body>
 
 <!-- SPLASH -->
 <div class="screen active" id="splash">
   <div class="sp-top">
-    <div class="sp-logo">
-      <svg width="140" height="140" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="80" cy="80" r="76" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
-        <path d="M30 95 Q45 65 60 80 Q75 95 90 75 Q105 55 120 70 Q110 100 90 110 Q70 120 50 115 Q35 110 30 95Z" fill="#1565c0" opacity="0.95"/>
-        <path d="M45 92 Q55 72 68 82 Q78 90 88 76 Q82 100 68 106 Q54 112 45 92Z" fill="#1976d2" opacity="0.85"/>
-        <ellipse cx="62" cy="84" rx="9" ry="13" fill="rgba(255,255,255,0.2)" transform="rotate(-15 62 84)"/>
-        <path d="M78 18 L87 33 L83 33 Q83 46 94 52 L86 57 Q72 48 72 33 L68 33 Z" fill="#00c896"/>
-        <path d="M114 70 L120 57 L123 61 Q133 49 124 39 L130 34 Q143 50 130 67 L133 71 Z" fill="#00c896"/>
-        <path d="M46 72 L40 85 L36 82 Q24 94 37 104 L30 109 Q15 93 30 76 L27 72 Z" fill="#00c896"/>
-      </svg>
-    </div>
-    <div class="sp-name">AquaHub Connect</div>
+    <img class="sp-img" src="logo-clean.webp" alt="AquaHub Connect"/>
     <div class="sp-tag">Clean water, safe sanitation and climate alerts for every community in Northern Ghana</div>
-    <div class="sp-badges">
-      <div class="sp-badge"><i class="fa-solid fa-wheelchair"></i> Accessible</div>
-      <div class="sp-badge"><i class="fa-solid fa-earth-africa"></i> Climate-Smart</div>
-      <div class="sp-badge"><i class="fa-solid fa-flag"></i> Made in Ghana</div>
-    </div>
   </div>
   <div class="sp-bot">
     <button class="sp-btn" onclick="getStarted()">Get Started <i class="fa-solid fa-arrow-right"></i></button>
@@ -1407,7 +1402,7 @@ async function openDriver(){
   if(data){
     form.style.display='none';st.style.display='block';
     st.innerHTML=`<div style="font-family:var(--sans);font-size:16px;font-weight:800;margin-bottom:8px">Application received</div>
-    <div style="font-size:13px;color:var(--text2);line-height:1.7">${esc(data.service_type)} · ${esc(data.vehicle_type)} · ${esc(data.vehicle_plate)}<br>Area: ${esc(data.area)}<br>Status: <b>${esc(data.status)}</b><br>Registration fee: <b>${data.fee_paid?'Paid':'Not paid yet'}</b></div>${data.fee_paid?'':'<button class="btn btn-p" style="margin-top:14px" onclick="payFee()">Pay Registration Fee</button>'}`;
+    <div style="font-size:13px;color:var(--text2);line-height:1.7">${esc(data.service_type)} · ${esc(data.vehicle_type)} · ${esc(data.vehicle_plate)}<br>Area: ${esc(data.area)}<br>Status: <b>${esc(data.status)}</b><br>Registration fee: <b>${data.fee_paid?'Paid':'Not paid yet'}</b></div>${data.fee_paid?'':termsHtml(data.service_type)+'<button class="btn btn-p" style="margin-top:14px" onclick="payFee()">Pay Registration Fee</button>'}`;
   }else{form.style.display='block';st.style.display='none';}
 }
 
@@ -1742,7 +1737,7 @@ async function openDriver(){
   if(data){
     form.style.display='none';st.style.display='block';
     const price=data.price!=null?'GH₵'+data.price+' per visit':'Not set (customers see "Ask the driver")';
-    const pay=data.fee_paid?'':'<button class="btn btn-p" style="margin-top:14px" onclick="payFee()">Pay Registration Fee</button>';
+    const pay=data.fee_paid?'':termsHtml(data.service_type)+'<button class="btn btn-p" style="margin-top:14px" onclick="payFee()">Pay Registration Fee</button>';
     st.innerHTML=`<div style="font-family:var(--sans);font-size:16px;font-weight:800;margin-bottom:8px">Application received</div>
     <div style="font-size:13px;color:var(--text2);line-height:1.7">${esc(data.service_type)} · ${esc(data.vehicle_type)} · ${esc(data.vehicle_plate)}<br>Area: ${esc(data.area)}<br>Price: <b>${esc(price)}</b><br>Status: <b>${esc(data.status)}</b><br>Registration fee: <b>${data.fee_paid?'Paid':'Not paid yet'}</b></div>
     <button class="btn btn-o" style="margin-top:14px" onclick="changePrice()">Change Price</button>${pay}`;
@@ -4620,7 +4615,11 @@ if(typeof window.loadCats==='undefined')window.loadCats=async function(){
 // ===== AQUAHUB PAY: server-set fees + 8% split (overrides earlier versions) =====
 async function callPay(body){const {data:{session}}=await sb.auth.getSession();
   const r=await fetch(SUPABASE_URL+'/functions/v1/aquahub-pay',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},body:JSON.stringify(body)});return r.json();}
-async function payFee(role){role=role==='seller'?'seller':'collector';toast('Opening payment...','fa-clock');
+async function payFee(role){role=role==='seller'?'seller':'collector';
+  let svc='seller';if(role!=='seller'){const {data:{user}}=await sb.auth.getUser();const {data:r}=await sb.from('collectors').select('service_type').eq('user_id',user.id).maybeSingle();svc=r?r.service_type:'';}
+  const c=window._cfg,fee=feeFor(svc),pct=Number(c.commission_pct);
+  if(!confirm('Registration fee: GH₵'+fee+' (one-time)\nCommission: '+pct+'% on every payment you receive through AquaHub. You receive the other '+(100-pct)+'%.\n\nContinue to pay GH₵'+fee+'?'))return;
+  toast('Opening payment...','fa-clock');
   const o=await callPay({action:'init-fee',role});if(o.ok){localStorage.setItem('aqh_role',role);location.href=o.url;}else toast(o.error||'Could not start payment','fa-triangle-exclamation');}
 async function payOrder(id){toast('Opening payment...','fa-clock');
   const o=await callPay({action:'init-order',order_id:id});if(o.ok)location.href=o.url;else toast(o.error||'Could not start payment','fa-triangle-exclamation');}
@@ -4638,7 +4637,7 @@ async function submitSeller(){
 const _openSellerApply=openSellerApply;
 openSellerApply=async function(){await _openSellerApply();const {data:{user}}=await sb.auth.getUser();
   const {data}=await sb.from('sellers').select('fee_paid').eq('user_id',user.id).maybeSingle();
-  if(data&&!data.fee_paid)ge('sa-status').insertAdjacentHTML('beforeend','<button class="btn btn-p" style="margin-top:14px" onclick="payFee(\'seller\')">Pay Registration Fee</button>');};
+  if(data&&!data.fee_paid)ge('sa-status').insertAdjacentHTML('beforeend',termsHtml('seller')+'<button class="btn btn-p" style="margin-top:14px" onclick="payFee(\'seller\')">Pay Registration Fee</button>');};
 const _submitDriver=submitDriver;
 submitDriver=async function(){if(!ge('agree-D').checked){toast('Please agree to the fee and commission first','fa-triangle-exclamation');return;}await _submitDriver();const n=ge('pay-num-D').value.trim();if(!/^\d{8,16}$/.test(n))return;
   const {data:{user}}=await sb.auth.getUser();await sb.rpc('save_payout',{p_network:ge('pay-net-D').value,p_number:n});};
@@ -4723,6 +4722,31 @@ function renderTerms(){const c=window._cfg,pct=Number(c.commission_pct),gh=n=>'G
 async function loadCfg(){try{const {data:{session}}=await sb.auth.getSession();if(!session)return;const o=await callPay({action:'config'});if(o.ok){window._cfg=o;}}catch(e){}renderTerms();}
 renderTerms();loadCfg();sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN')loadCfg();});
 if(ge('drv-service'))ge('drv-service').addEventListener('change',renderTerms);
+
+function feeFor(svc){const c=window._cfg;return svc==='seller'?c.fee_seller:svc==='Garbage Collection'?c.fee_collector:c.fee_vehicle;}
+function termsHtml(svc){const c=window._cfg,pct=Number(c.commission_pct);
+  return '<div style="background:var(--green-l,#eef7f2);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.7;margin-top:12px"><b>Registration fee: GH₵'+feeFor(svc)+'</b> (one-time), paid before your account can be approved.<br><b>Commission: '+pct+'%</b> on every payment you receive through AquaHub. You receive the other '+(100-pct)+'%.</div>';}
+
+// ===== PUSH NOTIFICATIONS =====
+const VAPID_PUBLIC='BLT5FiMcKuqohHbs68Ml_rZY7XAhDQbZsbaVIRHbrmo34Sigr198YpL-z3zTrEyt_izpNMlv9c-lSpXzU3OKqyE';
+const u8=k=>{const p='='.repeat((4-k.length%4)%4),b=(k+p).replace(/-/g,'+').replace(/_/g,'/'),r=atob(b);return Uint8Array.from([...r].map(c=>c.charCodeAt(0)));};
+(function(){const ref=document.querySelector('.mi[onclick="openJobs()"]');
+  if(ref&&!document.querySelector('.mi[onclick="togglePush()"]')){const d=document.createElement('div');d.className='mi';d.setAttribute('onclick','togglePush()');
+  d.innerHTML='<div class="mil"><div class="mii" style="background:var(--orange-l)"><i class="fa-solid fa-bell" style="color:var(--orange)"></i></div><div><div class="mit">Push Notifications</div><div class="mis" id="push-state">Tap to turn on</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>';ref.before(d);}})();
+async function pushSub(){if(!('serviceWorker' in navigator)||!('PushManager' in window))return null;const reg=await navigator.serviceWorker.ready;return reg.pushManager.getSubscription();}
+async function refreshPush(){const e=ge('push-state');if(!e)return;const sub=await pushSub();e.textContent=sub&&Notification.permission==='granted'?'On. Tap to turn off':'Tap to turn on';}
+async function togglePush(){
+  const ios=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  if(!('PushManager' in window)){toast(ios?'On iPhone: tap Share, then Add to Home Screen, and open AquaHub from there':'This browser does not support notifications','fa-circle-info');return;}
+  const cur=await pushSub();
+  if(cur){await sb.rpc('delete_push',{p_endpoint:cur.endpoint});await cur.unsubscribe();toast('Notifications off','fa-bell-slash');refreshPush();return;}
+  if(await Notification.requestPermission()!=='granted'){toast('Notifications are blocked. Allow them in your phone settings.','fa-triangle-exclamation');return;}
+  try{const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(VAPID_PUBLIC)}),j=sub.toJSON();
+    const {error}=await sb.rpc('save_push',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth});
+    if(error){toast(error.message,'fa-triangle-exclamation');return;}toast('Notifications on','fa-circle-check');refreshPush();
+  }catch(e){toast('Could not turn on notifications','fa-triangle-exclamation');}}
+refreshPush();
 </script>
 </body>
 </html>
