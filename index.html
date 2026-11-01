@@ -4048,7 +4048,7 @@ function pdDraw(){
     (p.desc?'<div style="font-size:13px;color:var(--text2);line-height:1.6;margin:10px 0">'+esc(p.desc)+'</div>':'')+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0"><div class="qs"><button onclick="pdQty(-1)">−</button><b id="pd-q">'+pdQ+'</b><button onclick="pdQty(1)">+</button></div><div style="font-weight:800">Total <span id="pd-t">'+fmt(p.price*pdQ)+'</span></div></div>'+
     (p.stock?'<button class="btn btn-p" style="margin-bottom:8px" onclick="pdAdd(false)"><i class="fa-solid fa-cart-plus"></i> Add to cart</button><button class="btn btn-o" onclick="pdAdd(true)">Buy now</button>':'<div style="text-align:center;font-weight:800;color:var(--text3)">Sold out</div>')+
-    (typeof ==='function'?'<div style="text-align:center;margin-top:12px"><a href="#" onclick="cm(\'pd\');reportProduct(\''+esc(p.id)+'\');return false" style="font-size:11px;color:var(--text3)">Report this listing</a></div>':'');
+    (typeof reportProduct==='function'?'<div style="text-align:center;margin-top:12px"><a href="#" onclick="cm(\'pd\');reportProduct(\''+esc(p.id)+'\');return false" style="font-size:11px;color:var(--text3)">Report this listing</a></div>':'');
 }
 function pdQty(d){
   const p=PRODS.find(x=>x.id===pdId);
@@ -4614,6 +4614,7 @@ if(typeof window.loadCats==='undefined')window.loadCats=async function(){
   console.warn('Missing parts:',miss);
   try{if(miss.length&&!sessionStorage.getItem('aqh_miss')){sessionStorage.setItem('aqh_miss','1');setTimeout(()=>alert('Missing parts: '+miss.join(', ')),2500)}}catch(e){}
 })();
+
 </script>
 </body>
 </html>
