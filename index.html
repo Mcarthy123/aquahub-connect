@@ -385,7 +385,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
       <div class="fg"><label class="fl">Vehicle type</label><input class="fi" id="drv-vehicle" placeholder="e.g. Vacuum truck, tricycle"/></div>
       <div class="fg"><label class="fl">Plate number</label><input class="fi" id="drv-plate" placeholder="e.g. GT 1234-24"/></div>
       <div class="fg"><label class="fl">Area you cover</label><input class="fi" id="drv-area" placeholder="e.g. Tamale, Jirapa"/></div>
-      <div class="fg"><label class="fl">Where should we pay you? (mobile money or bank)</label><select class="fsel" id="pay-net-D"><option>MTN</option><option>Vodafone</option><option>AirtelTigo</option></select></div><div class="fg"><label class="fl">Mobile money or bank account number</label><input class="fi" id="pay-num-D" inputmode="numeric" placeholder="Account or mobile money number"/></div><button class="btn btn-p" onclick="submitDriver()"><i class="fa-solid fa-paper-plane"></i> Submit Application</button>
+      <div class="fg"><label class="fl">Where should we pay you? (mobile money or bank)</label><select class="fsel" id="pay-net-D"><option>MTN</option><option>Vodafone</option><option>AirtelTigo</option></select></div><div class="fg"><label class="fl">Mobile money or bank account number</label><input class="fi" id="pay-num-D" inputmode="numeric" placeholder="Account or mobile money number"/></div><div id="terms-box-D" style="background:var(--green-l,#eef7f2);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.7;margin:4px 0 10px"></div><label style="display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5;margin-bottom:12px"><input type="checkbox" id="agree-D" style="margin-top:3px;width:18px;height:18px"/><span>I have read and agree to the registration fee and commission above, and to the <a href="terms.html" target="_blank">Terms</a>.</span></label><button class="btn btn-p" onclick="submitDriver()"><i class="fa-solid fa-paper-plane"></i> Submit Application</button>
     </div>
     <div class="card" id="drv-status" style="display:none"></div>
   </div>
@@ -2874,7 +2874,7 @@ mkScreen('seller-screen',`<div class="shdr"><h2>Become a Seller</h2><p>Open your
     <div class="fg"><label class="fl">What do you sell?</label><select class="fsel" id="sa-cat">
       <option value="fertilizer">Organic fertilizer</option><option value="biogas">Biogas</option><option value="water">Water</option></select></div>
     <div class="fg"><label class="fl">Town or area</label><input class="fi" id="sa-area" maxlength="80" placeholder="e.g. Tamale"/></div>
-    <div class="fg"><label class="fl">Where should we pay you? (mobile money or bank)</label><select class="fsel" id="pay-net-S"><option>MTN</option><option>Vodafone</option><option>AirtelTigo</option></select></div><div class="fg"><label class="fl">Mobile money or bank account number</label><input class="fi" id="pay-num-S" inputmode="numeric" placeholder="Account or mobile money number"/></div><button class="btn btn-p" onclick="submitSeller()"><i class="fa-solid fa-paper-plane"></i> Submit Application</button></div>
+    <div class="fg"><label class="fl">Where should we pay you? (mobile money or bank)</label><select class="fsel" id="pay-net-S"><option>MTN</option><option>Vodafone</option><option>AirtelTigo</option></select></div><div class="fg"><label class="fl">Mobile money or bank account number</label><input class="fi" id="pay-num-S" inputmode="numeric" placeholder="Account or mobile money number"/></div><div id="terms-box-S" style="background:var(--green-l,#eef7f2);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.7;margin:4px 0 10px"></div><label style="display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5;margin-bottom:12px"><input type="checkbox" id="agree-S" style="margin-top:3px;width:18px;height:18px"/><span>I have read and agree to the registration fee and commission above, and to the <a href="terms.html" target="_blank">Terms</a>.</span></label><button class="btn btn-p" onclick="submitSeller()"><i class="fa-solid fa-paper-plane"></i> Submit Application</button></div>
     <div class="card" id="sa-status" style="display:none"></div></div>`);
 
 mkScreen('shop-screen',`<div class="shdr"><h2>My Shop</h2><p>Your products on the Market</p></div>
@@ -2941,6 +2941,7 @@ async function submitSeller(){
   const category=document.getElementById('sa-cat').value;
   const area=document.getElementById('sa-area').value.trim();
   if(shop_name.length<2||area.length<2){toast('Enter your shop name and area','fa-triangle-exclamation');return;}
+  if(!ge('agree-S').checked){toast('Please agree to the fee and commission first','fa-triangle-exclamation');return;}
   const {data:{user}}=await sb.auth.getUser();
   const {error}=await sb.from('sellers').insert({user_id:user.id,shop_name,category,area});
   if(error){toast(error.message,'fa-triangle-exclamation');return;}
@@ -4639,7 +4640,7 @@ openSellerApply=async function(){await _openSellerApply();const {data:{user}}=aw
   const {data}=await sb.from('sellers').select('fee_paid').eq('user_id',user.id).maybeSingle();
   if(data&&!data.fee_paid)ge('sa-status').insertAdjacentHTML('beforeend','<button class="btn btn-p" style="margin-top:14px" onclick="payFee(\'seller\')">Pay Registration Fee</button>');};
 const _submitDriver=submitDriver;
-submitDriver=async function(){await _submitDriver();const n=ge('pay-num-D').value.trim();if(!/^\d{8,16}$/.test(n))return;
+submitDriver=async function(){if(!ge('agree-D').checked){toast('Please agree to the fee and commission first','fa-triangle-exclamation');return;}await _submitDriver();const n=ge('pay-num-D').value.trim();if(!/^\d{8,16}$/.test(n))return;
   const {data:{user}}=await sb.auth.getUser();await sb.rpc('save_payout',{p_network:ge('pay-net-D').value,p_number:n});};
 (async()=>{const q=new URLSearchParams(location.search),ref=q.get('reference')||q.get('trxref');if(!ref)return;
   history.replaceState({},'',location.pathname);const role=localStorage.getItem('aqh_role');
@@ -4711,6 +4712,17 @@ async function openPayout(){goTo('payout-screen');await fillBanks();
 async function savePayout(){const n=ge('pay-num-P').value.trim();if(!/^\d{8,16}$/.test(n)){toast('Enter a valid account or mobile money number','fa-triangle-exclamation');return;}
   const {error}=await sb.rpc('save_payout',{p_network:ge('pay-net-P').value,p_number:n});
   if(error){toast(error.message,'fa-triangle-exclamation');return;}toast('Payout details saved','fa-circle-check');ge('pay-num-P').value='';openPayout();}
+
+// ===== Fee and commission terms shown before sign-up (numbers come from the server settings) =====
+window._cfg={fee_seller:50,fee_collector:550,fee_vehicle:200,commission_pct:8};
+function renderTerms(){const c=window._cfg,pct=Number(c.commission_pct),gh=n=>'GH₵'+Number(n).toFixed(0);
+  const row=(who,fee,what)=>'<b>Registration fee: '+gh(fee)+'</b> (one-time), paid by mobile money or card before your '+who+' can be approved.<br><b>Commission: '+pct+'%</b> on every payment you receive through AquaHub '+what+'. You receive the other '+(100-pct)+'%.';
+  const a=ge('terms-box-S'),b=ge('terms-box-D'),svc=(ge('drv-service')||{}).value;
+  if(a)a.innerHTML=row('shop',c.fee_seller,'(for example, a GH₵100 sale pays you GH₵'+(100-pct)+')');
+  if(b)b.innerHTML=row('account',svc==='Garbage Collection'?c.fee_collector:c.fee_vehicle,'(for example, a GH₵100 payment pays you GH₵'+(100-pct)+')');}
+async function loadCfg(){try{const {data:{session}}=await sb.auth.getSession();if(!session)return;const o=await callPay({action:'config'});if(o.ok){window._cfg=o;}}catch(e){}renderTerms();}
+renderTerms();loadCfg();sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN')loadCfg();});
+if(ge('drv-service'))ge('drv-service').addEventListener('change',renderTerms);
 </script>
 </body>
 </html>
