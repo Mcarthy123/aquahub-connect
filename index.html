@@ -4048,7 +4048,7 @@ function pdDraw(){
     (p.desc?'<div style="font-size:13px;color:var(--text2);line-height:1.6;margin:10px 0">'+esc(p.desc)+'</div>':'')+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0"><div class="qs"><button onclick="pdQty(-1)">−</button><b id="pd-q">'+pdQ+'</b><button onclick="pdQty(1)">+</button></div><div style="font-weight:800">Total <span id="pd-t">'+fmt(p.price*pdQ)+'</span></div></div>'+
     (p.stock?'<button class="btn btn-p" style="margin-bottom:8px" onclick="pdAdd(false)"><i class="fa-solid fa-cart-plus"></i> Add to cart</button><button class="btn btn-o" onclick="pdAdd(true)">Buy now</button>':'<div style="text-align:center;font-weight:800;color:var(--text3)">Sold out</div>')+
-    (typeof reportProduct==='function'?'<div style="text-align:center;margin-top:12px"><a href="#" onclick="cm(\'pd\');reportProduct(\''+esc(p.id)+'\');return false" style="font-size:11px;color:var(--text3)">Report this listing</a></div>':'');
+    (typeof ==='function'?'<div style="text-align:center;margin-top:12px"><a href="#" onclick="cm(\'pd\');reportProduct(\''+esc(p.id)+'\');return false" style="font-size:11px;color:var(--text3)">Report this listing</a></div>':'');
 }
 function pdQty(d){
   const p=PRODS.find(x=>x.id===pdId);
@@ -4614,7 +4614,163 @@ if(typeof window.loadCats==='undefined')window.loadCats=async function(){
   console.warn('Missing parts:',miss);
   try{if(miss.length&&!sessionStorage.getItem('aqh_miss')){sessionStorage.setItem('aqh_miss','1');setTimeout(()=>alert('Missing parts: '+miss.join(', ')),2500)}}catch(e){}
 })();
+async function reportProduct(id){
+  const r=prompt('What is wrong with this listing? (for example fake, unsafe, wrong price)');
+  if(!r||r.trim().length<3)return;
+  const {error}=await sb.rpc('report_product',{p_product:id,p_reason:r});
+  toast(error?error.message:'Thank you. We will review this listing.',error?'fa-triangle-exclamation':'fa-flag');
+}
+  // ===== PICK HOUSE ON MAP =====
+(function(){
+  if(document.getElementById('pick'))return;
+  const p=document.createElement('div');
+  p.id='pick';
+  p.style.cssText='position:fixed;inset:0;z-index:2000;background:#fff;display:none;flex-direction:column';
+  p.innerHTML=`
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-family:var(--sans);font-weight:800;font-size:15px">Move the map until the pin is on your house</div>
+    <div style="position:relative;flex:1">
+      <div id="pick-map" style="position:absolute;inset:0"></div>
+      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);z-index:1000;pointer-events:none;font-size:34px;color:#dc2626"><i class="fa-solid fa-location-dot"></i></div>
+    </div>
+    <div style="padding:12px 16px 28px;display:flex;gap:8px;background:#fff">
+      <button class="btn btn-o" onclick="closePick()">Cancel</button>
+      <button class="btn btn-p" onclick="confirmPick()">Confirm location</button>
+    </div>`;
+  document.body.appendChild(p);
+})();
+(function(){
+  const g=document.getElementById('rq-gps');
+  if(g&&!document.getElementById('rq-pickbtn')){
+    const b=document.createElement('button');
+    b.type='button';b.id='rq-pickbtn';b.className='btn btn-o';b.style.marginTop='8px';
+    b.innerHTML='<i class="fa-solid fa-map-pin"></i> Choose house on map';
+    b.onclick=openPick;
+    g.insertBefore(b,document.getElementById('rq-gps-msg'));
+  }
+})();
+let pickMap=null;
+function openPick(){
+  document.getElementById('pick').style.display='flex';
+  const start=rqCoords?[rqCoords.lat,rqCoords.lng]:[9.4008,-0.8393];
+  if(!pickMap){
+    pickMap=L.map('pick-map').setView(start,17);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(pickMap);
+  }else pickMap.setView(start,17);
+  setTimeout(()=>pickMap.invalidateSize(),60);
+  if(!rqCoords&&navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(pos=>pickMap.setView([pos.coords.latitude,pos.coords.longitude],17),()=>{},{timeout:8000});
+  }
+}
+function confirmPick(){
+  const c=pickMap.getCenter();
+  rqCoords={lat:c.lat,lng:c.lng};
+  const m=document.getElementById('rq-gps-msg');
+  if(m){m.style.color='var(--green)';m.textContent='Pin placed on the map';}
+  closePick();
+}
+function closePick(){document.getElementById('pick').style.display='none';}
+  // ===== QUOTES AND DEPOSITS =====
+let depPct=10,qtId=null;
+sb.auth.onAuthStateChange((ev,ss)=>{if(ss)setTimeout(async()=>{const {data}=await sb.rpc('get_deposit_pct');if(data)depPct=Number(data)},0)});
 
+(function(){const n=ge('rq-notes');if(n&&!ge('rq-size')){const d=document.createElement('div');d.className='fg';
+ d.innerHTML='<label class="fl">Job size</label><select class="fsel" id="rq-size"><option value="">Not sure</option><option>Small tank or pit</option><option>Medium tank</option><option>Large tank</option><option>Very large or several tanks</option></select>';n.closest('.fg').before(d)}})();
+const _or3=openRequest;
+openRequest=function(b){_or3(b);ge('rq-size').value='';ge('rq-size').closest('.fg').style.display=rqDriver.svc==='Toilet / Pit Draining'?'':'none'};
+const _sr3=sendRequest;
+sendRequest=async function(){const n=ge('rq-notes'),s=ge('rq-size').value,o=n.value;if(s)n.value='Job size: '+s+(o?'. '+o:'');try{await _sr3()}finally{n.value=o}};
+
+(function(){if(ge('qt'))return;const d=document.createElement('div');d.className='mo';d.id='qt';d.onclick=()=>cm('qt');
+ d.innerHTML='<div class="ms" onclick="event.stopPropagation()"><div class="mh"></div><div class="mt">Send a quote</div><div class="msub">Check the location, job size and notes, then quote your full price. The customer pays an AquaHub deposit first, and you collect the balance after the job.</div><div class="fg"><label class="fl">Your price for the whole job (GH₵)</label><input class="fi" id="qt-amt" type="number" min="10" step="1" placeholder="e.g. 800"/><div id="qt-prev" style="font-size:12px;color:var(--text2);margin-top:6px;font-weight:600"></div></div><button class="btn btn-p" style="margin-bottom:8px" onclick="sendQuote()">Send quote</button><button class="btn btn-o" onclick="cm(\'qt\')">Cancel</button></div>';
+ document.body.appendChild(d);ge('qt-amt').addEventListener('input',()=>{const a=Number(ge('qt-amt').value),dp=Math.round(a*depPct)/100;ge('qt-prev').textContent=a>0?'Deposit GH₵'+dp.toFixed(2)+' ('+depPct+'%) goes to AquaHub. You collect GH₵'+(a-dp).toFixed(2)+' after the job.':''})})();
+function openQuote(id){qtId=id;ge('qt-amt').value='';ge('qt-prev').textContent='';openM('qt')}
+async function sendQuote(){const a=Number(ge('qt-amt').value);if(!(a>=10)){toast('Enter a price of at least GH₵10','fa-triangle-exclamation');return}
+ const {error}=await sb.rpc('send_quote',{p_booking:qtId,p_amount:a});
+ if(error){toast(error.message,'fa-triangle-exclamation');return}
+ cm('qt');toast('Quote sent','fa-circle-check');loadJobs();checkJobs()}
+
+async function setJob(id,status){
+  const fn={declined:'decline_request',completed:'complete_job'}[status];
+  if(!fn){toast('Send a quote instead','fa-circle-info');return}
+  const {error}=await sb.rpc(fn,{p_booking:id});
+  if(error){toast(error.message,'fa-triangle-exclamation');return}
+  toast(status==='completed'?'Job completed':'Done','fa-circle-check');loadJobs();checkJobs()}
+async function cancelRequest(id){
+  if(!confirm('Cancel this request?'))return;
+  const {error}=await sb.rpc('cancel_request',{p_booking:id});
+  if(error){toast(error.message,'fa-triangle-exclamation');return}
+  toast('Request cancelled','fa-circle-check');loadMyBookings();checkTrack()}
+
+async function loadJobs(){
+  const box=ge('jobs-list');box.innerHTML='<div class="card">Loading...</div>';
+  const {data,error}=await sb.rpc('my_jobs');
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No requests yet.</div>';return}
+  box.innerHTML=data.map(j=>{
+    const q=j.quote_amount!=null?Number(j.quote_amount):null,dp=j.deposit_amount!=null?Number(j.deposit_amount):null;
+    let a='',info='';
+    if(j.status==='requested')a='<div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-p" onclick="openQuote(\''+j.id+'\')">Send quote</button><button class="btn btn-o" onclick="setJob(\''+j.id+'\',\'declined\')">Decline</button></div>';
+    else if(j.status==='quoted'){info='<br>Your quote: <b>GH₵'+q+'</b>. Waiting for the customer to pay the deposit.';a='<button class="btn btn-o" style="margin-top:12px" onclick="setJob(\''+j.id+'\',\'declined\')">Withdraw quote</button>'}
+    else if(j.status==='accepted'||j.status==='completed'){
+      if(q!=null&&dp!=null)info='<br>Quote <b>GH₵'+q+'</b> · Deposit paid <b>GH₵'+dp+'</b><br>Collect from customer: <b>GH₵'+(q-dp).toFixed(2)+'</b>';
+      if(j.status==='accepted'){
+        if(j.lat!=null&&j.lng!=null)a+='<a class="btn btn-o" style="margin-top:12px;text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+Number(j.lat)+','+Number(j.lng)+'"><i class="fa-solid fa-diamond-turn-right"></i> Navigate to GPS pin</a>';
+        if(j.digital_address)a+='<button class="btn btn-o" style="margin-top:12px" onclick="copyAndOpen(\''+esc(j.digital_address)+'\')"><i class="fa-solid fa-copy"></i> Copy code &amp; open GhanaPostGPS</button>';
+        a+='<button class="btn btn-p" style="margin-top:12px" onclick="setJob(\''+j.id+'\',\'completed\')">Mark Completed</button>'}}
+    const ph=j.customer_phone?'<br>Phone: <b>'+esc(j.customer_phone)+'</b>':'',dg=j.digital_address?'<br>Ghana Post GPS: <b>'+esc(j.digital_address)+'</b>':'';
+    return '<div class="card"><div style="font-size:14px;font-weight:800">'+esc(j.service_type)+'</div><div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.7">Customer: <b>'+(esc(j.customer_name)||'—')+'</b>'+ph+dg+'<br>Location: '+esc(j.location)+'<br>When: '+esc(j.preferred_time)+(j.notes?'<br>Notes: '+esc(j.notes):'')+info+'<br>Status: <b>'+esc(j.status)+'</b></div>'+a+'</div>'}).join('')}
+
+async function loadMyBookings(){
+  const box=ge('my-bookings'),{data:{user}}=await sb.auth.getUser();
+  const [{data,error},{data:rated}]=await Promise.all([sb.from('bookings').select('*').eq('customer_id',user.id).order('created_at',{ascending:false}),sb.rpc('my_ratings')]);
+  if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return}
+  if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No requests yet.</div>';return}
+  const mine=Object.fromEntries((rated||[]).map(r=>[r.booking_id,r.stars]));
+  box.innerHTML=data.map(b=>{
+    let x='';
+    if(b.status==='requested')x='<button class="btn btn-o" style="margin-top:12px" onclick="cancelRequest(\''+b.id+'\')">Cancel Request</button>';
+    else if(b.status==='quoted')x='<div style="margin-top:8px;font-size:13px">Quote: <b>GH₵'+b.quote_amount+'</b></div><button class="btn btn-p" style="margin-top:10px" onclick="openLive(\''+b.id+'\')">Review quote</button><button class="btn btn-o" style="margin-top:8px" onclick="cancelRequest(\''+b.id+'\')">Decline</button>';
+    else if(b.status==='accepted')x='<div style="margin-top:8px;font-size:13px">Deposit paid. Pay the driver the balance of <b>GH₵'+(Number(b.quote_amount)-Number(b.deposit_amount)).toFixed(2)+'</b> after the job.</div><button class="btn btn-p" style="margin-top:10px" onclick="openLive(\''+b.id+'\')"><i class="fa-solid fa-location-dot"></i> Track driver</button>';
+    else if(b.status==='completed')x=mine[b.id]?'<div style="margin-top:10px;font-size:13px">You rated: <span style="color:#f59e0b;font-size:16px">'+'★'.repeat(mine[b.id])+'☆'.repeat(5-mine[b.id])+'</span></div>':'<button class="btn btn-p" style="margin-top:12px" onclick="openRate(\''+b.id+'\')"><i class="fa-solid fa-star"></i> Rate this driver</button>';
+    return '<div class="card"><div style="font-size:13px;font-weight:800">'+esc(b.service_type)+'</div><div style="font-size:12px;color:var(--text2);margin-top:4px;line-height:1.6">'+esc(b.location)+'<br>'+esc(b.preferred_time)+'<br>Status: <b>'+esc(b.status)+'</b></div>'+x+'</div>'}).join('')}
+
+async function checkTrack(){
+  const b=ge('track-banner');if(!b)return;
+  const {data:{user}}=await sb.auth.getUser();if(!user){b.style.display='none';return}
+  const {data}=await sb.from('bookings').select('id,service_type,status').eq('customer_id',user.id).in('status',['requested','quoted','accepted']).order('created_at',{ascending:false});
+  if(!data||!data.length){b.style.display='none';return}
+  const a=data.find(x=>x.status==='quoted')||data.find(x=>x.status==='accepted')||data[0];
+  b.dataset.id=a.id;
+  ge('track-sub').textContent=a.service_type+(a.status==='quoted'?': quote received. Tap to review':a.status==='accepted'?' confirmed. Tap to see your driver':' sent. Waiting for a quote')+(data.length>1?' (+'+(data.length-1)+' more)':'');
+  b.style.display='flex'}
+
+const _pl3=pollLive;
+pollLive=async function(){
+  if(!ge('live-screen').classList.contains('active'))return _pl3();
+  const {data}=await sb.rpc('track_booking',{p_booking:liveBooking}),t=data&&data[0];
+  if(t&&t.status==='quoted'){
+    const {data:d}=await sb.rpc('deposit_due',{p_booking:liveBooking}),x=d&&d[0];if(!x)return;
+    const key=x.quote+'|'+x.deposit;if(ge('live-info').dataset.q===key)return;
+    ge('live-info').dataset.q=key;ge('live-sub').textContent='Quote received';
+    ge('live-info').innerHTML='<b>'+(esc(t.driver_name)||'Your driver')+'</b> quoted <b>GH₵'+Number(x.quote).toFixed(2)+'</b> for the job.<br>Pay a <b>GH₵'+Number(x.deposit).toFixed(2)+'</b> deposit to confirm. You pay the balance of <b>GH₵'+Number(x.balance).toFixed(2)+'</b> to the driver after the job.'+
+      '<button class="btn btn-p" style="margin-top:12px" onclick="payDeposit(\''+liveBooking+'\')">Accept and pay deposit</button><button class="btn btn-o" style="margin-top:8px" onclick="cancelRequest(\''+liveBooking+'\');closeLive()">Decline quote</button>';
+    return}
+  ge('live-info').dataset.q='';return _pl3()};
+
+async function payDeposit(id){
+  const {data,error}=await sb.rpc('deposit_due',{p_booking:id}),x=data&&data[0];
+  if(error||!x){toast(error?error.message:'Quote not available','fa-triangle-exclamation');return}
+  const {data:{user}}=await sb.auth.getUser(),ref='aqd_'+Date.now()+'_'+Math.floor(Math.random()*1e6);
+  PaystackPop.setup({key:PAYSTACK_PUBLIC_KEY,email:user.email,amount:Math.round(Number(x.deposit)*100),currency:'GHS',ref:ref,
+    metadata:{user_id:user.id,booking_id:id},callback:function(r){confirmDeposit(id,r.reference)},onClose:function(){toast('Payment window closed','fa-circle-info')}}).openIframe()}
+async function confirmDeposit(id,ref){
+  toast('Confirming payment...','fa-clock');
+  const {data:{session}}=await sb.auth.getSession();
+  const res=await fetch(SUPABASE_URL+'/functions/v1/verify-deposit',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},body:JSON.stringify({booking_id:id,reference:ref})});
+  const out=await res.json();
+  if(out.ok){toast('Deposit received. Job confirmed!','fa-circle-check');ge('live-info').dataset.q='';openLive(id)}
+  else toast(out.error||'Could not confirm payment','fa-triangle-exclamation')}
+  
 </script>
 </body>
 </html>
