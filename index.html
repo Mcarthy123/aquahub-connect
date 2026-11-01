@@ -4609,7 +4609,7 @@ if(typeof window.loadCats==='undefined')window.loadCats=async function(){
 };
 // Check which parts of the app are missing, and tell me
 (function(){
-  const need=['reportProduct','submitSeller','openShop','saveProduct','openGallery','pdOpen','addToCart','openShopPage','saveSettings','openNotifs','refreshNotifs','checkJobs','startShare','loadWeather','captureGps','openPick','startRealBooking','sendQuote','payDeposit','confirmDeposit','openLive','openRate','openBlocks','openMoney','openDelete','openReports','loadServiceStats','profileExtras','loadBal','showMenu','mkScreen'];
+  const need=['submitSeller','openShop','saveProduct','openGallery','pdOpen','addToCart','openShopPage','saveSettings','openNotifs','refreshNotifs','checkJobs','startShare','loadWeather','captureGps','startRealBooking','openLive','openRate','openBlocks','openMoney','openDelete','openReports','loadServiceStats','profileExtras','loadBal','showMenu','mkScreen'];
   const miss=need.filter(n=>typeof window[n]!=='function');
   console.warn('Missing parts:',miss);
   try{if(miss.length&&!sessionStorage.getItem('aqh_miss')){sessionStorage.setItem('aqh_miss','1');setTimeout(()=>alert('Missing parts: '+miss.join(', ')),2500)}}catch(e){}
@@ -4629,8 +4629,10 @@ async function submitSeller(){
   if(shop_name.length<2||area.length<2){toast('Enter your shop name and area','fa-triangle-exclamation');return;}
   if(!/^\d{8,16}$/.test(momo_number)){toast('Enter a valid account or mobile money number','fa-triangle-exclamation');return;}
   const {data:{user}}=await sb.auth.getUser();
-  const {error}=await sb.from('sellers').insert({user_id:user.id,shop_name,category,area,momo_network,momo_number});
+  const {error}=await sb.from('sellers').insert({user_id:user.id,shop_name,category,area});
   if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  const pe=(await sb.rpc('save_payout',{p_network:momo_network,p_number:momo_number})).error;
+  if(pe){toast(pe.message,'fa-triangle-exclamation');return;}
   payFee('seller');}
 const _openSellerApply=openSellerApply;
 openSellerApply=async function(){await _openSellerApply();const {data:{user}}=await sb.auth.getUser();
