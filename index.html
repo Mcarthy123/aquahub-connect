@@ -4747,6 +4747,20 @@ async function togglePush(){
     if(error){toast(error.message,'fa-triangle-exclamation');return;}toast('Notifications on','fa-circle-check');refreshPush();
   }catch(e){toast('Could not turn on notifications','fa-triangle-exclamation');}}
 refreshPush();
+
+// ===== SMS ALERTS =====
+if(!ge('sms-screen')){const w=document.createElement('div');w.className='screen';w.id='sms-screen';
+  w.innerHTML='<div class="shdr"><h2>SMS Alerts</h2><p>Get your alerts as text messages</p></div><div class="bbody"><div class="card"><div id="sms-now" style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px"></div><div class="fg"><label class="fl">Your phone number</label><input class="fi" id="sms-phone" inputmode="tel" placeholder="0241234567"/></div><button class="btn btn-p" onclick="saveSms(true)">Turn on SMS alerts</button><button class="btn btn-o" style="margin-top:8px" onclick="saveSms(false)">Turn off SMS alerts</button></div></div>';
+  document.body.insertBefore(w,ge('bnav'));}
+(function(){const ref=document.querySelector('.mi[onclick="openJobs()"]');
+  if(ref&&!document.querySelector('.mi[onclick="openSms()"]')){const d=document.createElement('div');d.className='mi';d.setAttribute('onclick','openSms()');
+  d.innerHTML='<div class="mil"><div class="mii" style="background:var(--teal-l)"><i class="fa-solid fa-message" style="color:var(--teal)"></i></div><div><div class="mit">SMS Alerts</div><div class="mis">Alerts by text message</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>';ref.before(d);}})();
+async function openSms(){goTo('sms-screen');const {data}=await sb.rpc('my_sms'),r=data&&data[0];
+  ge('sms-now').innerHTML=r?'SMS alerts are <b>'+(r.enabled?'on':'off')+'</b> for 0'+esc(r.phone.slice(3)):'SMS alerts are off. Add your number to get payment reminders, pickup reminders and order updates by text.';
+  if(r)ge('sms-phone').value='0'+r.phone.slice(3);}
+async function saveSms(on){const ph=ge('sms-phone').value.trim();
+  const {error}=await sb.rpc('save_sms',{p_phone:ph,p_enabled:on});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}toast(on?'SMS alerts on':'SMS alerts off','fa-circle-check');openSms();}
 </script>
 </body>
 </html>
