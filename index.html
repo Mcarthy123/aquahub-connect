@@ -385,7 +385,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
       <div class="fg"><label class="fl">Vehicle type</label><input class="fi" id="drv-vehicle" placeholder="e.g. Vacuum truck, tricycle"/></div>
       <div class="fg"><label class="fl">Plate number</label><input class="fi" id="drv-plate" placeholder="e.g. GT 1234-24"/></div>
       <div class="fg"><label class="fl">Area you cover</label><input class="fi" id="drv-area" placeholder="e.g. Tamale, Jirapa"/></div>
-      <button class="btn btn-p" onclick="submitDriver()"><i class="fa-solid fa-paper-plane"></i> Submit Application</button>
+      <div class="fg"><label class="fl">Mobile money network (for payouts)</label><select class="fsel" id="pay-net-D"><option>MTN</option><option>Vodafone</option><option>AirtelTigo</option></select></div><div class="fg"><label class="fl">Mobile money number</label><input class="fi" id="pay-num-D" inputmode="numeric" placeholder="0241234567"/></div><button class="btn btn-p" onclick="submitDriver()"><i class="fa-solid fa-paper-plane"></i> Submit Application</button>
     </div>
     <div class="card" id="drv-status" style="display:none"></div>
   </div>
@@ -1407,7 +1407,7 @@ async function openDriver(){
   if(data){
     form.style.display='none';st.style.display='block';
     st.innerHTML=`<div style="font-family:var(--sans);font-size:16px;font-weight:800;margin-bottom:8px">Application received</div>
-    <div style="font-size:13px;color:var(--text2);line-height:1.7">${esc(data.service_type)} · ${esc(data.vehicle_type)} · ${esc(data.vehicle_plate)}<br>Area: ${esc(data.area)}<br>Status: <b>${esc(data.status)}</b><br>Registration fee: <b>${data.fee_paid?'Paid':'Not paid yet'}</b></div>${data.fee_paid?'':'<button class="btn btn-p" style="margin-top:14px" onclick="payFee()">Pay GH₵100 Registration Fee</button>'}`;
+    <div style="font-size:13px;color:var(--text2);line-height:1.7">${esc(data.service_type)} · ${esc(data.vehicle_type)} · ${esc(data.vehicle_plate)}<br>Area: ${esc(data.area)}<br>Status: <b>${esc(data.status)}</b><br>Registration fee: <b>${data.fee_paid?'Paid':'Not paid yet'}</b></div>${data.fee_paid?'':'<button class="btn btn-p" style="margin-top:14px" onclick="payFee()">Pay Registration Fee</button>'}`;
   }else{form.style.display='block';st.style.display='none';}
 }
 
@@ -1742,7 +1742,7 @@ async function openDriver(){
   if(data){
     form.style.display='none';st.style.display='block';
     const price=data.price!=null?'GH₵'+data.price+' per visit':'Not set (customers see "Ask the driver")';
-    const pay=data.fee_paid?'':'<button class="btn btn-p" style="margin-top:14px" onclick="payFee()">Pay GH₵100 Registration Fee</button>';
+    const pay=data.fee_paid?'':'<button class="btn btn-p" style="margin-top:14px" onclick="payFee()">Pay Registration Fee</button>';
     st.innerHTML=`<div style="font-family:var(--sans);font-size:16px;font-weight:800;margin-bottom:8px">Application received</div>
     <div style="font-size:13px;color:var(--text2);line-height:1.7">${esc(data.service_type)} · ${esc(data.vehicle_type)} · ${esc(data.vehicle_plate)}<br>Area: ${esc(data.area)}<br>Price: <b>${esc(price)}</b><br>Status: <b>${esc(data.status)}</b><br>Registration fee: <b>${data.fee_paid?'Paid':'Not paid yet'}</b></div>
     <button class="btn btn-o" style="margin-top:14px" onclick="changePrice()">Change Price</button>${pay}`;
@@ -2874,7 +2874,7 @@ mkScreen('seller-screen',`<div class="shdr"><h2>Become a Seller</h2><p>Open your
     <div class="fg"><label class="fl">What do you sell?</label><select class="fsel" id="sa-cat">
       <option value="fertilizer">Organic fertilizer</option><option value="biogas">Biogas</option><option value="water">Water</option></select></div>
     <div class="fg"><label class="fl">Town or area</label><input class="fi" id="sa-area" maxlength="80" placeholder="e.g. Tamale"/></div>
-    <button class="btn btn-p" onclick="submitSeller()"><i class="fa-solid fa-paper-plane"></i> Submit Application</button></div>
+    <div class="fg"><label class="fl">Mobile money network (for payouts)</label><select class="fsel" id="pay-net-S"><option>MTN</option><option>Vodafone</option><option>AirtelTigo</option></select></div><div class="fg"><label class="fl">Mobile money number</label><input class="fi" id="pay-num-S" inputmode="numeric" placeholder="0241234567"/></div><button class="btn btn-p" onclick="submitSeller()"><i class="fa-solid fa-paper-plane"></i> Submit Application</button></div>
     <div class="card" id="sa-status" style="display:none"></div></div>`);
 
 mkScreen('shop-screen',`<div class="shdr"><h2>My Shop</h2><p>Your products on the Market</p></div>
@@ -3019,7 +3019,7 @@ async function loadAdminSellers(){
 async function decideSeller(id,status){
   let pct=null;
   if(status==='verified'){
-    const v=prompt('Commission percent for this shop (0 for a founding seller, 10 normal)','10');
+    const v=prompt('Commission percent for this shop (8 is the standard)','8');
     if(v===null)return;
     pct=Number(v);
     if(v.trim()===''||!isFinite(pct)||pct<0||pct>50){toast('Enter a number from 0 to 50','fa-triangle-exclamation');return;}
@@ -4615,6 +4615,78 @@ if(typeof window.loadCats==='undefined')window.loadCats=async function(){
   try{if(miss.length&&!sessionStorage.getItem('aqh_miss')){sessionStorage.setItem('aqh_miss','1');setTimeout(()=>alert('Missing parts: '+miss.join(', ')),2500)}}catch(e){}
 })();
 
+
+// ===== AQUAHUB PAY: server-set fees + 8% split (overrides earlier versions) =====
+async function callPay(body){const {data:{session}}=await sb.auth.getSession();
+  const r=await fetch(SUPABASE_URL+'/functions/v1/aquahub-pay',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},body:JSON.stringify(body)});return r.json();}
+async function payFee(role){role=role==='seller'?'seller':'collector';toast('Opening payment...','fa-clock');
+  const o=await callPay({action:'init-fee',role});if(o.ok){localStorage.setItem('aqh_role',role);location.href=o.url;}else toast(o.error||'Could not start payment','fa-triangle-exclamation');}
+async function payOrder(id){toast('Opening payment...','fa-clock');
+  const o=await callPay({action:'init-order',order_id:id});if(o.ok)location.href=o.url;else toast(o.error||'Could not start payment','fa-triangle-exclamation');}
+async function submitSeller(){
+  const shop_name=ge('sa-name').value.trim(),category=ge('sa-cat').value,area=ge('sa-area').value.trim();
+  const momo_network=ge('pay-net-S').value,momo_number=ge('pay-num-S').value.trim();
+  if(shop_name.length<2||area.length<2){toast('Enter your shop name and area','fa-triangle-exclamation');return;}
+  if(!/^0\d{9}$/.test(momo_number)){toast('Enter a valid mobile money number','fa-triangle-exclamation');return;}
+  const {data:{user}}=await sb.auth.getUser();
+  const {error}=await sb.from('sellers').insert({user_id:user.id,shop_name,category,area,momo_network,momo_number});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  payFee('seller');}
+const _openSellerApply=openSellerApply;
+openSellerApply=async function(){await _openSellerApply();const {data:{user}}=await sb.auth.getUser();
+  const {data}=await sb.from('sellers').select('fee_paid').eq('user_id',user.id).maybeSingle();
+  if(data&&!data.fee_paid)ge('sa-status').insertAdjacentHTML('beforeend','<button class="btn btn-p" style="margin-top:14px" onclick="payFee(\'seller\')">Pay Registration Fee</button>');};
+const _submitDriver=submitDriver;
+submitDriver=async function(){await _submitDriver();const n=ge('pay-num-D').value.trim();if(!/^0\d{9}$/.test(n))return;
+  const {data:{user}}=await sb.auth.getUser();await sb.from('collectors').update({momo_network:ge('pay-net-D').value,momo_number:n}).eq('user_id',user.id);};
+(async()=>{const q=new URLSearchParams(location.search),ref=q.get('reference')||q.get('trxref');if(!ref)return;
+  history.replaceState({},'',location.pathname);const role=localStorage.getItem('aqh_role');
+  const {data:{session}}=await sb.auth.getSession();if(!session)return;
+  const o=await callPay({action:'verify',reference:ref});
+  setTimeout(()=>{if(!o.ok){toast(o.error||'Could not confirm payment','fa-triangle-exclamation');return;}
+    toast('Payment confirmed!','fa-circle-check');if(o.kind==='order')openOrders();else if(o.kind==='waste')openWaste();else if(role==='seller')openSellerApply();else openDriver();},800);})();
+
+// ===== WASTE COLLECTION: households pay collectors in the app =====
+const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+if(!ge('waste-screen')){const w=document.createElement('div');w.className='screen';w.id='waste-screen';
+  w.innerHTML='<div class="shdr"><h2>Waste Collection</h2><p>Pay your collector in the app</p></div><div class="bbody"><div id="waste-mine"></div><div id="waste-cust"></div><div id="waste-rec"></div><div id="waste-find"></div></div>';
+  document.body.insertBefore(w,ge('bnav'));}
+(function(){const ref=document.querySelector('.mi[onclick="openJobs()"]');
+  if(ref&&!document.querySelector('.mi[onclick="openWaste()"]')){const d=document.createElement('div');d.className='mi';d.setAttribute('onclick','openWaste()');
+  d.innerHTML='<div class="mil"><div class="mii" style="background:var(--teal-l)"><i class="fa-solid fa-trash-can" style="color:var(--teal)"></i></div><div><div class="mit">Waste Collection</div><div class="mis">Pay and track pickups</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>';ref.before(d);}})();
+function openWaste(){goTo('waste-screen');loadWaste();}
+async function loadWaste(){
+  const [m,c,f,r]=await Promise.all([sb.rpc('my_waste'),sb.rpc('collector_waste'),sb.rpc('list_drivers',{p_service:'Garbage Collection'}),sb.rpc('my_receipts')]);
+  const mine=m.data||[],cust=c.data||[],rec=r.data||[],fd=x=>new Date(x).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const tag=(t,c)=>' <span style="color:'+c+'">'+t+'</span>';
+  ge('waste-mine').innerHTML=mine.length?'<div class="slbl">My collection</div>'+mine.map(x=>
+    '<div class="card"><div style="font-weight:800">'+esc(x.collector_name)+(x.overdue?tag('· Overdue','#dc2626'):'')+'</div><div style="font-size:13px;color:var(--text2);line-height:1.7">GH₵'+Number(x.monthly_fee).toFixed(2)+' per month<br>Pickup: '+(x.pickup_day==null?'day not set yet':DAYS[x.pickup_day])+
+    '<br>This month: <b>'+(x.paid?'Paid':'Not paid')+'</b>'+(x.last_pickup_at?'<br>Last pickup: '+fd(x.last_pickup_at):'')+(x.open_issue?'<br><b style="color:#dc2626">Missed pickup reported, waiting for collector</b>':'')+'</div>'+
+    (x.paid?'':'<button class="btn btn-p" style="margin-top:12px" onclick="payWaste(\''+x.sub_id+'\')">Pay GH₵'+Number(x.monthly_fee).toFixed(2)+'</button>')+
+    (x.last_pickup_path?'<button class="btn btn-o" style="margin-top:8px" onclick="viewPickup(\''+x.last_pickup_path+'\')">See pickup photo</button>':'')+
+    (x.open_issue?'':'<button class="btn btn-o" style="margin-top:8px" onclick="missedPickup(\''+x.sub_id+'\')">Report missed pickup</button>')+'</div>').join(''):'';
+  ge('waste-cust').innerHTML=cust.length?'<div class="slbl">My customers ('+cust.filter(x=>x.paid).length+' of '+cust.length+' paid)</div>'+cust.map(x=>
+    '<div class="card"><div style="font-weight:800">'+esc(x.name)+' · <span style="color:'+(x.paid?'var(--teal)':'#dc2626')+'">'+(x.paid?'Paid':x.overdue?'Overdue':'Not paid')+'</span></div><div style="font-size:13px;color:var(--text2);line-height:1.7">'+esc(x.address||'')+'<br>'+esc(x.phone||'')+(x.last_pickup_at?'<br>Last pickup: '+fd(x.last_pickup_at):'')+(x.open_issue?'<br><b style="color:#dc2626">Missed pickup reported</b>':'')+'</div>'+
+    '<select class="fsel" style="margin-top:8px" onchange="setPickup(\''+x.sub_id+'\',this.value)"><option value="">Pickup day...</option>'+DAYS.map((d,i)=>'<option value="'+i+'"'+(x.pickup_day===i?' selected':'')+'>'+d+'</option>').join('')+'</select>'+
+    '<button class="btn btn-p" style="margin-top:8px" onclick="logPickup(\''+x.sub_id+'\')">Log pickup with photo</button></div>').join(''):'';
+  ge('waste-rec').innerHTML=rec.length?'<div class="slbl">Receipts</div>'+rec.map((x,i)=>'<div class="card"><b>GH₵'+Number(x.amount).toFixed(2)+'</b> · '+esc(x.period)+'<div style="font-size:12px;color:var(--text2);margin:4px 0 8px">'+esc(x.collector_name)+' · paid '+fd(x.paid_at)+'<br>Ref: '+esc(x.reference||'')+'</div><button class="btn btn-o" onclick="shareReceipt('+i+')">Share receipt</button></div>').join(''):'';
+  window._rec=rec;
+  ge('waste-find').innerHTML='<div class="slbl">Find a collector</div>'+((f.data||[]).length?f.data.map(d=>'<div class="card"><div style="font-weight:800">'+esc(d.full_name)+'</div><div style="font-size:12px;color:var(--text2);margin:4px 0 10px">'+esc(d.area)+' · '+(d.price!=null?'GH₵'+esc(d.price)+' per month':'fee not set')+'</div><button class="btn btn-p" onclick="joinWaste(\''+d.user_id+'\')">Join this collector</button></div>').join(''):'<div class="card" style="color:var(--text3)">No verified waste collectors yet.</div>');}
+function shareReceipt(i){const x=window._rec[i],t='AquaHub waste collection receipt\nAmount: GH₵'+Number(x.amount).toFixed(2)+'\nMonth: '+x.period+'\nCollector: '+x.collector_name+'\nPaid: '+new Date(x.paid_at).toLocaleDateString('en-GB')+'\nRef: '+x.reference;
+  if(navigator.share)navigator.share({text:t}).catch(()=>{});else navigator.clipboard.writeText(t).then(()=>toast('Receipt copied','fa-circle-check'));}
+async function missedPickup(id){if(!confirm('Tell your collector this pickup was missed?'))return;const {error}=await sb.rpc('report_missed_pickup',{p_sub:id});
+  toast(error?error.message:'Reported. Your collector has been notified.',error?'fa-triangle-exclamation':'fa-circle-check');loadWaste();}
+function shrink(file){return new Promise(res=>{const im=new Image();im.onload=()=>{const k=Math.min(1,900/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);c.toBlob(res,'image/jpeg',0.7);};im.src=URL.createObjectURL(file);});}
+function logPickup(id){const i=document.createElement('input');i.type='file';i.accept='image/*';i.setAttribute('capture','environment');
+  i.onchange=async()=>{if(!i.files[0])return;toast('Uploading photo...','fa-clock');const {data:{user}}=await sb.auth.getUser(),blob=await shrink(i.files[0]),path=user.id+'/'+id+'_'+Date.now()+'.jpg';
+    const up=await sb.storage.from('pickup-photos').upload(path,blob,{contentType:'image/jpeg'});if(up.error){toast(up.error.message,'fa-triangle-exclamation');return;}
+    const {error}=await sb.rpc('log_pickup',{p_sub:id,p_path:path});toast(error?error.message:'Pickup logged','fa-circle-check');loadWaste();};i.click();}
+async function viewPickup(path){const {data,error}=await sb.storage.from('pickup-photos').createSignedUrl(path,300);if(error){toast(error.message,'fa-triangle-exclamation');return;}window.open(data.signedUrl,'_blank');}
+async function joinWaste(id){const a=prompt('Your house address');if(!a)return;const p=prompt('Your phone number');if(!p)return;
+  const {error}=await sb.rpc('subscribe_waste',{p_collector:id,p_address:a,p_phone:p});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}toast('Joined! You can now pay in the app.','fa-circle-check');loadWaste();}
+async function setPickup(id,v){if(v==='')return;const {error}=await sb.rpc('set_pickup_day',{p_sub:id,p_day:Number(v)});toast(error?error.message:'Pickup day saved',error?'fa-triangle-exclamation':'fa-circle-check');}
+async function payWaste(id){toast('Opening payment...','fa-clock');const o=await callPay({action:'init-waste',sub_id:id});if(o.ok)location.href=o.url;else toast(o.error||'Could not start payment','fa-triangle-exclamation');}
 </script>
 </body>
 </html>
