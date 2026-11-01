@@ -4638,7 +4638,7 @@ openSellerApply=async function(){await _openSellerApply();const {data:{user}}=aw
   if(data&&!data.fee_paid)ge('sa-status').insertAdjacentHTML('beforeend','<button class="btn btn-p" style="margin-top:14px" onclick="payFee(\'seller\')">Pay Registration Fee</button>');};
 const _submitDriver=submitDriver;
 submitDriver=async function(){await _submitDriver();const n=ge('pay-num-D').value.trim();if(!/^\d{8,16}$/.test(n))return;
-  const {data:{user}}=await sb.auth.getUser();await sb.from('collectors').update({momo_network:ge('pay-net-D').value,momo_number:n}).eq('user_id',user.id);};
+  const {data:{user}}=await sb.auth.getUser();await sb.rpc('save_payout',{p_network:ge('pay-net-D').value,p_number:n});};
 (async()=>{const q=new URLSearchParams(location.search),ref=q.get('reference')||q.get('trxref');if(!ref)return;
   history.replaceState({},'',location.pathname);const role=localStorage.getItem('aqh_role');
   const {data:{session}}=await sb.auth.getSession();if(!session)return;
@@ -4692,8 +4692,23 @@ async function payWaste(id){toast('Opening payment...','fa-clock');const o=await
 async function fillBanks(){try{const {data:{session}}=await sb.auth.getSession();if(!session)return;
   if(!window._banks){const o=await callPay({action:'banks'});if(!o.ok)return;window._banks=o;}
   const g=(t,a)=>'<optgroup label="'+t+'">'+a.map(x=>'<option value="'+esc(x.code)+'">'+esc(x.name)+'</option>').join('')+'</optgroup>';
-  ['pay-net-S','pay-net-D'].forEach(id=>{const e=ge(id);if(e)e.innerHTML=g('Mobile money',window._banks.mobile)+g('Banks',window._banks.banks);});}catch(e){}}
+  ['pay-net-S','pay-net-D','pay-net-P'].forEach(id=>{const e=ge(id);if(e)e.innerHTML=g('Mobile money',window._banks.mobile)+g('Banks',window._banks.banks);});}catch(e){}}
 fillBanks();sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN')fillBanks();});
+
+// ===== PAYOUT DETAILS: add or change bank / mobile money =====
+if(!ge('payout-screen')){const w=document.createElement('div');w.className='screen';w.id='payout-screen';
+  w.innerHTML='<div class="shdr"><h2>Payout Details</h2><p>Where AquaHub sends your money</p></div><div class="bbody"><div class="card"><div id="payout-now" style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px"></div><div class="fg"><label class="fl">Mobile money or bank</label><select class="fsel" id="pay-net-P"></select></div><div class="fg"><label class="fl">Mobile money or bank account number</label><input class="fi" id="pay-num-P" inputmode="numeric" placeholder="Account or mobile money number"/></div><button class="btn btn-p" onclick="savePayout()">Save payout details</button></div></div>';
+  document.body.insertBefore(w,ge('bnav'));}
+(function(){const ref=document.querySelector('.mi[onclick="openJobs()"]');
+  if(ref&&!document.querySelector('.mi[onclick="openPayout()"]')){const d=document.createElement('div');d.className='mi';d.setAttribute('onclick','openPayout()');
+  d.innerHTML='<div class="mil"><div class="mii" style="background:var(--teal-l)"><i class="fa-solid fa-building-columns" style="color:var(--teal)"></i></div><div><div class="mit">Payout Details</div><div class="mis">Bank or mobile money</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>';ref.before(d);}})();
+async function openPayout(){goTo('payout-screen');await fillBanks();
+  const {data}=await sb.rpc('my_payout');const all=window._banks?[...window._banks.mobile,...window._banks.banks]:[];
+  const nm=c=>(all.find(x=>x.code===c)||{name:c}).name;
+  ge('payout-now').innerHTML=(data&&data.length)?data.map(x=>esc(x.kind)+': <b>'+esc(nm(x.network))+'</b> ending '+esc(x.last4)).join('<br>'):'No payout details saved yet. Add them so you can receive your money.';}
+async function savePayout(){const n=ge('pay-num-P').value.trim();if(!/^\d{8,16}$/.test(n)){toast('Enter a valid account or mobile money number','fa-triangle-exclamation');return;}
+  const {error}=await sb.rpc('save_payout',{p_network:ge('pay-net-P').value,p_number:n});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}toast('Payout details saved','fa-circle-check');ge('pay-num-P').value='';openPayout();}
 </script>
 </body>
 </html>
