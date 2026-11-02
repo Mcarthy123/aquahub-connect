@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-title" content="AquaHub"/>
 <title>AquaHub Connect</title>
 <link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-180.png"/>
+<link rel="icon" type="image/png" href="icon-192.png"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://js.paystack.co/v1/inline.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
@@ -329,6 +331,16 @@ html,body{height:100%;background:var(--bg);font-family:var(--body);overflow:hidd
 #splash .sp-ao{flex-direction:row;justify-content:center;gap:6px;padding:11px 6px;background:#f3f6f5;border:1px solid #e1e8e5;border-radius:12px}
 #splash .sp-ao i{font-size:14px;color:#1a7a5e}
 #splash .sp-ao span{font-size:12px;color:#3d4f49;font-weight:600}
+</style>
+<script src="support.js"></script>
+<style id="a11y">
+html.lt{-webkit-text-size-adjust:118%;text-size-adjust:118%}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+.pav{position:relative;cursor:pointer}
+.pav img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.pav .pcam{position:absolute;right:-2px;bottom:-2px;width:28px;height:28px;border-radius:50%;background:#fff;color:#1a7a5e;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+#voice-fab{position:fixed;right:16px;bottom:96px;width:52px;height:52px;border-radius:50%;background:#1a7a5e;color:#fff;border:none;font-size:20px;z-index:60;box-shadow:0 4px 12px rgba(0,0,0,.3);display:none;align-items:center;justify-content:center}
+body.vo #voice-fab{display:flex}
 </style>
 </head>
 <body>
@@ -1402,7 +1414,7 @@ async function openDriver(){
   if(data){
     form.style.display='none';st.style.display='block';
     st.innerHTML=`<div style="font-family:var(--sans);font-size:16px;font-weight:800;margin-bottom:8px">Application received</div>
-    <div style="font-size:13px;color:var(--text2);line-height:1.7">${esc(data.service_type)} · ${esc(data.vehicle_type)} · ${esc(data.vehicle_plate)}<br>Area: ${esc(data.area)}<br>Status: <b>${esc(data.status)}</b><br>Registration fee: <b>${data.fee_paid?'Paid':'Not paid yet'}</b></div>${data.fee_paid?'':termsHtml(data.service_type)+'<button class="btn btn-p" style="margin-top:14px" onclick="payFee()">Pay Registration Fee</button>'}`;
+    <div style="font-size:13px;color:var(--text2);line-height:1.7">${esc(data.service_type)} · ${esc(data.vehicle_type)} · ${esc(data.vehicle_plate)}<br>Area: ${esc(data.area)}<br>Status: <b>${esc(data.status)}</b><br>Registration fee: <b>${data.fee_paid?'Paid':'Not paid yet'}</b></div>${data.fee_paid?'':termsHtml(data.service_type,data)+'<button class="btn btn-p" style="margin-top:14px" onclick="payFee()">Pay Registration Fee</button>'}`;
   }else{form.style.display='block';st.style.display='none';}
 }
 
@@ -1462,7 +1474,7 @@ async function loadDrivers(){
   if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
   if(!data.length){box.innerHTML='<div class="card">No verified drivers yet for this service.</div>';return;}
   box.innerHTML=data.map(d=>`<div class="card">
-    <div style="font-family:var(--sans);font-size:15px;font-weight:800">${esc(d.full_name)||'Driver'}</div>
+    <div style="font-family:var(--sans);font-size:15px;font-weight:800;display:flex;align-items:center;gap:10px">${logoHtml(d.user_id,38)}<span>${esc(d.full_name)||'Driver'}</span></div>
     <div style="font-size:12px;color:var(--text2);margin:4px 0 12px;line-height:1.6">${esc(d.service_type)} · ${esc(d.vehicle_type)}<br>Area: ${esc(d.area)}</div>
     <button class="btn btn-p" data-id="${d.user_id}" data-svc="${esc(d.service_type)}" data-name="${esc(d.full_name)}" onclick="openRequest(this)">Request this driver</button>
   </div>`).join('');
@@ -1737,7 +1749,7 @@ async function openDriver(){
   if(data){
     form.style.display='none';st.style.display='block';
     const price=data.price!=null?'GH₵'+data.price+' per visit':'Not set (customers see "Ask the driver")';
-    const pay=data.fee_paid?'':termsHtml(data.service_type)+'<button class="btn btn-p" style="margin-top:14px" onclick="payFee()">Pay Registration Fee</button>';
+    const pay=data.fee_paid?'':termsHtml(data.service_type,data)+'<button class="btn btn-p" style="margin-top:14px" onclick="payFee()">Pay Registration Fee</button>';
     st.innerHTML=`<div style="font-family:var(--sans);font-size:16px;font-weight:800;margin-bottom:8px">Application received</div>
     <div style="font-size:13px;color:var(--text2);line-height:1.7">${esc(data.service_type)} · ${esc(data.vehicle_type)} · ${esc(data.vehicle_plate)}<br>Area: ${esc(data.area)}<br>Price: <b>${esc(price)}</b><br>Status: <b>${esc(data.status)}</b><br>Registration fee: <b>${data.fee_paid?'Paid':'Not paid yet'}</b></div>
     <button class="btn btn-o" style="margin-top:14px" onclick="changePrice()">Change Price</button>${pay}`;
@@ -1766,7 +1778,7 @@ async function loadDrivers(){
   if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
   if(!data.length){box.innerHTML='<div class="card">No verified drivers yet for this service.</div>';return;}
   box.innerHTML=data.map(d=>`<div class="card">
-    <div style="font-family:var(--sans);font-size:15px;font-weight:800">${esc(d.full_name)||'Driver'}</div>
+    <div style="font-family:var(--sans);font-size:15px;font-weight:800;display:flex;align-items:center;gap:10px">${logoHtml(d.user_id,38)}<span>${esc(d.full_name)||'Driver'}</span></div>
     <div style="font-size:12px;color:var(--text2);margin:4px 0 12px;line-height:1.6">${esc(d.service_type)} · ${esc(d.vehicle_type)}<br>Area: ${esc(d.area)}<br>${d.price!=null?'<b style="color:var(--teal)">GH₵'+esc(d.price)+'</b> per visit':'Price: ask the driver'}</div>
     <button class="btn btn-p" data-id="${d.user_id}" data-svc="${esc(d.service_type)}" data-name="${esc(d.full_name)}" onclick="openRequest(this)">Request this driver</button>
   </div>`).join('');
@@ -2523,7 +2535,7 @@ async function loadDrivers(){
       ?`<span style="color:#f59e0b">★</span> <b>${esc(d.avg_rating)}</b> <span style="color:var(--text3)">(${esc(d.rating_count)} rating${Number(d.rating_count)===1?'':'s'})</span>`
       :'<span style="color:var(--text3)">New driver</span>';
     return `<div class="card">
-      <div style="font-family:var(--sans);font-size:15px;font-weight:800">${esc(d.full_name)||'Driver'}</div>
+      <div style="font-family:var(--sans);font-size:15px;font-weight:800;display:flex;align-items:center;gap:10px">${logoHtml(d.user_id,38)}<span>${esc(d.full_name)||'Driver'}</span></div>
       <div style="font-size:12px;color:var(--text2);margin:4px 0 12px;line-height:1.7">${rating}<br>${esc(d.service_type)} · ${esc(d.vehicle_type)}<br>Area: ${esc(d.area)}<br>${d.price!=null?'<b style="color:var(--teal)">GH₵'+esc(d.price)+'</b> per visit':'Price: ask the driver'}</div>
       <button class="btn btn-p" data-id="${d.user_id}" data-svc="${esc(d.service_type)}" data-name="${esc(d.full_name)}" onclick="openRequest(this)">Request this driver</button>
     </div>`;
@@ -4039,7 +4051,7 @@ function pdDraw(){
     ?'<div class="pgal" style="display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;margin-bottom:6px">'+p.imgs.map((u,i)=>'<img src="'+esc(u)+'" alt="" onclick="openGallery(\''+esc(p.id)+'\','+i+')" style="flex:0 0 100%;scroll-snap-align:center;height:300px;object-fit:contain;background:#f8fafb;border-radius:14px"/>').join('')+'</div><div style="font-size:11px;color:var(--text3);margin-bottom:8px">'+(p.imgs.length>1?p.imgs.length+' photos · swipe · tap to enlarge':'Tap to enlarge')+'</div>':'';
   mq('pd-b').innerHTML='<div class="mh"></div>'+pics+
     '<div style="font-family:var(--sans);font-size:19px;font-weight:900">'+esc(p.name)+'</div>'+
-    '<div style="font-size:12px;color:var(--text2);margin:3px 0 8px">Sold by <b>'+esc(p.shop)+'</b></div>'+
+    '<div style="font-size:12px;color:var(--text2);margin:3px 0 8px">'+logoHtml(p.seller,20)+'Sold by <b>'+esc(p.shop)+'</b></div>'+
     '<div style="font-size:26px;font-weight:900;font-family:var(--sans)">'+fmt(p.price)+'<span style="font-size:13px;font-weight:600;color:var(--text3)"> / '+esc(p.unit)+'</span></div>'+
     (p.desc?'<div style="font-size:13px;color:var(--text2);line-height:1.6;margin:10px 0">'+esc(p.desc)+'</div>':'')+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0"><div class="qs"><button onclick="pdQty(-1)">−</button><b id="pd-q">'+pdQ+'</b><button onclick="pdQty(1)">+</button></div><div style="font-weight:800">Total <span id="pd-t">'+fmt(p.price*pdQ)+'</span></div></div>'+
@@ -4284,6 +4296,7 @@ async function loadShopOrders(){
   const box=ge('shop-orders-list');
   box.innerHTML='<div class="card">Loading...</div>';
   const {data,error}=await sb.rpc('seller_orders');
+  const _po=(await sb.rpc('my_payout')).data||[],_ac=(_po.find(x=>x.kind==='Shop')||{}).last4;
   if(error){box.innerHTML='<div class="card">'+esc(error.message)+'</div>';return;}
   if(!data.length){box.innerHTML='<div class="card" style="color:var(--text3)">No paid orders yet. You will get a notification when a customer pays.</div>';return;}
   box.innerHTML=data.map(o=>{
@@ -4296,7 +4309,7 @@ async function loadShopOrders(){
       '<div style="font-size:13px;color:var(--text2);margin:6px 0;line-height:1.7">'+esc(o.items).replace(/\n/g,'<br>')+'</div>'+
       '<div style="font-size:12px;color:var(--text2);line-height:1.7">Deliver to: '+esc(o.address)+'</div>'+
       '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px"><span>Total <b style="color:var(--teal)">GH₵'+Number(o.total).toFixed(2)+'</b></span><b>'+(o.status==='paid'?'Ready to deliver':'Delivered')+'</b></div>'+
-      '<div style="font-size:11px;color:var(--text3);margin-top:4px">You receive GH₵'+receive+' after AquaHub commission (GH₵'+Number(o.commission).toFixed(2)+'). AquaHub pays you.</div>'+act+'</div>';
+      '<div style="background:#eef7f2;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:12px;line-height:1.6"><i class="fa-solid fa-circle-check" style="color:var(--teal)"></i> <b>Customer has paid.</b> GH₵'+receive+' is on its way to '+(_ac?'your account ending '+_ac:'your payout account')+'. Paystack usually sends it the next working day. Your very first payout can take a little longer.'+(_ac?'':' <a href="#" onclick="openPayout();return false">Add your payout details</a>')+'<div style="color:var(--text3);margin-top:4px">After AquaHub commission of GH₵'+Number(o.commission).toFixed(2)+'.</div></div>'+act+'</div>';
   }).join('');
 }
 async function deliverShopOrder(id){
@@ -4494,7 +4507,7 @@ async function syncProducts(){
 // Product card: tapping the shop name opens the shop page
 function mkCard(p){
   const img=p.imgs&&p.imgs.length?'<img src="'+esc(p.imgs[0])+'" alt="'+esc(p.name)+'" loading="lazy"/>':'<i class="fa-solid '+p.ico+'" style="font-size:38px;color:'+p.ic+'"></i>';
-  const shop=p.seller?'<span onclick="event.stopPropagation();openShopPage(\''+p.seller+'\')" style="text-decoration:underline">'+esc(p.shop)+'</span>':esc(p.shop);
+  const shop=p.seller?logoHtml(p.seller,16)+'<span onclick="event.stopPropagation();openShopPage(\''+p.seller+'\')" style="text-decoration:underline">'+esc(p.shop)+'</span>':esc(p.shop);
   const hasV=(p.sizes&&p.sizes.length)||(p.colours&&p.colours.length);
   return '<div class="pk" onclick="pdOpen(\''+esc(p.id)+'\')"><div class="pk-i">'+img+(p.stock?'':'<div class="pk-so">Sold out</div>')+'</div><div class="pk-b"><div class="pk-n">'+esc(p.name)+'</div><div class="pk-s">'+shop+'</div><div class="pk-p">'+fmt(p.price)+'</div><div class="pk-u">per '+esc(p.unit)+(hasV?' · sizes/colours':'')+'</div></div>'+
     (p.stock?'<button class="pk-a" onclick="event.stopPropagation();addToCart(\''+esc(p.id)+'\')">+</button>':'')+'</div>'}
@@ -4529,7 +4542,7 @@ mkScreen('shop-page','<div class="shdr"><h2 id="sp-h">Shop</h2><p id="sp-s"></p>
 async function openShopPage(id){
   goTo('shop-page');ge('sp-h').textContent='Shop';ge('sp-s').textContent='';ge('sp-g').innerHTML='';
   const {data}=await sb.rpc('shop_info',{p_seller:id}),x=data&&data[0];if(!x){ge('sp-g').innerHTML='<div class="mk-empty">This shop is not available.</div>';return}
-  ge('sp-h').textContent=x.shop_name;
+  ge('sp-h').innerHTML=logoHtml(id,40)+'<span style="vertical-align:middle">'+esc(x.shop_name)+'</span>';
   const f=[x.offers_delivery?'Delivery '+(Number(x.delivery_fee)>0?fmt(x.delivery_fee):'free'):'',x.offers_pickup?'Pickup available':''].filter(Boolean).join(' · ');
   ge('sp-s').textContent=x.area+(f?' · '+f:'');
   const l=PRODS.filter(p=>p.seller===id);
@@ -4618,7 +4631,7 @@ async function callPay(body){const {data:{session}}=await sb.auth.getSession();
 async function payFee(role){role=role==='seller'?'seller':'collector';
   let svc='seller';if(role!=='seller'){const {data:{user}}=await sb.auth.getUser();const {data:r}=await sb.from('collectors').select('service_type').eq('user_id',user.id).maybeSingle();svc=r?r.service_type:'';}
   const c=window._cfg,fee=feeFor(svc),pct=Number(c.commission_pct);
-  if(!confirm('Registration fee: GH₵'+fee+' (one-time)\nCommission: '+pct+'% on every payment you receive through AquaHub. You receive the other '+(100-pct)+'%.\n\nContinue to pay GH₵'+fee+'?'))return;
+  if(!confirm('Registration fee: GH₵'+fee+' (per year)\nCommission: '+pct+'% on every payment you receive through AquaHub. You receive the other '+(100-pct)+'%.\n\nContinue to pay GH₵'+fee+'?'))return;
   toast('Opening payment...','fa-clock');
   const o=await callPay({action:'init-fee',role});if(o.ok){localStorage.setItem('aqh_role',role);location.href=o.url;}else toast(o.error||'Could not start payment','fa-triangle-exclamation');}
 async function payOrder(id){toast('Opening payment...','fa-clock');
@@ -4637,7 +4650,7 @@ async function submitSeller(){
 const _openSellerApply=openSellerApply;
 openSellerApply=async function(){await _openSellerApply();const {data:{user}}=await sb.auth.getUser();
   const {data}=await sb.from('sellers').select('fee_paid').eq('user_id',user.id).maybeSingle();
-  if(data&&!data.fee_paid)ge('sa-status').insertAdjacentHTML('beforeend',termsHtml('seller')+'<button class="btn btn-p" style="margin-top:14px" onclick="payFee(\'seller\')">Pay Registration Fee</button>');};
+  if(data&&!data.fee_paid)ge('sa-status').insertAdjacentHTML('beforeend',termsHtml('seller',data)+'<button class="btn btn-p" style="margin-top:14px" onclick="payFee(\'seller\')">Pay Registration Fee</button>');};
 const _submitDriver=submitDriver;
 submitDriver=async function(){if(!ge('agree-D').checked){toast('Please agree to the fee and commission first','fa-triangle-exclamation');return;}await _submitDriver();const n=ge('pay-num-D').value.trim();if(!/^\d{8,16}$/.test(n))return;
   const {data:{user}}=await sb.auth.getUser();await sb.rpc('save_payout',{p_network:ge('pay-net-D').value,p_number:n});};
@@ -4651,7 +4664,7 @@ submitDriver=async function(){if(!ge('agree-D').checked){toast('Please agree to 
 // ===== WASTE COLLECTION: households pay collectors in the app =====
 const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 if(!ge('waste-screen')){const w=document.createElement('div');w.className='screen';w.id='waste-screen';
-  w.innerHTML='<div class="shdr"><h2>Waste Collection</h2><p>Pay your collector in the app</p></div><div class="bbody"><div id="waste-mine"></div><div id="waste-cust"></div><div id="waste-rec"></div><div id="waste-find"></div></div>';
+  w.innerHTML='<div class="shdr"><h2>Waste Collection</h2><p>Pay your collector in the app</p></div><div class="bbody"><div id="waste-binbtn"></div><div id="waste-mine"></div><div id="waste-cust"></div><div id="waste-bins"></div><div id="waste-rep"></div><div id="waste-rec"></div><div id="waste-find"></div></div>';
   document.body.insertBefore(w,ge('bnav'));}
 (function(){const ref=document.querySelector('.mi[onclick="openJobs()"]');
   if(ref&&!document.querySelector('.mi[onclick="openWaste()"]')){const d=document.createElement('div');d.className='mi';d.setAttribute('onclick','openWaste()');
@@ -4673,7 +4686,7 @@ async function loadWaste(){
     '<button class="btn btn-p" style="margin-top:8px" onclick="logPickup(\''+x.sub_id+'\')">Log pickup with photo</button></div>').join(''):'';
   ge('waste-rec').innerHTML=rec.length?'<div class="slbl">Receipts</div>'+rec.map((x,i)=>'<div class="card"><b>GH₵'+Number(x.amount).toFixed(2)+'</b> · '+esc(x.period)+'<div style="font-size:12px;color:var(--text2);margin:4px 0 8px">'+esc(x.collector_name)+' · paid '+fd(x.paid_at)+'<br>Ref: '+esc(x.reference||'')+'</div><button class="btn btn-o" onclick="shareReceipt('+i+')">Share receipt</button></div>').join(''):'';
   window._rec=rec;
-  ge('waste-find').innerHTML='<div class="slbl">Find a collector</div>'+((f.data||[]).length?f.data.map(d=>'<div class="card"><div style="font-weight:800">'+esc(d.full_name)+'</div><div style="font-size:12px;color:var(--text2);margin:4px 0 10px">'+esc(d.area)+' · '+(d.price!=null?'GH₵'+esc(d.price)+' per month':'fee not set')+'</div><button class="btn btn-p" onclick="joinWaste(\''+d.user_id+'\')">Join this collector</button></div>').join(''):'<div class="card" style="color:var(--text3)">No verified waste collectors yet.</div>');}
+  ge('waste-find').innerHTML='<div class="slbl">Find a collector</div>'+((f.data||[]).length?f.data.map(d=>'<div class="card"><div style="font-weight:800;display:flex;align-items:center;gap:10px">'+logoHtml(d.user_id,38)+'<span>'+esc(d.full_name)+'</span></div><div style="font-size:12px;color:var(--text2);margin:4px 0 10px">'+esc(d.area)+' · '+(d.price!=null?'GH₵'+esc(d.price)+' per month':'fee not set')+'</div><button class="btn btn-p" onclick="joinWaste(\''+d.user_id+'\')">Join this collector</button></div>').join(''):'<div class="card" style="color:var(--text3)">No verified waste collectors yet.</div>');}
 function shareReceipt(i){const x=window._rec[i],t='AquaHub waste collection receipt\nAmount: GH₵'+Number(x.amount).toFixed(2)+'\nMonth: '+x.period+'\nCollector: '+x.collector_name+'\nPaid: '+new Date(x.paid_at).toLocaleDateString('en-GB')+'\nRef: '+x.reference;
   if(navigator.share)navigator.share({text:t}).catch(()=>{});else navigator.clipboard.writeText(t).then(()=>toast('Receipt copied','fa-circle-check'));}
 async function missedPickup(id){if(!confirm('Tell your collector this pickup was missed?'))return;const {error}=await sb.rpc('report_missed_pickup',{p_sub:id});
@@ -4699,11 +4712,11 @@ fillBanks();sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN')fillBanks();});
 
 // ===== PAYOUT DETAILS: add or change bank / mobile money =====
 if(!ge('payout-screen')){const w=document.createElement('div');w.className='screen';w.id='payout-screen';
-  w.innerHTML='<div class="shdr"><h2>Payout Details</h2><p>Where AquaHub sends your money</p></div><div class="bbody"><div class="card"><div id="payout-now" style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px"></div><div class="fg"><label class="fl">Mobile money or bank</label><select class="fsel" id="pay-net-P"></select></div><div class="fg"><label class="fl">Mobile money or bank account number</label><input class="fi" id="pay-num-P" inputmode="numeric" placeholder="Account or mobile money number"/></div><button class="btn btn-p" onclick="savePayout()">Save payout details</button></div></div>';
+  w.innerHTML='<div class="shdr"><h2>Business Details</h2><p>Payout account and logo</p></div><div class="bbody"><div class="card"><div id="payout-now" style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px"></div><div class="fg"><label class="fl">Mobile money or bank</label><select class="fsel" id="pay-net-P"></select></div><div class="fg"><label class="fl">Mobile money or bank account number</label><input class="fi" id="pay-num-P" inputmode="numeric" placeholder="Account or mobile money number"/></div><button class="btn btn-p" onclick="savePayout()">Save payout details</button></div></div>';
   document.body.insertBefore(w,ge('bnav'));}
 (function(){const ref=document.querySelector('.mi[onclick="openJobs()"]');
   if(ref&&!document.querySelector('.mi[onclick="openPayout()"]')){const d=document.createElement('div');d.className='mi';d.setAttribute('onclick','openPayout()');
-  d.innerHTML='<div class="mil"><div class="mii" style="background:var(--teal-l)"><i class="fa-solid fa-building-columns" style="color:var(--teal)"></i></div><div><div class="mit">Payout Details</div><div class="mis">Bank or mobile money</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>';ref.before(d);}})();
+  d.innerHTML='<div class="mil"><div class="mii" style="background:var(--teal-l)"><i class="fa-solid fa-building-columns" style="color:var(--teal)"></i></div><div><div class="mit">Business Details</div><div class="mis">Payout account and logo</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>';ref.before(d);}})();
 async function openPayout(){goTo('payout-screen');await fillBanks();
   const {data}=await sb.rpc('my_payout');const all=window._banks?[...window._banks.mobile,...window._banks.banks]:[];
   const nm=c=>(all.find(x=>x.code===c)||{name:c}).name;
@@ -4715,7 +4728,7 @@ async function savePayout(){const n=ge('pay-num-P').value.trim();if(!/^\d{8,16}$
 // ===== Fee and commission terms shown before sign-up (numbers come from the server settings) =====
 window._cfg={fee_seller:50,fee_collector:550,fee_vehicle:200,commission_pct:8};
 function renderTerms(){const c=window._cfg,pct=Number(c.commission_pct),gh=n=>'GH₵'+Number(n).toFixed(0);
-  const row=(who,fee,what)=>'<b>Registration fee: '+gh(fee)+'</b> (one-time), paid by mobile money or card before your '+who+' can be approved.<br><b>Commission: '+pct+'%</b> on every payment you receive through AquaHub '+what+'. You receive the other '+(100-pct)+'%.';
+  const row=(who,fee,what)=>'<b>Registration fee: '+gh(fee)+'</b> per year, paid by mobile money or card before your '+who+' can be approved.<br><b>Commission: '+pct+'%</b> on every payment you receive through AquaHub '+what+'. You receive the other '+(100-pct)+'%.';
   const a=ge('terms-box-S'),b=ge('terms-box-D'),svc=(ge('drv-service')||{}).value;
   if(a)a.innerHTML=row('shop',c.fee_seller,'(for example, a GH₵100 sale pays you GH₵'+(100-pct)+')');
   if(b)b.innerHTML=row('account',svc==='Garbage Collection'?c.fee_collector:c.fee_vehicle,'(for example, a GH₵100 payment pays you GH₵'+(100-pct)+')');}
@@ -4724,8 +4737,9 @@ renderTerms();loadCfg();sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN')loa
 if(ge('drv-service'))ge('drv-service').addEventListener('change',renderTerms);
 
 function feeFor(svc){const c=window._cfg;return svc==='seller'?c.fee_seller:svc==='Garbage Collection'?c.fee_collector:c.fee_vehicle;}
-function termsHtml(svc){const c=window._cfg,pct=Number(c.commission_pct);
-  return '<div style="background:var(--green-l,#eef7f2);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.7;margin-top:12px"><b>Registration fee: GH₵'+feeFor(svc)+'</b> (one-time), paid before your account can be approved.<br><b>Commission: '+pct+'%</b> on every payment you receive through AquaHub. You receive the other '+(100-pct)+'%.</div>';}
+function termsHtml(svc,d){const c=window._cfg,pct=Number(c.commission_pct);
+  const ex=d&&d.status==='expired'?'<div style="background:#fef2f2;color:#b91c1c;border-radius:12px;padding:12px 14px;font-size:13px;margin-top:12px"><b>Your yearly registration has ended.</b> Renew it to be listed again.</div>':'';
+  return ex+'<div style="background:var(--green-l,#eef7f2);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.7;margin-top:12px"><b>Registration fee: GH₵'+feeFor(svc)+'</b> (per year), paid before your account can be approved.<br><b>Commission: '+pct+'%</b> on every payment you receive through AquaHub. You receive the other '+(100-pct)+'%.</div>';}
 
 // ===== PUSH NOTIFICATIONS =====
 const VAPID_PUBLIC='BLT5FiMcKuqohHbs68Ml_rZY7XAhDQbZsbaVIRHbrmo34Sigr198YpL-z3zTrEyt_izpNMlv9c-lSpXzU3OKqyE';
@@ -4761,6 +4775,127 @@ async function openSms(){goTo('sms-screen');const {data}=await sb.rpc('my_sms'),
 async function saveSms(on){const ph=ge('sms-phone').value.trim();
   const {error}=await sb.rpc('save_sms',{p_phone:ph,p_enabled:on});
   if(error){toast(error.message,'fa-triangle-exclamation');return;}toast(on?'SMS alerts on':'SMS alerts off','fa-circle-check');openSms();}
+
+// ===== HELP & SUPPORT =====
+if(!ge('support-screen')){const w=document.createElement('div');w.className='screen';w.id='support-screen';
+  w.innerHTML='<div class="shdr"><h2>Help & Support</h2><p>We are here to help</p></div><div class="bbody"><div id="support-list"></div></div>';
+  document.body.insertBefore(w,ge('bnav'));}
+(function(){const ref=document.querySelector('.mi[onclick="openJobs()"]');
+  if(ref&&!document.querySelector('.mi[onclick="openSupport()"]')){const d=document.createElement('div');d.className='mi';d.setAttribute('onclick','openSupport()');
+  d.innerHTML='<div class="mil"><div class="mii" style="background:var(--sky-l)"><i class="fa-solid fa-headset" style="color:var(--sky)"></i></div><div><div class="mit">Help & Support</div><div class="mis">Reach us with any concern</div></div></div><i class="fa-solid fa-chevron-right" style="color:var(--text3)"></i>';ref.before(d);}})();
+function openSupport(){goTo('support-screen');const l=(window.aqLinks?aqLinks():[]);
+  ge('support-list').innerHTML=l.length?l.map(x=>'<a class="card" style="display:flex;gap:14px;align-items:center;text-decoration:none;color:inherit;margin-bottom:10px" href="'+x.href+'" target="_blank" rel="noopener"><i class="'+x.icon+'" style="font-size:22px;color:var(--teal);width:28px;text-align:center"></i><div><div style="font-weight:800">'+x.label+'</div><div style="font-size:13px;color:var(--text2)">'+esc(x.text)+'</div></div></a>').join(''):'<div class="card" style="color:var(--text3)">Support contacts are coming soon.</div>';}
+
+// ===== BIN REPORTS + COLLECTOR REPORTS =====
+if(!ge('bin-screen')){const w=document.createElement('div');w.className='screen';w.id='bin-screen';
+  w.innerHTML='<div class="shdr"><h2>Report a Bin</h2><p>Tell a collection company about an overflowing bin</p></div><div class="bbody"><div class="card"><div class="fg"><label class="fl">Collection company</label><select class="fsel" id="bin-co"></select></div><div class="fg"><label class="fl">Where is the bin?</label><input class="fi" id="bin-loc" placeholder="e.g. Next to Kanvili market, Tamale"/></div><div class="fg"><label class="fl">Note (optional)</label><input class="fi" id="bin-note" placeholder="e.g. Overflowing since Friday"/></div><div class="fg"><label class="fl">Photo (optional)</label><input class="fi" id="bin-photo" type="file" accept="image/*" capture="environment"/></div><button class="btn btn-p" onclick="sendBin()">Send report</button></div></div>';
+  document.body.insertBefore(w,ge('bnav'));}
+async function openBin(){goTo('bin-screen');const {data}=await sb.rpc('list_drivers',{p_service:'Garbage Collection'});
+  ge('bin-co').innerHTML=(data||[]).map(d=>'<option value="'+esc(d.user_id)+'">'+esc(d.full_name)+' · '+esc(d.area)+'</option>').join('')||'<option value="">No collection companies yet</option>';}
+function getPos(){return new Promise(r=>{if(!navigator.geolocation)return r(null);navigator.geolocation.getCurrentPosition(p=>r(p.coords),()=>r(null),{timeout:5000});});}
+async function sendBin(){const co=ge('bin-co').value,loc=ge('bin-loc').value.trim();
+  if(!co||loc.length<3){toast('Choose a company and say where the bin is','fa-triangle-exclamation');return;}
+  toast('Sending...','fa-clock');const pos=await getPos();let path=null;const f=ge('bin-photo').files[0];
+  if(f){const {data:{user}}=await sb.auth.getUser(),blob=await shrink(f);path=user.id+'/bin_'+Date.now()+'.jpg';
+    const up=await sb.storage.from('pickup-photos').upload(path,blob,{contentType:'image/jpeg'});if(up.error){toast(up.error.message,'fa-triangle-exclamation');return;}}
+  const {error}=await sb.rpc('report_bin',{p_collector:co,p_location:loc,p_note:ge('bin-note').value.trim(),p_lat:pos?pos.latitude:null,p_lng:pos?pos.longitude:null,p_photo:path});
+  if(error){toast(error.message,'fa-triangle-exclamation');return;}toast('Report sent. Thank you!','fa-circle-check');ge('bin-loc').value='';ge('bin-note').value='';ge('bin-photo').value='';openWaste();}
+async function resolveBin(id){const {error}=await sb.rpc('resolve_bin_report',{p_id:id});toast(error?error.message:'Marked as collected',error?'fa-triangle-exclamation':'fa-circle-check');loadWaste();}
+const _lw=loadWaste;
+loadWaste=async function(){await _lw();
+  ge('waste-binbtn').innerHTML='<button class="btn btn-o" style="margin-bottom:14px" onclick="openBin()"><i class="fa-solid fa-trash-can-arrow-up"></i> Report an overflowing bin</button>';
+  const [b,c]=await Promise.all([sb.rpc('collector_bin_reports'),sb.rpc('collector_waste')]),bins=b.data||[];
+  ge('waste-bins').innerHTML=bins.length?'<div class="slbl">Bin reports ('+bins.filter(x=>!x.resolved).length+' open)</div>'+bins.map(x=>'<div class="card"><div style="font-weight:800">'+esc(x.location)+(x.resolved?' <span style="color:var(--teal)">· Collected</span>':'')+'</div><div style="font-size:12px;color:var(--text2);margin:4px 0">'+(x.note?esc(x.note)+'<br>':'')+new Date(x.created_at).toLocaleDateString('en-GB')+'</div>'+
+    (x.photo_path?'<button class="btn btn-o" style="margin-top:6px" onclick="viewPickup(\''+x.photo_path+'\')">See photo</button>':'')+
+    (x.lat?'<a class="btn btn-o" style="margin-top:6px;display:block;text-decoration:none;text-align:center" target="_blank" href="https://www.google.com/maps?q='+x.lat+','+x.lng+'">Open on map</a>':'')+
+    (x.resolved?'':'<button class="btn btn-p" style="margin-top:6px" onclick="resolveBin(\''+x.id+'\')">Mark as collected</button>')+'</div>').join(''):'';
+  if((c.data||[]).length||bins.length){const ms=[];for(let i=0;i<6;i++){const d=new Date();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()-i);ms.push(d.toISOString().slice(0,7));}
+    ge('waste-rep').innerHTML='<div class="slbl">Monthly report</div><div class="card"><select class="fsel" id="rep-month" onchange="showReport()">'+ms.map(m=>'<option>'+m+'</option>').join('')+'</select><div id="rep-out" style="margin-top:12px"></div></div>';showReport();}
+  else ge('waste-rep').innerHTML='';};
+async function showReport(){const m=ge('rep-month').value,{data,error}=await sb.rpc('collector_report',{p_month:m});if(error||!data){ge('rep-out').textContent=error?error.message:'';return;}
+  window._rep=data;window._repm=m;const g=v=>'GH₵'+Number(v).toFixed(2);
+  ge('rep-out').innerHTML='<div style="font-size:13px;line-height:1.9">Collected from customers: <b>'+g(data.gross)+'</b> ('+data.payments+' payments)<br>AquaHub commission: '+g(data.commission)+'<br>Paid to you: <b>'+g(data.net)+'</b><br>Customers: '+data.customers+' · Not yet paid: '+data.unpaid+'<br>Pickups logged: '+data.pickups+'<br>Bin reports: '+data.bins+' ('+data.bins_resolved+' collected)</div><button class="btn btn-o" style="margin-top:10px" onclick="downloadReport()">Download CSV</button>';}
+function downloadReport(){const r=window._rep,q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const csv=['Name,Phone,Address,Amount (GHS),Paid on,Reference'].concat(r.rows.map(x=>[x.name,x.phone,x.address,x.amount,x.paid_at,x.ref].map(q).join(','))).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='aquahub-report-'+window._repm+'.csv';a.click();}
+
+// ===== YEARLY RENEWAL CARD =====
+const _op=openPayout;
+openPayout=async function(){await _op();const {data}=await sb.rpc('my_registration'),rows=data||[];
+  let el=ge('reg-card');if(!el){el=document.createElement('div');el.id='reg-card';ge('payout-screen').querySelector('.bbody').appendChild(el);}
+  const fd=x=>new Date(x).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  el.innerHTML=rows.length?'<div class="slbl" style="margin-top:14px">Yearly registration</div>'+rows.map(r=>{
+    const days=r.fee_paid_until?Math.ceil((new Date(r.fee_paid_until)-Date.now())/864e5):null,lbl=r.role==='seller'?'Shop':'Driver / collector';
+    let txt,btn='';
+    if(r.founding)txt='Founding account: no yearly fee.';
+    else if(!r.fee_paid){txt=r.status==='expired'?'Expired. Renew to be listed again.':'Not paid yet.';btn='Pay registration fee';}
+    else{txt='Active until <b>'+fd(r.fee_paid_until)+'</b>';if(days!==null&&days<=30)btn='Renew now';}
+    return '<div class="card"><div style="font-weight:800">'+lbl+'</div><div style="font-size:13px;color:var(--text2);margin:4px 0">'+txt+'</div>'+(btn?'<button class="btn btn-p" onclick="payFee(\''+r.role+'\')">'+btn+'</button>':'')+'</div>';}).join(''):'';};
+
+// ===== keep the server's copy of my weather place up to date, so warnings can be pushed =====
+async function syncPlace(){try{const {data:{session}}=await sb.auth.getSession();if(!session)return;
+  const p=JSON.parse(localStorage.getItem('aqh_place')||'null')||{name:'Tamale',lat:9.40,lng:-0.84};
+  await sb.rpc('save_place',{p_name:p.name,p_lat:p.lat,p_lng:p.lng});}catch(e){}}
+const _si=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){_si.apply(this,arguments);if(k==='aqh_place')syncPlace();};
+sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN'||ev==='INITIAL_SESSION')setTimeout(syncPlace,1500);});
+
+// ===== ACCESSIBILITY: settings that work and are remembered =====
+const A11Y={get(k){try{return localStorage.getItem('aqh_'+k)==='1'}catch(e){return false}},set(k,v){try{localStorage.setItem('aqh_'+k,v?'1':'0')}catch(e){}}};
+if(!document.getElementById('voice-fab')){const b=document.createElement('button');b.id='voice-fab';b.setAttribute('aria-label','Read this screen aloud');b.innerHTML='<i class="fa-solid fa-volume-high"></i>';b.onclick=readScreen;document.body.appendChild(b);}
+function setLarge(on,quiet){document.documentElement.classList.toggle('lt',on);A11Y.set('lt',on);const t=toggleFor('Large Text');if(t)t.classList.toggle('on',on);if(!quiet)toast('Large text '+(on?'on':'off'),'fa-text-height');}
+function setVoice(on,quiet){document.body.classList.toggle('vo',on);A11Y.set('vo',on);const t=toggleFor('Voice Assistance');if(t)t.classList.toggle('on',on);
+  if(!on&&window.speechSynthesis)speechSynthesis.cancel();if(!quiet)toast(on?'Voice on. Tap the speaker button to hear any screen.':'Voice off','fa-volume-high');}
+function readScreen(){if(!window.speechSynthesis){toast('Voice is not supported on this phone','fa-triangle-exclamation');return;}
+  if(speechSynthesis.speaking){speechSynthesis.cancel();return;}
+  const sc=document.querySelector('.screen.active');if(!sc)return;
+  const u=new SpeechSynthesisUtterance((sc.innerText||'').replace(/\s+/g,' ').trim().slice(0,1500));u.lang='en-GB';u.rate=0.95;speechSynthesis.speak(u);}
+enableLargeText=function(){setLarge(true);goTo('home');};
+enableVoice=function(){setVoice(true);};
+const _goToVoice=goTo;goTo=function(id){if(window.speechSynthesis)speechSynthesis.cancel();_goToVoice(id);};
+(function(){const L=toggleFor('Large Text'),V=toggleFor('Voice Assistance'),H=toggleFor('Haptic Feedback');
+  if(L)L.onclick=()=>setLarge(!A11Y.get('lt'));
+  if(V)V.onclick=()=>setVoice(!A11Y.get('vo'));
+  if(H)H.onclick=function(){this.classList.toggle('on');S.haptic=this.classList.contains('on');try{localStorage.setItem('aqh_hp',S.haptic?'1':'0');}catch(e){}toast('Haptic feedback '+(S.haptic?'on':'off'),'fa-mobile-screen-button');};
+  let hp='1';try{hp=localStorage.getItem('aqh_hp')||'1';}catch(e){}
+  if(H&&hp==='0'){S.haptic=false;H.classList.remove('on');}
+  setLarge(A11Y.get('lt'),true);setVoice(A11Y.get('vo'),true);})();
+
+// ===== PROFILE PICTURE =====
+function paintAvatar(path){const a=document.querySelector('#profile-screen .pav');if(!a)return;
+  const url=path?sb.storage.from('avatars').getPublicUrl(path).data.publicUrl:null;
+  a.innerHTML=(url?'<img src="'+url+'" alt="Profile picture"/>':'<i class="fa-solid fa-user"></i>')+'<span class="pcam"><i class="fa-solid fa-camera"></i></span>';a.dataset.path=path||'';}
+async function loadAvatar(){try{const {data}=await sb.rpc('my_avatar');paintAvatar(data);}catch(e){}}
+function squareImg(file,n){return new Promise(res=>{const im=new Image();im.onload=()=>{const q=Math.min(im.width,im.height),c=document.createElement('canvas');c.width=c.height=n;
+  c.getContext('2d').drawImage(im,(im.width-q)/2,(im.height-q)/2,q,q,0,0,n,n);c.toBlob(res,'image/jpeg',0.8);};im.src=URL.createObjectURL(file);});}
+function pickAvatar(){const i=document.createElement('input');i.type='file';i.accept='image/*';
+  i.onchange=async()=>{const f=i.files[0];if(!f)return;toast('Uploading...','fa-clock');
+    const blob=await squareImg(f,320),{data:{user}}=await sb.auth.getUser(),old=document.querySelector('#profile-screen .pav').dataset.path,path=user.id+'/avatar_'+Date.now()+'.jpg';
+    const up=await sb.storage.from('avatars').upload(path,blob,{contentType:'image/jpeg'});if(up.error){toast(up.error.message,'fa-triangle-exclamation');return;}
+    const {error}=await sb.rpc('set_avatar',{p_path:path});if(error){toast(error.message,'fa-triangle-exclamation');return;}
+    if(old)sb.storage.from('avatars').remove([old]);paintAvatar(path);toast('Profile picture updated','fa-circle-check');};i.click();}
+(function(){const a=document.querySelector('#profile-screen .pav');if(a){a.onclick=pickAvatar;paintAvatar(null);}})();
+sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN'||ev==='INITIAL_SESSION')setTimeout(loadAvatar,1200);});
+
+// ===== BUSINESS LOGOS =====
+let LOGOS={},LOGOP={};
+function logoHtml(uid,n){return LOGOS[uid]?'<img src="'+LOGOS[uid]+'" alt="" style="width:'+n+'px;height:'+n+'px;border-radius:10px;object-fit:cover;flex-shrink:0;vertical-align:middle;margin-right:8px;background:#fff"/>':'';}
+async function loadLogos(){try{const {data}=await sb.rpc('all_logos');LOGOS={};LOGOP={};(data||[]).forEach(r=>{LOGOS[r.user_id]=sb.storage.from('avatars').getPublicUrl(r.logo_path).data.publicUrl;LOGOP[r.user_id]=r.logo_path;});}catch(e){}try{renderProds();}catch(e){}}
+sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN'||ev==='INITIAL_SESSION')setTimeout(loadLogos,900);});
+function containImg(file,n){return new Promise(res=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=n;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,n,n);
+  const k=Math.min(n/im.width,n/im.height),w=im.width*k,h=im.height*k;x.drawImage(im,(n-w)/2,(n-h)/2,w,h);c.toBlob(res,'image/jpeg',0.85);};im.src=URL.createObjectURL(file);});}
+function pickLogo(){const i=document.createElement('input');i.type='file';i.accept='image/*';
+  i.onchange=async()=>{const f=i.files[0];if(!f)return;toast('Uploading logo...','fa-clock');
+    const {data:{user}}=await sb.auth.getUser(),blob=await containImg(f,400),old=LOGOP[user.id],path=user.id+'/logo_'+Date.now()+'.jpg';
+    const up=await sb.storage.from('avatars').upload(path,blob,{contentType:'image/jpeg'});if(up.error){toast(up.error.message,'fa-triangle-exclamation');return;}
+    const {error}=await sb.rpc('set_logo',{p_path:path});if(error){await sb.storage.from('avatars').remove([path]);toast(error.message,'fa-triangle-exclamation');return;}
+    if(old)sb.storage.from('avatars').remove([old]);toast('Logo saved','fa-circle-check');openPayout();};i.click();}
+async function removeLogo(){const {data:{user}}=await sb.auth.getUser(),old=LOGOP[user.id];
+  const {error}=await sb.rpc('set_logo',{p_path:null});if(error){toast(error.message,'fa-triangle-exclamation');return;}
+  if(old)sb.storage.from('avatars').remove([old]);toast('Logo removed','fa-circle-check');openPayout();}
+const _op2=openPayout;
+openPayout=async function(){await _op2();await loadLogos();const {data:{user}}=await sb.auth.getUser(),u=LOGOS[user.id],bb=ge('payout-screen').querySelector('.bbody');
+  let el=ge('logo-card');if(!el){el=document.createElement('div');el.id='logo-card';bb.insertBefore(el,bb.firstChild);}
+  el.innerHTML='<div class="slbl">Business logo</div><div class="card" style="display:flex;gap:14px;align-items:center"><div style="width:68px;height:68px;border-radius:14px;background:#f3f6f5;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">'+(u?'<img src="'+u+'" style="width:100%;height:100%;object-fit:cover" alt="Logo"/>':'<i class="fa-solid fa-image" style="font-size:24px;color:var(--text3)"></i>')+'</div><div style="flex:1;font-size:13px;color:var(--text2);line-height:1.5">Shown on your shop or driver card so customers recognise you.<div style="margin-top:8px;display:flex;gap:8px"><button class="btn btn-o" style="flex:1" onclick="pickLogo()">'+(u?'Change logo':'Upload logo')+'</button>'+(u?'<button class="btn btn-o" style="flex:1" onclick="removeLogo()">Remove</button>':'')+'</div></div></div>';};
 </script>
 </body>
 </html>
