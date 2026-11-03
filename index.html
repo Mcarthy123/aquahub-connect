@@ -507,7 +507,7 @@ body.vo #voice-fab{display:flex}
       <div class="qa-card" onclick="goTo('book');setNav(2)" style="border-left:4px solid var(--blue)">
         <div class="qa-icon" style="background:var(--blue-l)"><i class="fa-solid fa-calendar-check" style="color:var(--blue)"></i></div>
         <div class="qa-title">Book Service</div>
-        <div class="qa-sub">Toilet draining & more</div>
+        <div class="qa-sub">Vacuum trucks & water tankers</div>
         <div class="qa-arrow" style="background:var(--blue-l)"><i class="fa-solid fa-arrow-right" style="color:var(--blue)"></i></div>
       </div>
       <div class="qa-card" onclick="goTo('alerts-screen');setNav(3)" style="border-left:4px solid var(--orange)">
@@ -521,6 +521,18 @@ body.vo #voice-fab{display:flex}
         <div class="qa-title">Garbage Collect</div>
         <div class="qa-sub">Book & track live</div>
         <div class="qa-arrow" style="background:var(--green-l)"><i class="fa-solid fa-arrow-right" style="color:var(--green)"></i></div>
+      </div>
+      <div class="qa-card" onclick="openWater()" style="border-left:4px solid var(--sky)">
+        <div class="qa-icon" style="background:var(--sky-l)"><i class="fa-solid fa-droplet" style="color:var(--sky)"></i></div>
+        <div class="qa-title">Water Tanker</div>
+        <div class="qa-sub">Order clean water</div>
+        <div class="qa-arrow" style="background:var(--sky-l)"><i class="fa-solid fa-arrow-right" style="color:var(--sky)"></i></div>
+      </div>
+      <div class="qa-card" onclick="openBin()" style="border-left:4px solid var(--orange)">
+        <div class="qa-icon" style="background:var(--orange-l)"><i class="fa-solid fa-trash-can-arrow-up" style="color:var(--orange)"></i></div>
+        <div class="qa-title">Report a Bin</div>
+        <div class="qa-sub">Overflowing bin? Tell us</div>
+        <div class="qa-arrow" style="background:var(--orange-l)"><i class="fa-solid fa-arrow-right" style="color:var(--orange)"></i></div>
       </div>
     </div>
 
@@ -649,6 +661,12 @@ body.vo #voice-fab{display:flex}
       <div class="sd">A trained officer visits your home to assess sanitation needs and recommend the right solution.</div>
       <div class="ftags"><span class="ftag">Free</span><span class="ftag">Wheelchair Friendly</span></div>
     </div>
+    <div class="so" id="svc2" onclick="selSvc(2)">
+      <div class="sh2"><div class="sic" style="background:var(--sky-l)"><i class="fa-solid fa-droplet" style="color:var(--sky)"></i></div><div><div class="sn">Water Tanker Delivery</div><div class="sp2">Price agreed with the driver</div></div></div>
+      <div class="sd">Order a water tanker to deliver clean water to your home, shop or farm. Choose a verified driver, then agree the price with them.</div>
+      <div class="ftags"><span class="ftag">Verified drivers</span><span class="ftag">Request and track</span></div>
+    </div>
+    <div class="card" id="wtbox" style="display:none"><div class="slbl">Water needed</div><div class="fg"><label class="fl">Tank size</label><select class="fsel" id="wt-size"><option>1,000 litres</option><option>2,000 litres</option><option>5,000 litres</option><option>10,000 litres</option><option>Not sure, will discuss</option></select></div></div>
     <div class="card">
       <div class="slbl">Your Details</div>
       <div class="fg"><label class="fl">Full Name</label><input class="fi" id="bname" placeholder="e.g. Amina Issahaku"/></div>
@@ -1147,7 +1165,7 @@ function placeOrder(){
 }
 
 // BOOKING
-const SVCS=[{name:'Toilet / Pit Draining',cost:'GH₵ 50'},{name:'Sanitation Assessment',cost:'Free'}];
+const SVCS=[{name:'Toilet / Pit Draining',cost:'GH₵ 50'},{name:'Sanitation Assessment',cost:'Free'},{name:'Water Delivery',cost:'Agreed with driver'}];
 function selSvc(i){S.selSvc=i;document.querySelectorAll('.so').forEach((s,idx)=>s.classList.toggle('on',idx===i));}
 
 function renderDates(){
@@ -2577,9 +2595,9 @@ function buildAlerts(w){
   else if(rain>=RAIN_MODERATE)out.push({kind:'flood',level:'moderate',title:'Rain advisory',
     body:'About '+Math.round(rain)+' mm of rain is forecast for '+dayLabel(w,wet).toLowerCase()+'. Watch for waterlogged roads and blocked drains.'});
   if(heat>=HEAT_WARNING)out.push({kind:'heat',level:'high',title:'Extreme heat warning',
-    body:'It will feel like '+Math.round(heat)+'°C '+dayLabel(w,hot).toLowerCase()+'. Stay indoors at midday, drink water often, and check on the elderly and children.'});
+    body:wxPick(HEAT_HIGH,Math.round(heat),dayLabel(w,hot).toLowerCase())});
   else if(heat>=HEAT_ADVISORY)out.push({kind:'heat',level:'moderate',title:'Heat advisory',
-    body:'It will feel like '+Math.round(heat)+'°C '+dayLabel(w,hot).toLowerCase()+'. Drink plenty of water and avoid strenuous work at midday.'});
+    body:wxPick(HEAT_MOD,Math.round(heat),dayLabel(w,hot).toLowerCase())});
   return out;
 }
 
@@ -2616,10 +2634,7 @@ function renderAlerts(w,alerts){
         <div class="ah-i"><i class="fa-solid fa-circle-check"></i></div>
         <div class="ah-t">No active warnings</div>
         <div class="ah-s">The next 3 days look calm for Tamale. Check back for updates.</div></div>`;
-  const tips=top&&top.kind==='heat'
-    ?['Drink water often','Avoid the sun at midday','Check on the elderly and children','Keep rooms ventilated']
-    :['Move valuables to higher ground','Store clean drinking water','Keep your phone charged','Know your evacuation route'];
-  const icons=top&&top.kind==='heat'?['droplet','sun','people-roof','wind']:['house','droplet','mobile-screen','door-open'];
+  const [tips,icons]=wxTips(top,w);
   const tipHtml=tips.map((t,i)=>`<div class="ti"><i class="fa-solid fa-${icons[i]}"></i>${t}</div>`).join('');
   const cards=alerts.map(a=>`<div class="ac ${a.kind}"><div class="ach"><div class="act">
       <i class="fa-solid ${a.kind==='heat'?'fa-temperature-high':'fa-water'}" style="color:var(--${a.kind==='heat'?'orange':'blue'})"></i> ${esc(a.title)}</div>
@@ -4870,8 +4885,8 @@ function squareImg(file,n){return new Promise(res=>{const im=new Image();im.onlo
 function pickAvatar(){const i=document.createElement('input');i.type='file';i.accept='image/*';
   i.onchange=async()=>{const f=i.files[0];if(!f)return;toast('Uploading...','fa-clock');
     const blob=await squareImg(f,320),{data:{user}}=await sb.auth.getUser(),old=document.querySelector('#profile-screen .pav').dataset.path,path=user.id+'/avatar_'+Date.now()+'.jpg';
-    const up=await sb.storage.from('avatars').upload(path,blob,{contentType:'image/jpeg'});if(up.error){toast(up.error.message,'fa-triangle-exclamation');return;}
-    const {error}=await sb.rpc('set_avatar',{p_path:path});if(error){toast(error.message,'fa-triangle-exclamation');return;}
+    const up=await sb.storage.from('avatars').upload(path,blob,{contentType:'image/jpeg'});if(up.error){alert('Upload failed: '+up.error.message);return;}
+    const {error}=await sb.rpc('set_avatar',{p_path:path});if(error){alert('Could not save: '+error.message);return;}
     if(old)sb.storage.from('avatars').remove([old]);paintAvatar(path);toast('Profile picture updated','fa-circle-check');};i.click();}
 (function(){const a=document.querySelector('#profile-screen .pav');if(a){a.onclick=pickAvatar;paintAvatar(null);}})();
 sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN'||ev==='INITIAL_SESSION')setTimeout(loadAvatar,1200);});
@@ -4886,8 +4901,8 @@ function containImg(file,n){return new Promise(res=>{const im=new Image();im.onl
 function pickLogo(){const i=document.createElement('input');i.type='file';i.accept='image/*';
   i.onchange=async()=>{const f=i.files[0];if(!f)return;toast('Uploading logo...','fa-clock');
     const {data:{user}}=await sb.auth.getUser(),blob=await containImg(f,400),old=LOGOP[user.id],path=user.id+'/logo_'+Date.now()+'.jpg';
-    const up=await sb.storage.from('avatars').upload(path,blob,{contentType:'image/jpeg'});if(up.error){toast(up.error.message,'fa-triangle-exclamation');return;}
-    const {error}=await sb.rpc('set_logo',{p_path:path});if(error){await sb.storage.from('avatars').remove([path]);toast(error.message,'fa-triangle-exclamation');return;}
+    const up=await sb.storage.from('avatars').upload(path,blob,{contentType:'image/jpeg'});if(up.error){alert('Upload failed: '+up.error.message);return;}
+    const {error}=await sb.rpc('set_logo',{p_path:path});if(error){await sb.storage.from('avatars').remove([path]);alert('Could not save: '+error.message);return;}
     if(old)sb.storage.from('avatars').remove([old]);toast('Logo saved','fa-circle-check');openPayout();};i.click();}
 async function removeLogo(){const {data:{user}}=await sb.auth.getUser(),old=LOGOP[user.id];
   const {error}=await sb.rpc('set_logo',{p_path:null});if(error){toast(error.message,'fa-triangle-exclamation');return;}
@@ -4896,6 +4911,52 @@ const _op2=openPayout;
 openPayout=async function(){await _op2();await loadLogos();const {data:{user}}=await sb.auth.getUser(),u=LOGOS[user.id],bb=ge('payout-screen').querySelector('.bbody');
   let el=ge('logo-card');if(!el){el=document.createElement('div');el.id='logo-card';bb.insertBefore(el,bb.firstChild);}
   el.innerHTML='<div class="slbl">Business logo</div><div class="card" style="display:flex;gap:14px;align-items:center"><div style="width:68px;height:68px;border-radius:14px;background:#f3f6f5;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">'+(u?'<img src="'+u+'" style="width:100%;height:100%;object-fit:cover" alt="Logo"/>':'<i class="fa-solid fa-image" style="font-size:24px;color:var(--text3)"></i>')+'</div><div style="flex:1;font-size:13px;color:var(--text2);line-height:1.5">Shown on your shop or driver card so customers recognise you.<div style="margin-top:8px;display:flex;gap:8px"><button class="btn btn-o" style="flex:1" onclick="pickLogo()">'+(u?'Change logo':'Upload logo')+'</button>'+(u?'<button class="btn btn-o" style="flex:1" onclick="removeLogo()">Remove</button>':'')+'</div></div></div>';};
+
+// ===== WATER TANKER BOOKING =====
+function openWater(){goTo('book');setNav(2);selSvc(2);}
+const _selSvcW=selSvc;
+selSvc=function(i){_selSvcW(i);const b=ge('wtbox');if(b)b.style.display=i===2?'block':'none';};
+submitBooking=function(){
+  const loc=ge('bloc').value.trim(),special=ge('bspecial').value.trim(),svc=SVCS[S.selSvc];
+  if(S.selSvc===1){toast('Sanitation assessments are not available yet. Choose a vacuum truck or water tanker.','fa-circle-info');return;}
+  if(!loc){toast('Enter your location','fa-triangle-exclamation');return;}
+  if(!S.selDate){toast('Select a date','fa-triangle-exclamation');return;}
+  if(!S.selTime){toast('Select a time','fa-triangle-exclamation');return;}
+  const notes=S.selSvc===2?('Tank size: '+ge('wt-size').value+(special?'. '+special:'')):special;
+  startRealBooking(svc.name,loc,S.selDate+' at '+S.selTime,notes);};
+
+// ===== VARIED WEATHER TEXT: same meaning, different wording, rotating through the day =====
+const wxSeed=()=>{const d=new Date();return Math.floor((d-new Date(d.getFullYear(),0,0))/864e5)*4+Math.floor(d.getHours()/6);};
+const HEAT_HIGH=[(t,d)=>'It will feel like '+t+'°C '+d+'. Stay indoors at midday, drink water often, and check on the elderly and children.',
+ (t,d)=>'Dangerous heat is expected '+d+', feeling like '+t+'°C. Stay in the shade, sip water often and look in on older neighbours.',
+ (t,d)=>'Feels-like heat of '+t+'°C is forecast for '+d+'. Avoid outdoor work at midday and keep children and the elderly cool.',
+ (t,d)=>'Extreme heat ahead: about '+t+'°C '+d+'. Rest in a cool place, keep drinking water, and never leave children or pets in a parked car.'];
+const HEAT_MOD=[(t,d)=>'It will feel like '+t+'°C '+d+'. Drink plenty of water and avoid strenuous work at midday.',
+ (t,d)=>'A hot spell is coming '+d+', feeling like '+t+'°C. Sip water through the day and rest in the shade when the sun is strongest.',
+ (t,d)=>'Expect heat of about '+t+'°C '+d+'. Do heavy work early or late, and keep a bottle of water with you.',
+ (t,d)=>'Heat is building: '+t+'°C '+d+'. Wear light clothes, cover your head outdoors and take regular breaks in the shade.'];
+function wxPick(arr,t,d){return arr[wxSeed()%arr.length](t,d);}
+const HEAT_TIPS=[['droplet',['Drink water often, even when you are not thirsty','Sip water through the day, do not wait until you are thirsty','Keep a bottle of water with you and sip regularly','Take small sips of water often to stay hydrated']],
+ ['sun',['Avoid the sun between 11 am and 3 pm','Do heavy work in the early morning or evening','Stay in the shade when the sun is strongest','Rest somewhere cool during the hottest hours']],
+ ['people-roof',['Check on the elderly, babies and sick neighbours','Look in on older people who live alone','Keep babies and young children cool and shaded','Never leave children or pets in a parked car']],
+ ['wind',['Keep rooms ventilated and curtains drawn by day','Open windows at night to let cool air in','Use a fan or a damp cloth on your neck to cool down','Sleep in the coolest room of your home']],
+ ['shirt',['Wear light, loose clothes and cover your head','Choose light-coloured cotton clothes outdoors','Wear a hat or head cloth when you go out','Loose, breathable clothing keeps you cooler']],
+ ['kit-medical',['Dizzy, weak or confused? Move to shade and drink water','Headache and heavy sweating can mean heat stress. Rest now','Watch for signs of heatstroke and get help quickly','If someone faints from heat, cool them down and call for help']]];
+const FLOOD_TIPS=[['house',['Move valuables to higher ground','Lift electronics and documents off the floor','Keep important papers in a waterproof bag','Raise food and belongings above the floor']],
+ ['droplet',['Store clean drinking water','Fill containers with clean water before the rain','Keep safe drinking water for at least two days','Boil or treat water if floods reach your well']],
+ ['mobile-screen',['Keep your phone charged','Charge your phone and power bank now','Save emergency numbers on your phone','Keep your phone in a waterproof bag']],
+ ['door-open',['Know your evacuation route','Agree a safe meeting place with your family','Plan the quickest way to higher ground','Know where the nearest safe shelter is']],
+ ['plug',['Switch off electricity if water enters your home','Keep away from fallen cables and wet sockets','Unplug appliances before the water rises','Never touch electrical items with wet hands']],
+ ['triangle-exclamation',['Never walk or drive through flood water','Stay away from fast-flowing water and river banks','Keep children away from drains and streams','Flood water can hide holes and sharp objects, so stay out']]];
+function wxTips(top,w){
+  const feels=Math.max.apply(null,(w.daily.apparent_temperature_max||[0]).map(v=>v||0));
+  const kind=top?top.kind:(feels>=35?'heat':'flood'),pool=kind==='heat'?HEAT_TIPS:FLOOD_TIPS,s=wxSeed();let lead=null;
+  if(kind==='heat'){const h=new Date().getHours();
+    lead=h<10?{t:'Do heavy work now, before the midday heat builds',i:'clock'}:h<16?{t:'It is the hottest part of the day. Rest in the shade and drink water',i:'sun'}:h<20?{t:'The sun is easing. Drink water and open windows to cool your home',i:'wind'}:{t:'Sip some water before bed and keep your room ventilated',i:'moon'};}
+  const late=new Date().getHours()>=17,base=lead?pool.filter(c=>c[0]!==lead.i&&!(late&&c[0]==='sun')):pool,need=lead?3:4,st=s%base.length;
+  const ch=[...Array(need).keys()].map(i=>base[(st+i)%base.length]),tips=ch.map((c,i)=>c[1][(s+i)%c[1].length]),icons=ch.map(c=>c[0]);
+  if(lead){tips.unshift(lead.t);icons.unshift(lead.i);}
+  return [tips,icons];}
 </script>
 </body>
 </html>
