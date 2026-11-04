@@ -4957,6 +4957,59 @@ function wxTips(top,w){
   const ch=[...Array(need).keys()].map(i=>base[(st+i)%base.length]),tips=ch.map((c,i)=>c[1][(s+i)%c[1].length]),icons=ch.map(c=>c[0]);
   if(lead){tips.unshift(lead.t);icons.unshift(lead.i);}
   return [tips,icons];}
+  (function(){
+  // --- Vehicle icons (SVG, they take the colour of the text around them) ---
+  const CAB='<path d="M40 40V24h9l9 10v6"/><path d="M44 28h4.5l4.5 5.5H44z" stroke-width="2.5"/>';
+  const WHEELS='<circle cx="16" cy="46" r="5"/><circle cx="30" cy="46" r="5"/><circle cx="50" cy="46" r="5"/>';
+  const VEH={
+    // water tanker: round tank with a water drop
+    tanker:'<rect x="4" y="16" width="34" height="24" rx="12"/><path d="M4 40h54"/>'+CAB+
+      '<path d="M21 22C17 27 16 29 16 31.5a5 5 0 0 0 10 0C26 29 25 27 21 22z" fill="currentColor" stroke="none"/>',
+    // vacuum truck: banded tank, dome on top, hose hanging at the back
+    vacuum:'<rect x="8" y="18" width="30" height="22" rx="7"/><path d="M18 18v22M28 18v22" stroke-width="2"/>'+
+      '<rect x="19" y="12" width="8" height="6" rx="2"/><path d="M8 40h50M8 27H3v21"/>'+CAB,
+    // garbage truck: boxy body with a bin on the side
+    garbage:'<rect x="4" y="14" width="36" height="26" rx="3"/><path d="M4 40h54"/>'+CAB+
+      '<path d="M15 22h14M20 22v-2h4v2M17 25l1.5 11h9L29 25" stroke-width="2.5"/>'
+  };
+  window.vIcon=(k,n)=>'<svg viewBox="0 0 64 64" width="'+n+'" height="'+n+'" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle" aria-hidden="true">'+VEH[k]+WHEELS+'</svg>';
+
+  const put=(sel,k,n,color,bg)=>{
+    const e=document.querySelector(sel);if(!e)return;
+    e.innerHTML=vIcon(k,n);
+    if(color)e.style.color=color;
+    if(bg)e.style.background=bg;
+  };
+  // Home cards
+  put('.qa-card[onclick="openWater()"] .qa-icon','tanker',30,'var(--sky)');
+  put('.qa-card[onclick*="garbage-screen"] .qa-icon','garbage',30,'var(--green)');
+  put('.qa-card[onclick*="goTo(\'book\')"] .qa-icon','vacuum',30,'var(--blue)');
+  // Book screen cards
+  put('#svc0 .sic','vacuum',30,'var(--orange)','var(--orange-l)');
+  put('#svc2 .sic','tanker',30,'var(--sky)');
+  // Garbage Collection header
+  const gh=document.querySelector('.gcti');
+  if(gh)gh.innerHTML=vIcon('garbage',30)+' Garbage Collection';
+
+  // --- Book screen shows only the service you came for ---
+  let mode='all';
+  function applyMode(m){
+    const water=m==='water',hd=document.querySelector('#book .shdr');
+    ge('svc0').style.display=water?'none':'';
+    const lbl=document.querySelector('#book .bbody > .slbl');
+    if(lbl)lbl.style.display=water?'none':'';
+    hd.querySelector('h2').textContent=water?'Order Water Tanker':'Book a Service';
+    hd.querySelector('p').textContent=water?'Clean water delivered to your door':'We come to you — licensed & affordable';
+    if(water)selSvc(2);else if(S.selSvc===1)selSvc(0);
+  }
+  const _goBook=goTo;
+  goTo=function(id){
+    if(id==='book'){applyMode(mode);mode='all';}
+    _goBook(id);
+  };
+  // Water Tanker card on Home: tanker only. Book Service card and BOOK tab: both services.
+  openWater=function(){mode='water';goTo('book');setNav(2);};
+})();
 </script>
 </body>
 </html>
