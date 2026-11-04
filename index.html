@@ -5085,6 +5085,91 @@ function wxTips(top,w){
     });
   };
 })();
+  (function(){
+  const TRI='Water Delivery (Tricycle)';
+
+  const st=document.createElement('style');
+  st.textContent='.gchip{padding:10px 16px;border-radius:var(--rsm);border:1.5px solid var(--border);background:#fff;font-weight:700;font-size:14px;color:var(--text2);cursor:pointer;font-family:var(--sans)}.gchip.on{border-color:var(--teal);background:var(--teal-l);color:var(--teal)}';
+  document.head.appendChild(st);
+
+  // Gallons: type any number, or tap a quick button
+  const box=ge('gabox');
+  if(box){
+    box.innerHTML='<div class="slbl">Water needed</div><div class="fg"><label class="fl">How many gallons?</label>'+
+      '<input class="fi" id="ga-num" type="number" inputmode="numeric" min="1" max="500" placeholder="e.g. 3"/>'+
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">'+
+      [2,5,10,20,50,100].map(n=>'<button type="button" class="gchip" data-n="'+n+'">'+n+'</button>').join('')+
+      '</div></div>';
+    const num=ge('ga-num'),chips=[...box.querySelectorAll('.gchip')];
+    const mark=()=>chips.forEach(c=>c.classList.toggle('on',c.dataset.n===num.value.trim()));
+    chips.forEach(c=>c.onclick=()=>{num.value=c.dataset.n;mark();});
+    num.addEventListener('input',mark);
+  }
+
+  // Booking sends the typed quantity to the driver
+  const _sb=submitBooking;
+  submitBooking=function(){
+    if(S.selSvc!==3){_sb();return;}
+    const loc=ge('bloc').value.trim(),special=ge('bspecial').value.trim();
+    const raw=ge('ga-num').value.trim(),q=Number(raw);
+    if(raw!==''&&(!Number.isInteger(q)||q<1||q>500)){toast('Enter a whole number of gallons from 1 to 500','fa-triangle-exclamation');return;}
+    if(!loc){toast('Enter your location','fa-triangle-exclamation');return;}
+    if(!S.selDate){toast('Select a date','fa-triangle-exclamation');return;}
+    if(!S.selTime){toast('Select a time','fa-triangle-exclamation');return;}
+    const qty=raw===''?'to be agreed with the driver':q+' gallon'+(q===1?'':'s');
+    startRealBooking(TRI,loc,S.selDate+' at '+S.selTime,'Quantity: '+qty+(special?'. '+special:''));
+  };
+})();
+  (function(){
+  // Add 'apple' to this list once Apple sign-in is set up in Supabase
+  const PROVIDERS=['google','facebook'];
+  const META={
+    google:['Continue with Google','fa-brands fa-google'],
+    facebook:['Continue with Facebook','fa-brands fa-facebook-f'],
+    apple:['Continue with Apple','fa-brands fa-apple']
+  };
+
+  if(!ge('social')){
+    const d=document.createElement('div');
+    d.id='social';
+    d.style.cssText='margin-top:18px';
+    d.innerHTML='<div style="display:flex;align-items:center;gap:10px;color:var(--text3);font-size:12px;font-weight:700;margin-bottom:12px"><span style="flex:1;height:1px;background:var(--border)"></span>OR<span style="flex:1;height:1px;background:var(--border)"></span></div>'+
+      PROVIDERS.map(p=>'<button type="button" class="btn btn-o" style="margin-bottom:10px;border-color:var(--border);color:var(--text)" onclick="socialLogin(\''+p+'\')"><i class="'+META[p][1]+'"></i> '+META[p][0]+'</button>').join('');
+    ge('auth-msg').after(d);
+  }
+
+  window.socialLogin=async function(provider){
+    const msg=ge('auth-msg');
+    msg.style.color='var(--red)';msg.textContent='';
+    const {error}=await sb.auth.signInWithOAuth({provider,options:{redirectTo:location.origin+'/'}});
+    if(error)msg.textContent=error.message;
+  };
+
+  // People who join with Google or Facebook have no phone number yet, so ask once
+  let asked=false;
+  async function needPhone(session){
+    if(asked)return;
+    const {data}=await sb.from('profiles').select('phone').eq('id',session.user.id).single();
+    if(data&&!(data.phone||'').trim()){
+      asked=true;
+      toast('Add your phone number to finish setting up','fa-phone');
+      openEdit();
+    }
+  }
+  sb.auth.onAuthStateChange((ev,session)=>{
+    if(session&&ev==='SIGNED_IN')setTimeout(()=>needPhone(session),2500);
+  });
+})();
+  (function(){
+  const bot=document.querySelector('#splash .sp-bot');
+  if(bot&&!ge('powered-by')){
+    const d=document.createElement('div');
+    d.id='powered-by';
+    d.style.cssText='text-align:center;font-size:12px;color:#5a6b65;margin-top:6px;font-weight:600';
+    d.innerHTML='Powered by <b style="color:#1a7a5e">EcoCharge</b>';
+    bot.appendChild(d);
+  }
+})();
 </script>
 </body>
 </html>
