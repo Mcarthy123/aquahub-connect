@@ -5010,6 +5010,81 @@ function wxTips(top,w){
   // Water Tanker card on Home: tanker only. Book Service card and BOOK tab: both services.
   openWater=function(){mode='water';goTo('book');setNav(2);};
 })();
+  (function(){
+  const TRI='Water Delivery (Tricycle)';
+
+  // --- Tricycle icon ---
+  const triIcon=n=>'<svg viewBox="0 0 64 64" width="'+n+'" height="'+n+'" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle" aria-hidden="true"><path d="M6 40V31l5-9h11v18"/><rect x="24" y="18" width="34" height="22" rx="3"/><path d="M6 40h52"/><circle cx="12" cy="46" r="5"/><circle cx="46" cy="46" r="5"/><path d="M41 23c-3 3.5-4 5-4 7a4 4 0 0 0 8 0c0-2-1-3.5-4-7z" fill="currentColor" stroke="none"/></svg>';
+
+  // --- Registration fee: GH 100 a year for tricycles (the server has the final say) ---
+  const _feeFor=feeFor;
+  feeFor=function(svc){return svc===TRI?Number(window._cfg.fee_tricycle??100):_feeFor(svc);};
+  const _rt=renderTerms;
+  renderTerms=function(){
+    _rt();
+    const b=ge('terms-box-D'),s=ge('drv-service');
+    if(b&&s&&s.value===TRI)b.innerHTML=b.innerHTML.replace('Registration fee: GH₵'+Number(window._cfg.fee_vehicle).toFixed(0),'Registration fee: GH₵'+feeFor(TRI));
+  };
+
+  // --- New service in the driver sign-up and Find a Driver lists ---
+  ['drv-service','fd-service'].forEach(id=>{
+    const s=ge(id);
+    if(s&&![...s.options].some(o=>o.text===TRI))s.add(new Option(TRI,TRI));
+  });
+  const ds=ge('drv-service');
+  const lab=()=>{
+    const p=ge('drv-price');
+    if(p&&p.previousElementSibling)p.previousElementSibling.textContent=ds.value===TRI?'Your price per gallon (GH₵, optional)':'Your price per visit (GH₵, optional)';
+  };
+  ds.addEventListener('change',()=>{renderTerms();lab();});
+
+  // --- Book screen: tricycle card and gallons box ---
+  SVCS[3]={name:TRI,cost:'Agreed with driver'};
+  if(!ge('svc3')){
+    ge('svc2').insertAdjacentHTML('afterend',
+      '<div class="so" id="svc3" onclick="selSvc(3)"><div class="sh2"><div class="sic" style="background:var(--teal-l);color:var(--teal)">'+triIcon(30)+'</div><div><div class="sn">Water by Tricycle</div><div class="sp2">Sold in gallons, price set by the driver</div></div></div>'+
+      '<div class="sd">Order gallons of clean water delivered by a tricycle driver. Choose a verified driver, then agree the price with them.</div>'+
+      '<div class="ftags"><span class="ftag">Verified drivers</span><span class="ftag">Request and track</span></div></div>');
+    ge('wtbox').insertAdjacentHTML('afterend',
+      '<div class="card" id="gabox" style="display:none"><div class="slbl">Water needed</div><div class="fg"><label class="fl">Number of gallons</label><select class="fsel" id="ga-size"><option>5 gallons</option><option>10 gallons</option><option>20 gallons</option><option>30 gallons</option><option>50 gallons</option><option>100 gallons</option><option>Not sure, will discuss</option></select></div></div>');
+  }
+  const _sv=selSvc;
+  selSvc=function(i){_sv(i);const g=ge('gabox');if(g)g.style.display=i===3?'block':'none';};
+
+  const _sb=submitBooking;
+  submitBooking=function(){
+    if(S.selSvc!==3){_sb();return;}
+    const loc=ge('bloc').value.trim(),special=ge('bspecial').value.trim();
+    if(!loc){toast('Enter your location','fa-triangle-exclamation');return;}
+    if(!S.selDate){toast('Select a date','fa-triangle-exclamation');return;}
+    if(!S.selTime){toast('Select a time','fa-triangle-exclamation');return;}
+    startRealBooking(TRI,loc,S.selDate+' at '+S.selTime,'Quantity: '+ge('ga-size').value+(special?'. '+special:''));
+  };
+
+  // Water Tanker card on Home now offers tanker or tricycle
+  const _gt=goTo;
+  goTo=function(id){
+    _gt(id);
+    if(id==='book'&&ge('svc0').style.display==='none'){
+      const hd=document.querySelector('#book .shdr');
+      hd.querySelector('h2').textContent='Order Water';
+      hd.querySelector('p').textContent='Tanker or tricycle, delivered to your door';
+    }
+  };
+  const bs=document.querySelector('.qa-card[onclick*="goTo(\'book\')"] .qa-sub');
+  if(bs)bs.textContent='Vacuum trucks & water delivery';
+  const ws=document.querySelector('.qa-card[onclick="openWater()"] .qa-sub');
+  if(ws)ws.textContent='Tanker or tricycle';
+
+  // Tricycle drivers show their price per gallon
+  const _ldT=loadDrivers;
+  loadDrivers=async function(){
+    await _ldT();
+    document.querySelectorAll('#fd-list .card').forEach(c=>{
+      if(c.textContent.includes(TRI))c.innerHTML=c.innerHTML.replace('</b> per visit','</b> per gallon');
+    });
+  };
+})();
 </script>
 </body>
 </html>
