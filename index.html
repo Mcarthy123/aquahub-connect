@@ -5170,6 +5170,17 @@ function wxTips(top,w){
     bot.appendChild(d);
   }
 })();
+  (function(){
+  const sc=ge('sms-screen');
+  if(sc&&!ge('sms-consent')){
+    const n=document.createElement('div');
+    n.id='sms-consent';
+    n.style.cssText='font-size:12px;color:var(--text3);margin-top:12px;line-height:1.6';
+    n.textContent='Includes weather warnings, payment and pickup reminders, and occasional AquaHub tips and invitations. Turn it off here any time.';
+    const card=sc.querySelector('.card');
+    if(card)card.appendChild(n);
+  }
+})();
 </script>
 </body>
 </html>
