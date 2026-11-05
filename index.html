@@ -5181,6 +5181,80 @@ function wxTips(top,w){
     if(card)card.appendChild(n);
   }
 })();
+  (function(){
+  // --- 1. Sign-up: agree to Terms and messages (shown only on the Sign up form) ---
+  const extra=ge('auth-extra');
+  if(extra&&!ge('au-consent')){
+    const d=document.createElement('label');
+    d.style.cssText='display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5;margin:4px 0 14px';
+    d.innerHTML='<input type="checkbox" id="au-consent" style="margin-top:3px;width:18px;height:18px"/><span>I agree to the <a href="terms.html" target="_blank">Terms</a> and to receive AquaHub messages by SMS and notifications: weather warnings, reminders, tips and invitations. I can turn SMS off any time in Profile.</span>';
+    extra.appendChild(d);
+  }
+
+  // Sign-up is blocked until they agree
+  const _sa=submitAuth;
+  submitAuth=async function(){
+    if(authMode==='signup'&&!ge('au-consent').checked){
+      const m=ge('auth-msg');
+      m.style.color='var(--red)';
+      m.textContent='Please agree to the Terms and messages to create your account';
+      return;
+    }
+    return _sa();
+  };
+
+  // Remember that they agreed (saved with the account)
+  const _su=sb.auth.signUp.bind(sb.auth);
+  sb.auth.signUp=function(args){
+    const c=ge('au-consent');
+    args.options=args.options||{};
+    args.options.data=Object.assign({},args.options.data,{sms_consent:!!(c&&c.checked)});
+    return _su(args);
+  };
+
+  // --- 2. After login: turn SMS on for people who agreed, ask everyone else once ---
+  if(!ge('smsq')){
+    const m=document.createElement('div');
+    m.className='mo';m.id='smsq';
+    m.innerHTML='<div class="ms" onclick="event.stopPropagation()"><div class="mh"></div><div class="mt">Get alerts by SMS?</div><div class="msub">We can text <b id="smsq-phone"></b> with weather warnings, payment and pickup reminders, and occasional tips and invitations. You can turn it off any time in Profile.</div><button class="btn btn-p" style="margin-bottom:10px" onclick="smsAnswer(true)">Yes, turn on SMS</button><button class="btn btn-o" onclick="smsAnswer(false)">Not now</button></div>';
+    document.body.appendChild(m);
+  }
+  window.smsAnswer=async function(yes){
+    try{localStorage.setItem('aqh_sms_asked','1');}catch(e){}
+    cm('smsq');
+    if(!yes)return;
+    const phone=ge('smsq-phone').textContent;
+    const {error}=await sb.rpc('save_sms',{p_phone:phone,p_enabled:true});
+    toast(error?error.message:'SMS alerts are on','fa-message');
+  };
+
+  let done=false;
+  async function smsConsent(session){
+    if(done)return;
+    done=true;
+    try{
+      const {data:cur}=await sb.rpc('my_sms');
+      if(cur&&cur.length)return; // already decided
+      const {data:p}=await sb.from('profiles').select('phone').eq('id',session.user.id).single();
+      const meta=session.user.user_metadata||{};
+      const phone=((p&&p.phone)||meta.phone||'').replace(/\s+/g,'');
+      if(!phone)return; // they will be asked for a phone number first
+      if(meta.sms_consent===true){
+        const {error}=await sb.rpc('save_sms',{p_phone:phone,p_enabled:true});
+        if(!error)toast('SMS alerts are on for '+phone,'fa-message');
+        return;
+      }
+      let asked=null;
+      try{asked=localStorage.getItem('aqh_sms_asked');}catch(e){}
+      if(asked)return;
+      ge('smsq-phone').textContent=phone;
+      openM('smsq');
+    }catch(e){}
+  }
+  sb.auth.onAuthStateChange((ev,session)=>{
+    if(session&&(ev==='SIGNED_IN'||ev==='INITIAL_SESSION'))setTimeout(()=>smsConsent(session),4500);
+  });
+})();
 </script>
 </body>
 </html>
