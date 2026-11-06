@@ -5255,6 +5255,176 @@ function wxTips(top,w){
     if(session&&(ev==='SIGNED_IN'||ev==='INITIAL_SESSION'))setTimeout(()=>smsConsent(session),4500);
   });
 })();
+  (function(){
+  const TRI='Water Delivery (Tricycle)';
+
+  // --- 1. The request window asks for gallons when the driver is a tricycle water seller ---
+  const notesFg=ge('rq-notes').closest('.fg');
+  if(!ge('rq-gal')){
+    const d=document.createElement('div');
+    d.className='fg';d.id='rq-gal-fg';d.style.display='none';
+    d.innerHTML='<label class="fl">How many gallons?</label><input class="fi" id="rq-gal" type="number" inputmode="numeric" min="1" max="500" placeholder="e.g. 20"/>';
+    notesFg.before(d);
+  }
+
+  const _or=openRequest;
+  openRequest=function(btn){
+    _or(btn);
+    const tri=!!rqDriver&&rqDriver.svc===TRI;
+    ge('rq-gal-fg').style.display=tri?'':'none';
+    const send=document.querySelector('#rq .btn-p');
+    if(send)send.textContent=tri?'Pay and send request':'Send Request';
+    if(tri){
+      const n=ge('rq-notes');
+      const m=/Quantity:\s*(\d+)\s*gallon/i.exec(n.value||'');
+      ge('rq-gal').value=m?m[1]:'';
+      n.value=(n.value||'').replace(/Quantity:[^.]*\.?\s*/i,'').trim();
+    }
+  };
+
+  // --- 2. For tricycle water, the customer pays first. The driver only sees paid requests. ---
+  const _sr=sendRequest;
+  sendRequest=async function(){
+    if(!rqDriver||rqDriver.svc!==TRI){return _sr();}
+    const dg=normDigital(ge('rq-dgcode').value);
+    if(dg===null){toast('Check the Ghana Post GPS address, for example NT-123-4567','fa-triangle-exclamation');return;}
+    const loc=ge('rq-loc').value.trim()||dg||(rqCoords?'Shared GPS location':'');
+    if(!loc){toast('Enter a location, your GPS address, or use your current location','fa-triangle-exclamation');return;}
+    const qty=Math.floor(Number(ge('rq-gal').value));
+    if(!(qty>=1&&qty<=500)){toast('Enter the number of gallons (1 to 500)','fa-triangle-exclamation');return;}
+    const payload={action:'init-booking',driver_id:rqDriver.id,qty,location:loc,time:ge('rq-time').value.trim(),
+      notes:ge('rq-notes').value.trim(),lat:rqCoords?rqCoords.lat:null,lng:rqCoords?rqCoords.lng:null,dg:dg||null};
+    toast('Checking the total...','fa-clock');
+    const p=await callPay({...payload,preview:true});
+    if(!p.ok){toast(p.error||'Could not start payment','fa-triangle-exclamation');return;}
+    if(!confirm(qty+' gallons x GH₵'+p.price+' = GH₵'+Number(p.total).toFixed(2)+'. Pay now to send your request to the driver?'))return;
+    const o=await callPay(payload);
+    if(o.ok)location.href=o.url;
+    else toast(o.error||'Could not start payment','fa-triangle-exclamation');
+  };
+
+  // --- 3. Wording on the driver cards ---
+  const _ldP=loadDrivers;
+  loadDrivers=async function(){
+    await _ldP();
+    document.querySelectorAll('#fd-list .est').forEach(e=>{
+      e.textContent=e.textContent.replace('Pay the driver in cash when they arrive.','You pay in the app when you send the request.');
+    });
+    document.querySelectorAll('#fd-list button[data-svc="'+TRI+'"]').forEach(b=>{b.textContent='Order and pay';});
+  };
+
+  // --- 4. Customer and driver see that the order is paid ---
+  const _lmb=loadMyBookings;
+  loadMyBookings=async function(){
+    await _lmb();
+    try{
+      const {data:{user}}=await sb.auth.getUser();
+      const {data}=await sb.from('bookings').select('id,pay_status').eq('customer_id',user.id);
+      const st=Object.fromEntries((data||[]).map(r=>[r.id,r.pay_status]));
+      document.querySelectorAll('#my-bookings .card').forEach(c=>{
+        if(c.querySelector('.paybk'))return;
+        const cb=c.querySelector('button[onclick^="cancelRequest"]');
+        const m=cb&&/cancelRequest\('([0-9a-f-]{36})'/.exec(cb.getAttribute('onclick'));
+        if(!m||st[m[1]]!=='paid')return;
+        const d=document.createElement('div');
+        d.className='paybk';
+        d.style.cssText='margin-top:12px;font-size:13px;font-weight:800;color:var(--teal)';
+        d.innerHTML='<i class="fa-solid fa-circle-check"></i> Paid in the app';
+        cb.before(d);
+      });
+    }catch(e){}
+  };
+
+  const _lj=loadJobs;
+  loadJobs=async function(){
+    await _lj();
+    try{
+      const {data:{user}}=await sb.auth.getUser();
+      const {data}=await sb.from('bookings').select('id,pay_status,pay_amount').eq('driver_id',user.id);
+      const st=Object.fromEntries((data||[]).map(r=>[r.id,r]));
+      document.querySelectorAll('#jobs-list .card').forEach(c=>{
+        if(c.querySelector('.paidtag'))return;
+        const m=/setJob\('([0-9a-f-]{36})'/.exec(c.innerHTML);
+        const r=m&&st[m[1]];
+        if(r&&r.pay_status==='paid'){
+          const d=document.createElement('div');
+          d.className='paidtag';
+          d.style.cssText='margin-top:8px;font-size:13px;font-weight:800;color:var(--teal)';
+          d.innerHTML='<i class="fa-solid fa-circle-check"></i> Customer has paid GH₵'+Number(r.pay_amount).toFixed(2)+' in the app';
+          c.insertBefore(d,c.children[2]||null);
+        }
+      });
+    }catch(e){}
+  };
+})();
+  (function(){
+  // ===== 1. FORGOT PASSWORD =====
+  if(ge('auth-btn')&&!ge('forgot-link')){
+    const f=document.createElement('div');
+    f.id='forgot-link';
+    f.style.cssText='text-align:center;margin-top:12px;font-size:13px;font-weight:700;color:var(--teal);cursor:pointer';
+    f.textContent='Forgot password?';
+    f.onclick=()=>forgotPassword();
+    ge('auth-msg').before(f);
+  }
+  // Only show it on the Log in form
+  const showForgot=()=>{const f=ge('forgot-link');if(f)f.style.display=authMode==='login'?'':'none';};
+  const _swa=switchAuth;
+  switchAuth=function(){_swa();showForgot();};
+  showForgot();
+
+  window.forgotPassword=async function(){
+    const email=ge('au-email').value.trim(),msg=ge('auth-msg');
+    msg.style.color='var(--red)';
+    if(!email){msg.textContent='Type your email above, then tap Forgot password again';return;}
+    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/'});
+    if(error){msg.textContent=error.message;return;}
+    msg.style.color='var(--green)';
+    msg.textContent='If that email has an account, a reset link is on its way. Check your inbox and spam.';
+  };
+
+  // The link in the email brings them back here to choose a new password
+  if(!ge('pwq')){
+    const m=document.createElement('div');
+    m.className='mo';m.id='pwq';
+    m.innerHTML='<div class="ms" onclick="event.stopPropagation()"><div class="mh"></div><div class="mt">Set a new password</div><div class="fg"><label class="fl">New password</label><input class="fi" id="pw-new" type="password" placeholder="At least 6 characters" autocomplete="new-password"/></div><button class="btn btn-p" onclick="saveNewPassword()">Save password</button></div>';
+    document.body.appendChild(m);
+  }
+  window.saveNewPassword=async function(){
+    const p=ge('pw-new').value;
+    if(p.length<6){toast('Use at least 6 characters','fa-triangle-exclamation');return;}
+    const {error}=await sb.auth.updateUser({password:p});
+    if(error){toast(error.message,'fa-triangle-exclamation');return;}
+    ge('pw-new').value='';
+    cm('pwq');
+    toast('Password updated','fa-circle-check');
+  };
+  sb.auth.onAuthStateChange(ev=>{if(ev==='PASSWORD_RECOVERY')setTimeout(()=>openM('pwq'),800);});
+
+  // ===== 2. TRICYCLE DRIVERS SET THEIR PRICE PER GALLON =====
+  const TRI='Water Delivery (Tricycle)';
+  changePrice=async function(){
+    const {data:{user}}=await sb.auth.getUser();
+    const {data:c}=await sb.from('collectors').select('service_type').eq('user_id',user.id).maybeSingle();
+    const gal=!!c&&c.service_type===TRI;
+    const v=prompt(gal?'Your price per gallon in GH₵ (for example 4 or 5)':'Your price per visit in GH₵ (leave empty for "Ask the driver")');
+    if(v===null)return;
+    const clean=v.trim();
+    const price=clean===''?null:Number(clean);
+    if(price!==null&&(!isFinite(price)||price<0||price>100000)){toast('Enter a valid amount','fa-triangle-exclamation');return;}
+    if(gal&&price===null){toast('Enter your price per gallon','fa-triangle-exclamation');return;}
+    const {error}=await sb.from('collectors').update({price}).eq('user_id',user.id);
+    if(error){toast(error.message,'fa-triangle-exclamation');return;}
+    toast('Price updated','fa-circle-check');
+    openDriver();
+  };
+  const _odp=openDriver;
+  openDriver=async function(){
+    await _odp();
+    const st=ge('drv-status');
+    if(st&&st.textContent.includes(TRI))st.innerHTML=st.innerHTML.replace(' per visit',' per gallon');
+  };
+})();
 </script>
 </body>
 </html>
