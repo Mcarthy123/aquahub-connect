@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.aquahub_connect.twa",
+        "sha256_cert_fingerprints": ["2B:F8:CD:04:F8:78:57:69:EB:FF:21:D4:62:C4:98:F8:58:7B:0C:90:87:31:E0:2E:F1:5F:CF:DE:7B:BA:A7:07"]
+      }
+    }]
