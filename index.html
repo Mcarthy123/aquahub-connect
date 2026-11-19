@@ -4674,7 +4674,7 @@ submitDriver=async function(){if(!ge('agree-D').checked){toast('Please agree to 
   const {data:{session}}=await sb.auth.getSession();if(!session)return;
   const o=await callPay({action:'verify',reference:ref});
   setTimeout(()=>{if(!o.ok){toast(o.error||'Could not confirm payment','fa-triangle-exclamation');return;}
-    toast('Payment confirmed!','fa-circle-check');if(o.kind==='order')openOrders();else if(o.kind==='waste')openWaste();else if(role==='seller')openSellerApply();else openDriver();},800);})();
+    toast('Payment confirmed!','fa-circle-check');if(o.kind==='order')openOrders();else if(o.kind==='waste')openWaste();else if(o.kind==='booking')openDrivers();else if(role==='seller')openSellerApply();else openDriver();},800);})();
 
 // ===== WASTE COLLECTION: households pay collectors in the app =====
 const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -5515,7 +5515,7 @@ if(!confirm(what+'GH₵'+Number(p.total).toFixed(2)+'. Pay now?'))return;
         const cb=c.querySelector('button[onclick^="cancelRequest"]');
         const m=cb&&/cancelRequest\('([0-9a-f-]{36})'/.exec(cb.getAttribute('onclick'));
         const r=m&&by[m[1]];
-        if(!r||r.service_type!==TRI||r.status!=='accepted'||r.pay_status==='paid')return;
+        if(!r||r.status!=='accepted'||r.pay_status==='paid')return;
         const b=document.createElement('button');
         b.className='btn btn-p paynow';b.style.marginTop='12px';
         b.innerHTML='<i class="fa-solid fa-credit-card"></i> Driver accepted. Pay now'+(r.pay_by?' ('+mins(r.pay_by)+' min left)':'');
@@ -5539,7 +5539,7 @@ if(!confirm(what+'GH₵'+Number(p.total).toFixed(2)+'. Pay now?'))return;
         info.textContent='The driver did not answer in time. Please go back and choose another driver.';
         return;
       }
-      if(b.service_type===TRI&&b.status==='accepted'&&b.pay_status!=='paid'){
+     if(b.status==='accepted'&&b.pay_status!=='paid'){
         sub.textContent='Driver accepted. Pay now to confirm';
         info.insertAdjacentHTML('beforeend','<button class="btn btn-p" style="margin-top:12px" onclick="payBooking(\''+liveBooking+'\')"><i class="fa-solid fa-credit-card"></i> Pay now'+(b.pay_by?' ('+mins(b.pay_by)+' min left)':'')+'</button>');
       }
@@ -5561,7 +5561,7 @@ if(!confirm(what+'GH₵'+Number(p.total).toFixed(2)+'. Pay now?'))return;
         if(!r)return;
         let t='';
         if(r.status==='requested'&&r.accept_by)t='Answer within '+mins(r.accept_by)+' min or this request expires.';
-        else if(r.service_type===TRI&&r.status==='accepted'&&r.pay_status!=='paid')
+        else if(r.status==='accepted'&&r.pay_status!=='paid')
           t='Waiting for the customer to pay'+(r.pay_by?' ('+mins(r.pay_by)+' min left)':'')+'. Do not go yet.';
         if(!t)return;
         const d=document.createElement('div');
