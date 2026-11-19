@@ -5495,7 +5495,8 @@ function wxTips(top,w){
     toast('Checking the total...','fa-clock');
     const p=await callPay({action:'init-booking-pay',booking_id:id,preview:true});
     if(!p.ok){toast(p.error||'Could not start payment','fa-triangle-exclamation');return;}
-    if(!confirm(p.qty+' gallons x GH₵'+p.price+' = GH₵'+Number(p.total).toFixed(2)+'. Pay now?'))return;
+   const what=p.qty?p.qty+' gallons x GH₵'+p.price+' = ':'';
+if(!confirm(what+'GH₵'+Number(p.total).toFixed(2)+'. Pay now?'))return;
     const o=await callPay({action:'init-booking-pay',booking_id:id});
     if(o.ok)location.href=o.url;
     else toast(o.error||'Could not start payment','fa-triangle-exclamation');
