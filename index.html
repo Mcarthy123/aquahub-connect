@@ -5572,6 +5572,16 @@ if(!confirm(what+'GH₵'+Number(p.total).toFixed(2)+'. Pay now?'))return;
     }catch(e){}
   };
 })();
+  (function(){
+  const _ljHide=loadJobs;
+  loadJobs=async function(){
+    await _ljHide();
+    document.querySelectorAll('#jobs-list .jobnote').forEach(n=>{
+      if(!/Waiting for the customer to pay/.test(n.textContent))return;
+      n.closest('.card').querySelectorAll('a.btn,button.btn').forEach(b=>{b.style.display='none';});
+    });
+  };
+})();
 </script>
 </body>
 </html>
