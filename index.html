@@ -5448,6 +5448,129 @@ function wxTips(top,w){
     if(role==='seller')openSellerApply();else openDriver();
   };
 })();
+  // ===== TRICYCLE WATER: REQUEST FIRST, PAY AFTER THE DRIVER ACCEPTS =====
+(function(){
+  const TRI='Water Delivery (Tricycle)';
+  const mins=ts=>Math.max(0,Math.ceil((new Date(ts)-Date.now())/60000));
+
+  const _or2=openRequest;
+  openRequest=function(btn){
+    _or2(btn);
+    const send=document.querySelector('#rq .btn-p');
+    if(send)send.textContent='Send Request';
+  };
+  const _ld=loadDrivers;
+  loadDrivers=async function(){
+    await _ld();
+    document.querySelectorAll('#fd-list button[data-svc="'+TRI+'"]').forEach(b=>{b.textContent='Request this driver';});
+  };
+
+  // Send the request with no payment
+  sendRequest=async function(){
+    const dg=normDigital(ge('rq-dgcode').value);
+    if(dg===null){toast('Check the Ghana Post GPS address, for example NT-123-4567','fa-triangle-exclamation');return;}
+    const loc=ge('rq-loc').value.trim()||dg||(rqCoords?'Shared GPS location':'');
+    if(!loc){toast('Enter a location, your GPS address, or use your current location','fa-triangle-exclamation');return;}
+    const tri=rqDriver.svc===TRI;
+    let qty=null;
+    if(tri){
+      qty=Math.floor(Number(ge('rq-gal').value));
+      if(!(qty>=1&&qty<=500)){toast('Enter the number of gallons (1 to 500)','fa-triangle-exclamation');return;}
+    }
+    const {data:{user}}=await sb.auth.getUser();
+    const row={customer_id:user.id,driver_id:rqDriver.id,service_type:rqDriver.svc,location:loc,
+      preferred_time:ge('rq-time').value.trim(),notes:ge('rq-notes').value.trim(),digital_address:dg||null};
+    if(tri)row.qty=qty;
+    if(rqCoords){row.lat=rqCoords.lat;row.lng=rqCoords.lng;}
+    const {data,error}=await sb.from('bookings').insert(row).select('id').single();
+    if(error){toast(error.message,'fa-triangle-exclamation');return;}
+    cm('rq');
+    toast('Request sent! The driver will respond.','fa-circle-check');
+    loadMyBookings();
+    if(data&&data.id)openLive(data.id);
+  };
+
+  // Pay after acceptance
+  window.payBooking=async function(id){
+    toast('Checking the total...','fa-clock');
+    const p=await callPay({action:'init-booking-pay',booking_id:id,preview:true});
+    if(!p.ok){toast(p.error||'Could not start payment','fa-triangle-exclamation');return;}
+    if(!confirm(p.qty+' gallons x GH₵'+p.price+' = GH₵'+Number(p.total).toFixed(2)+'. Pay now?'))return;
+    const o=await callPay({action:'init-booking-pay',booking_id:id});
+    if(o.ok)location.href=o.url;
+    else toast(o.error||'Could not start payment','fa-triangle-exclamation');
+  };
+
+  // Customer: Pay now button on My Requests
+  const _lmb=loadMyBookings;
+  loadMyBookings=async function(){
+    await _lmb();
+    try{
+      const {data:{user}}=await sb.auth.getUser();
+      const {data}=await sb.from('bookings').select('id,service_type,status,pay_status,pay_by').eq('customer_id',user.id);
+      const by=Object.fromEntries((data||[]).map(r=>[r.id,r]));
+      document.querySelectorAll('#my-bookings .card').forEach(c=>{
+        if(c.querySelector('.paynow'))return;
+        const cb=c.querySelector('button[onclick^="cancelRequest"]');
+        const m=cb&&/cancelRequest\('([0-9a-f-]{36})'/.exec(cb.getAttribute('onclick'));
+        const r=m&&by[m[1]];
+        if(!r||r.service_type!==TRI||r.status!=='accepted'||r.pay_status==='paid')return;
+        const b=document.createElement('button');
+        b.className='btn btn-p paynow';b.style.marginTop='12px';
+        b.innerHTML='<i class="fa-solid fa-credit-card"></i> Driver accepted. Pay now'+(r.pay_by?' ('+mins(r.pay_by)+' min left)':'');
+        b.onclick=()=>payBooking(r.id);
+        cb.before(b);
+      });
+    }catch(e){}
+  };
+
+  // Customer: tracker screen shows Pay now, or the expired message
+  const _poll2=pollLive;
+  pollLive=async function(){
+    await _poll2();
+    try{
+      if(!liveBooking||!ge('live-screen').classList.contains('active'))return;
+      const {data:b}=await sb.from('bookings').select('service_type,status,pay_status,pay_by').eq('id',liveBooking).single();
+      if(!b)return;
+      const info=ge('live-info'),sub=ge('live-sub');
+      if(b.status==='expired'){
+        sub.textContent='No response from the driver';
+        info.textContent='The driver did not answer in time. Please go back and choose another driver.';
+        return;
+      }
+      if(b.service_type===TRI&&b.status==='accepted'&&b.pay_status!=='paid'){
+        sub.textContent='Driver accepted. Pay now to confirm';
+        info.insertAdjacentHTML('beforeend','<button class="btn btn-p" style="margin-top:12px" onclick="payBooking(\''+liveBooking+'\')"><i class="fa-solid fa-credit-card"></i> Pay now'+(b.pay_by?' ('+mins(b.pay_by)+' min left)':'')+'</button>');
+      }
+    }catch(e){}
+  };
+
+  // Driver: countdown and "do not go yet" until paid
+  const _lj2=loadJobs;
+  loadJobs=async function(){
+    await _lj2();
+    try{
+      const {data:{user}}=await sb.auth.getUser();
+      const {data}=await sb.from('bookings').select('id,service_type,status,pay_status,accept_by,pay_by').eq('driver_id',user.id);
+      const by=Object.fromEntries((data||[]).map(r=>[r.id,r]));
+      document.querySelectorAll('#jobs-list .card').forEach(c=>{
+        if(c.querySelector('.jobnote'))return;
+        const m=/setJob\('([0-9a-f-]{36})'/.exec(c.innerHTML);
+        const r=m&&by[m[1]];
+        if(!r)return;
+        let t='';
+        if(r.status==='requested'&&r.accept_by)t='Answer within '+mins(r.accept_by)+' min or this request expires.';
+        else if(r.service_type===TRI&&r.status==='accepted'&&r.pay_status!=='paid')
+          t='Waiting for the customer to pay'+(r.pay_by?' ('+mins(r.pay_by)+' min left)':'')+'. Do not go yet.';
+        if(!t)return;
+        const d=document.createElement('div');
+        d.className='jobnote';d.style.cssText='margin-top:8px;font-size:13px;font-weight:800;color:var(--orange)';
+        d.textContent=t;
+        c.insertBefore(d,c.children[2]||null);
+      });
+    }catch(e){}
+  };
+})();
 </script>
 </body>
 </html>
