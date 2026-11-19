@@ -5425,6 +5425,29 @@ function wxTips(top,w){
     if(st&&st.textContent.includes(TRI))st.innerHTML=st.innerHTML.replace(' per visit',' per gallon');
   };
 })();
+  (function(){
+  // Set to false when you start charging the registration fee again
+  const FREE=true;
+  if(!FREE)return;
+
+  // Sign-up forms: no fee, commission still shown
+  const _rt=renderTerms;
+  renderTerms=function(){
+    _rt();
+    const pct=Number((window._cfg&&window._cfg.commission_pct)||8);
+    ['terms-box-S','terms-box-D'].forEach(id=>{
+      const b=ge(id);
+      if(b)b.innerHTML='<b>Registration is free for now.</b><br><b>Commission: '+pct+'%</b> on every payment you receive through AquaHub. You receive the other '+(100-pct)+'%.';
+    });
+  };
+  renderTerms();
+
+  // No payment page: the application goes straight to AquaHub for approval
+  payFee=async function(role){
+    toast('Registration is free right now. Your application is waiting for approval.','fa-circle-check');
+    if(role==='seller')openSellerApply();else openDriver();
+  };
+})();
 </script>
 </body>
 </html>
