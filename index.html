@@ -5582,6 +5582,47 @@ if(!confirm(what+'GH₵'+Number(p.total).toFixed(2)+'. Pay now?'))return;
     });
   };
 })();
+  (function(){
+  const fmt=d=>d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'});
+
+  // Dates now start from today instead of tomorrow
+  renderDates=function(){
+    const days=['SUN','MON','TUE','WED','THU','FRI','SAT'],now=new Date();
+    ge('dgrid').innerHTML=[0,1,2,3].map(i=>{
+      const d=new Date(now);d.setDate(d.getDate()+i);
+      return '<div class="db" onclick="selDate(this,\''+fmt(d)+'\')"><div class="dd">'+(i===0?'TODAY':days[d.getDay()])+'</div><div class="dn">'+d.getDate()+'</div></div>';
+    }).join('');
+  };
+  renderDates();
+
+  // Times that have already passed today cannot be picked
+  const hourOf=s=>{
+    const m=/(\d+):00 (AM|PM)/.exec(s);
+    let h=+m[1];
+    if(m[2]==='PM'&&h<12)h+=12;
+    if(m[2]==='AM'&&h===12)h=0;
+    return h;
+  };
+  const _sd=selDate;
+  selDate=function(el,label){
+    _sd(el,label);
+    const today=fmt(new Date()),hr=new Date().getHours();
+    document.querySelectorAll('#tgrid .tb').forEach(b=>{
+      const past=label===today&&hourOf(b.textContent)<=hr;
+      b.style.opacity=past?'.35':'';
+      b.style.pointerEvents=past?'none':'';
+      if(past&&b.classList.contains('on')){b.classList.remove('on');S.selTime=null;}
+    });
+  };
+
+  // Refresh the dates each time the Book screen opens, so they stay correct after midnight
+  const _gt=goTo;
+  goTo=function(id){
+    if(id==='book'){renderDates();S.selDate=null;}
+    _gt(id);
+  };
+})();
+
 </script>
 </body>
 </html>
