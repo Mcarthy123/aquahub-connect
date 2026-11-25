@@ -5622,7 +5622,76 @@ if(!confirm(what+'GH₵'+Number(p.total).toFixed(2)+'. Pay now?'))return;
     _gt(id);
   };
 })();
+(function(){
+  // Paystack's fee, added on top of the listed price so sellers and drivers receive the full price
+  const pct=()=>Number(((window._cfg&&window._cfg.paystack_fee_pct)??1.95))/100;
+  const gross=b=>Math.round((b/(1-pct())+0.01)*100)/100;
+  const m=n=>'GH₵'+Number(n).toFixed(2);
 
+  // Market checkout: show the payment fee and the total to pay
+  const _dc=drawCheckout;
+  drawCheckout=function(){
+    _dc();
+    const items=S.cart.reduce((s,i)=>s+i.total,0);
+    const fee=(fulfil==='delivery'&&shopInfo)?Number(shopInfo.delivery_fee):0;
+    const base=items+fee,g=gross(base);
+    ge('ch-items').insertAdjacentHTML('beforeend','<div class="mr"><span class="mk">Payment fee</span><span class="mv">'+m(g-base)+'</span></div>');
+    ge('ch-tot').textContent=m(g);
+  };
+
+  // Monthly waste payment: the Pay button shows the full amount, with the fee explained under it
+  const _lw=loadWaste;
+  loadWaste=async function(){
+    await _lw();
+    document.querySelectorAll('#waste-mine button[onclick^="payWaste"]').forEach(b=>{
+      const mm=/GH₵\s*([\d.]+)/.exec(b.textContent);
+      if(!mm||b.dataset.fee)return;
+      const base=Number(mm[1]),g=gross(base);
+      b.dataset.fee='1';
+      b.textContent='Pay '+m(g);
+      const n=document.createElement('div');
+      n.style.cssText='font-size:11px;color:var(--text3);margin-top:6px;text-align:center';
+      n.textContent=m(base)+' plus '+m(g-base)+' payment fee';
+      b.after(n);
+    });
+  };
+})();
+  (function(){
+  const pct=()=>Number(((window._cfg&&window._cfg.paystack_fee_pct)??1.95));
+  const note=()=>'A small payment fee (about '+Math.round(pct()*10)/10+'%) is added at checkout.';
+
+  // Market page: note under the banner
+  const ban=document.querySelector('.mk-ban');
+  if(ban&&!ban.querySelector('.fnote')){
+    const s=document.createElement('div');
+    s.className='fnote';
+    s.style.cssText='font-size:11px;opacity:.85;margin-top:4px';
+    s.textContent=note();
+    ban.appendChild(s);
+  }
+
+  // Product sheet: note under the price and quantity row
+  const _pd=pdDraw;
+  pdDraw=function(){
+    _pd();
+    const row=ge('pd-b').querySelector('.qs');
+    if(!row||ge('pd-b').querySelector('.fnote'))return;
+    const d=document.createElement('div');
+    d.className='fnote';
+    d.style.cssText='font-size:11px;color:var(--text3);text-align:center;margin:-4px 0 10px';
+    d.textContent=note();
+    row.parentElement.after(d);
+  };
+
+  // Tricycle driver cards: payment fee mentioned next to the estimate
+  const _ld=loadDrivers;
+  loadDrivers=async function(){
+    await _ld();
+    document.querySelectorAll('#fd-list .est').forEach(e=>{
+      if(!e.dataset.fn){e.dataset.fn='1';e.textContent+=' '+note();}
+    });
+  };
+})();
 </script>
 </body>
 </html>
