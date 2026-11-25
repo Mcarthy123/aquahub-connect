@@ -5297,7 +5297,7 @@ function wxTips(top,w){
     toast('Checking the total...','fa-clock');
     const p=await callPay({...payload,preview:true});
     if(!p.ok){toast(p.error||'Could not start payment','fa-triangle-exclamation');return;}
-    if(!confirm(qty+' gallons x GH₵'+p.price+' = GH₵'+Number(p.total).toFixed(2)+'. Pay now to send your request to the driver?'))return;
+       if(!confirm(qty+' gallons x GH₵'+p.price+' = GH₵'+Number(p.total).toFixed(2)+'. Payment fee GH₵'+Number(p.fee).toFixed(2)+'. You pay GH₵'+Number(p.charge).toFixed(2)+'. Send request?'))return;
     const o=await callPay(payload);
     if(o.ok)location.href=o.url;
     else toast(o.error||'Could not start payment','fa-triangle-exclamation');
