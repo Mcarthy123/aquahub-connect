@@ -5692,6 +5692,40 @@ if(!confirm(what+'GH₵'+Number(p.total).toFixed(2)+'. Pay now?'))return;
     });
   };
 })();
+  (function(){
+  const mins=ts=>Math.max(0,Math.ceil((new Date(ts)-Date.now())/60000));
+
+  // --- Customer tracker: before payment, explain it. After payment, confirm it. ---
+  const _pl=pollLive;
+  pollLive=async function(){
+    await _pl();
+    try{
+      if(!liveBooking||!ge('live-screen').classList.contains('active'))return;
+      const {data:b}=await sb.from('bookings').select('status,pay_status,pay_by').eq('id',liveBooking).single();
+      if(!b||b.status!=='accepted')return;
+      const info=ge('live-info'),sub=ge('live-sub');
+      if(b.pay_status!=='paid'){
+        sub.textContent='Driver accepted. Pay to confirm';
+        info.innerHTML='<b>Pay now to confirm your driver.</b><br>After you pay, the driver is told to come to you, and you can call them and follow them on the map.'+
+          '<button class="btn btn-p" style="margin-top:12px" onclick="payBooking(\''+liveBooking+'\')"><i class="fa-solid fa-credit-card"></i> Pay now'+(b.pay_by?' ('+mins(b.pay_by)+' min left)':'')+'</button>';
+      }else if(!info.querySelector('.paidnote')){
+        info.insertAdjacentHTML('afterbegin','<div class="paidnote" style="background:#eef7f2;border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:700;color:var(--teal)"><i class="fa-solid fa-circle-check"></i> Payment confirmed. Your driver has been told to come to you.</div>');
+      }
+    }catch(e){}
+  };
+
+  // --- Driver: clear "go now" message once the customer has paid ---
+  const _lj=loadJobs;
+  loadJobs=async function(){
+    await _lj();
+    document.querySelectorAll('#jobs-list .paidtag').forEach(t=>{
+      if(t.dataset.go)return;
+      t.dataset.go='1';
+      t.innerHTML='<i class="fa-solid fa-circle-check"></i> Paid. You can go now. The phone number and directions are below.';
+    });
+  };
+})();
+
 </script>
 </body>
 </html>
