@@ -5725,6 +5725,117 @@ if(!confirm(what+'GH₵'+Number(p.total).toFixed(2)+'. Pay now?'))return;
     });
   };
 })();
+(function(){
+  let fulfBy={},shopMap={};
+
+  // Same Paystack fee as the rest of the app, worked out per shop order
+  const gross=b=>{
+    const p=Number(((window._cfg&&window._cfg.paystack_fee_pct)??1.95))/100;
+    return Math.round((b/(1-p)+0.01)*100)/100;
+  };
+  const groupCart=()=>{
+    const g={};
+    S.cart.forEach(i=>{const k=i.seller||'x';(g[k]=g[k]||[]).push(i);});
+    return g;
+  };
+
+  // 1. The cart can now hold products from different shops
+  addToCart=function(id,qty,o){
+    const p=PRODS.find(x=>x.id===id);
+    if(!p||!p.stock)return false;
+    const hasV=(p.sizes&&p.sizes.length)||(p.colours&&p.colours.length);
+    if(hasV&&!o){pdOpen(id);toast('Choose a size or colour','fa-circle-info');return false;}
+    qty=Math.max(p.min,qty||p.min);
+    o=o||{};
+    const v=[o.size?'Size '+o.size:'',o.colour||''].filter(Boolean).join(', ');
+    const key=id+'|'+(o.size||'')+'|'+(o.colour||'');
+    const ex=S.cart.find(c=>c.key===key);
+    if(ex){ex.qty+=qty;ex.total=ex.price*ex.qty;}
+    else S.cart.push({key,id,name:p.name+(v?' ('+v+')':''),qty,unit:p.unit,price:p.price,total:p.price*qty,col:p.col,seller:p.seller,shop:p.shop,size:o.size,colour:o.colour});
+    updateCart();
+    toast(p.name+' added to cart','fa-cart-shopping');
+    return true;
+  };
+
+  // 2. Checkout shows one section per shop, each with its own delivery or pickup choice
+  window.setFulFor=function(sid,f){fulfBy[sid]=f;drawCheckout();};
+
+  drawCheckout=function(){
+    const groups=groupCart(),ids=Object.keys(groups);
+    let html='',pay=0,anyDelivery=false,blocked=false;
+    if(ids.length>1)html+='<div style="font-size:12px;color:var(--text2);background:var(--teal-l);border-radius:12px;padding:10px 12px;margin-bottom:12px">You are buying from '+ids.length+' shops. Each shop is a separate order, and you pay for each one.</div>';
+    ids.forEach(sid=>{
+      const items=groups[sid],info=shopMap[sid];
+      const name=items[0].shop||(info&&info.shop_name)||'Shop';
+      const cD=!info||info.offers_delivery,cP=!!(info&&info.offers_pickup);
+      let f=fulfBy[sid]||(cD?'delivery':(cP?'pickup':'delivery'));
+      if(f==='delivery'&&!cD&&cP)f='pickup';
+      if(f==='pickup'&&!cP)f='delivery';
+      fulfBy[sid]=f;
+      const sub=items.reduce((s,i)=>s+i.total,0);
+      const fee=(f==='delivery'&&info)?Number(info.delivery_fee):0;
+      const total=sub+fee,g=gross(total);
+      pay+=g;
+      if(f==='delivery')anyDelivery=true;
+      if(!cD&&!cP)blocked=true;
+      html+='<div style="border:1.5px solid var(--border);border-radius:14px;padding:12px;margin-bottom:12px">'+
+        '<div style="font-weight:800;margin-bottom:6px"><i class="fa-solid fa-store" style="color:var(--teal)"></i> '+esc(name)+'</div>'+
+        items.map(i=>'<div class="mr"><span class="mk">'+esc(i.name)+' ('+i.qty+' '+esc(i.unit)+')</span><span class="mv">'+gh(i.total)+'</span></div>').join('')+
+        '<div style="display:flex;gap:8px;margin:8px 0">'+
+          (cD?'<button class="btn '+(f==='delivery'?'btn-p':'btn-o')+'" style="padding:10px" onclick="setFulFor(\''+sid+'\',\'delivery\')">Delivery</button>':'')+
+          (cP?'<button class="btn '+(f==='pickup'?'btn-p':'btn-o')+'" style="padding:10px" onclick="setFulFor(\''+sid+'\',\'pickup\')">I will collect</button>':'')+
+        '</div>'+
+        (f==='delivery'
+          ?'<div class="mr"><span class="mk">Delivery</span><span class="mv">'+(fee>0?gh(fee):'Free')+'</span></div>'
+          :'<div style="font-size:12px;color:var(--text2);margin-bottom:6px">Collect from: '+esc((info&&info.pickup_note)||'the shop')+'. No delivery fee.</div>')+
+        (!cD&&!cP?'<div style="font-size:12px;color:var(--red)">This shop has not set up delivery or pickup yet.</div>':'')+
+        '<div class="mr"><span class="mk">Payment fee</span><span class="mv">'+gh(g-total)+'</span></div>'+
+      '</div>';
+    });
+    ge('ch-items').innerHTML=html;
+    ge('ch-tot').textContent=gh(pay);
+    ge('ch-addr').closest('.fg').style.display=anyDelivery?'':'none';
+    const ful=ge('ch-ful');if(ful)ful.innerHTML='';
+    window._chBlocked=blocked;
+  };
+
+  checkout=async function(){
+    if(!S.cart.length)return;
+    fulfBy={};shopMap={};
+    const sellers=[...new Set(S.cart.map(i=>i.seller).filter(Boolean))];
+    await Promise.all(sellers.map(async sid=>{
+      const {data}=await sb.rpc('shop_info',{p_seller:sid});
+      shopMap[sid]=(data&&data[0])||null;
+    }));
+    drawCheckout();
+    openM('chm');
+  };
+
+  // 3. Placing the order creates one order per shop
+  placeOrder=async function(){
+    const addr=ge('ch-addr').value.trim(),ph=ge('ch-ph').value.trim();
+    const groups=groupCart(),ids=Object.keys(groups);
+    if(window._chBlocked){toast('One of the shops has not set up delivery or pickup yet. Remove it or choose another shop.','fa-triangle-exclamation');return;}
+    if(ids.some(sid=>fulfBy[sid]==='delivery')&&!addr){toast('Enter delivery address','fa-triangle-exclamation');return;}
+    if(!ph){toast('Enter phone number','fa-triangle-exclamation');return;}
+    const orderIds=[];
+    let err=null;
+    for(const sid of ids){
+      const f=fulfBy[sid]||'delivery';
+      const items=groups[sid].map(i=>({id:i.id,qty:i.qty,size:i.size||null,colour:i.colour||null}));
+      const {data:orderId,error}=await sb.rpc('place_order',{p_items:items,p_address:f==='delivery'?addr:'',p_phone:ph,p_fulfil:f});
+      if(error){err=error.message;break;}
+      orderIds.push(orderId);
+      S.cart=S.cart.filter(i=>(i.seller||'x')!==sid);
+    }
+    updateCart();renderProds();
+    if(!orderIds.length){toast(err||'Could not place the order','fa-triangle-exclamation');return;}
+    cm('chm');
+    if(orderIds.length===1&&!err&&!S.cart.length){payOrder(orderIds[0]);return;}
+    toast(err?('Some items could not be ordered: '+err):(orderIds.length+' orders created. Pay for each one below.'),err?'fa-triangle-exclamation':'fa-cart-shopping');
+    openOrders();
+  };
+})();
 
 </script>
 </body>
